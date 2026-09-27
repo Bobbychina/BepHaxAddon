@@ -62,6 +62,7 @@ public class EntityMixin {
             Modules mods = Modules.get();
             if (mods == null) return;
             NoRender noRender = mods.get(NoRender.class);
+            if (noRender == null) return;   // 26.1: 启动期模块可能未注册
             if (!noRender.isActive()) return;
             var codySetting = noRender.settings.get("cody");
             if (codySetting != null && (boolean) codySetting.get() && player.getGameProfile().name().equals("codysmile11")) {

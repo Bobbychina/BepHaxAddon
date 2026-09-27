@@ -17,6 +17,7 @@ public class Loadout extends Command {
             Modules mods = Modules.get();
             if (mods == null) return SINGLE_SUCCESS;
             Loadouts loadouts = mods.get(Loadouts.class);
+            if (loadouts == null) return SINGLE_SUCCESS;   // 26.1: 启动期模块可能未注册
             if (loadouts.noLoadout(loadoutName)) {
                 MsgUtil.sendModuleMsg("Saving loadout" + StardustUtil.rCC() + "..!", loadouts.name);
             } else {
@@ -30,6 +31,7 @@ public class Loadout extends Command {
             Modules mods = Modules.get();
             if (mods == null) return SINGLE_SUCCESS;
             Loadouts loadouts = mods.get(Loadouts.class);
+            if (loadouts == null) return SINGLE_SUCCESS;   // 26.1: 启动期模块可能未注册
             if (!loadouts.isActive()) {
                 loadouts.toggle();
                 loadouts.sendToggledMsg();
@@ -47,6 +49,7 @@ public class Loadout extends Command {
             Modules mods = Modules.get();
             if (mods == null) return SINGLE_SUCCESS;
             Loadouts loadouts = mods.get(Loadouts.class);
+            if (loadouts == null) return SINGLE_SUCCESS;   // 26.1: 启动期模块可能未注册
             if (loadouts.noLoadout(loadoutName)) {
                 MsgUtil.sendModuleMsg("No loadout \"§5§o" + loadoutName + "§7\" to delete§c..!", loadouts.name);
             } else {
@@ -58,6 +61,7 @@ public class Loadout extends Command {
             Modules mods = Modules.get();
             if (mods == null) return SINGLE_SUCCESS;
             Loadouts loadouts = mods.get(Loadouts.class);
+            if (loadouts == null) return SINGLE_SUCCESS;   // 26.1: 启动期模块可能未注册
             loadouts.clearLoadouts();
             MsgUtil.sendModuleMsg("Loadouts cleared.", loadouts.name);
             return SINGLE_SUCCESS;

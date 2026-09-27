@@ -79,6 +79,7 @@ public abstract class BookEditScreenMixin extends Screen {
         Modules modules = Modules.get();
         if (modules == null) return;
         BookTools bookTools = modules.get(BookTools.class);
+        if (bookTools == null) return;   // 26.1: 启动期模块可能未注册
         if (bookTools.skipFormatting()) return;
         int offset = 0;
         boolean odd = false;
@@ -156,6 +157,7 @@ public abstract class BookEditScreenMixin extends Screen {
         Modules modules = Modules.get();
         if (modules == null) return;
         BookTools bookTools = modules.get(BookTools.class);
+        if (bookTools == null) return;   // 26.1: 启动期模块可能未注册
         if (bookTools.skipFormatting()) return;
         for (Button btn : this.buttons) {
             btn.visible = true;

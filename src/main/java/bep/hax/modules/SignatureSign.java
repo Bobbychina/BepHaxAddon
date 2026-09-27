@@ -836,6 +836,7 @@ public class SignatureSign extends Module {
         Modules mods = Modules.get();
         if (mods == null) return;
         SignHistorian sh = mods.get(SignHistorian.class);
+        if (sh == null) return;   // 26.1: 启动期模块可能未注册
         if (sh.isActive() && sh.getRestoration(sign) != null) return;
         if (autoConfirm.get()) {
             event.cancel();

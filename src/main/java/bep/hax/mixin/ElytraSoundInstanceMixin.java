@@ -20,6 +20,7 @@ public abstract class ElytraSoundInstanceMixin extends AbstractTickableSoundInst
         Modules modules = Modules.get();
         if (modules == null) return;
         RocketMan rocketMan = modules.get(RocketMan.class);
+        if (rocketMan == null) return;   // 26.1: 启动期模块可能未注册
         if (rocketMan.isActive() && rocketMan.shouldMuteElytra()) this.stop();
     }
 }

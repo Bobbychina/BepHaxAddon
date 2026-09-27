@@ -329,6 +329,7 @@ public class StardustUtil {
         Modules mods = Modules.get();
         if (mods == null) return;
         AutoReconnect atrc = mods.get(AutoReconnect.class);
+        if (atrc == null) return;   // 26.1: 启动期模块可能未注册
         if (atrc.isActive()) atrc.toggle();
     }
 }

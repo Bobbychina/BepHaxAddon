@@ -75,7 +75,9 @@ public abstract class BookScreenMixin extends Screen {
         if (modules == null) return;
         List<Component> pages = ((BookScreenContentsAccessor)(Object) this.bookAccess).getPages();
         AntiToS antiToS = modules.get(AntiToS.class);
+        if (antiToS == null) return;   // 26.1: 启动期模块可能未注册
         BookTools bookTools = modules.get(BookTools.class);
+        if (bookTools == null) return;   // 26.1: 启动期模块可能未注册
         if (antiToS.isActive()) {
             List<Component> filtered = new ArrayList<>();
             for (Component page : pages) {
@@ -109,6 +111,7 @@ public abstract class BookScreenMixin extends Screen {
         Modules mods = Modules.get();
         if (mods == null) return;
         BookTools bookTools = mods.get(BookTools.class);
+        if (bookTools == null) return;   // 26.1: 启动期模块可能未注册
         if (bookTools.skipDeobfuscation()) return;
         List<Component> pages = ((BookScreenContentsAccessor)(Object) bookAccess).getPages();
         if (!pages.isEmpty()) {

@@ -49,6 +49,7 @@ public abstract class PlayerEntityMixin extends LivingEntity {
             }
         }
         RocketMan rm = modules.get(RocketMan.class);
+        if (rm == null) return;   // 26.1: 启动期模块可能未注册
         if (!rm.isActive()) {
             while (rm.getClientInstance().options.keyDown.consumeClick()) { continue; }
             return;

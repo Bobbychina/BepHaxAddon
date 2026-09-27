@@ -36,7 +36,9 @@ public abstract class AbstractSignEditScreenMixin extends Screen {
         Modules modules = Modules.get();
         if (modules == null) return;
         SignHistorian signHistorian = modules.get(SignHistorian.class);
+        if (signHistorian == null) return;   // 26.1: 启动期模块可能未注册
         SignatureSign signatureSign = modules.get(SignatureSign.class);
+        if (signatureSign == null) return;   // 26.1: 启动期模块可能未注册
         if (!signatureSign.isActive() && !signHistorian.isActive()) return;
         if (signatureSign.getAutoConfirm()) return;
         SignText restoration = signHistorian.getRestoration(this.sign);

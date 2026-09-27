@@ -31,6 +31,7 @@ public abstract class ScreenMixin extends AbstractContainerEventHandler implemen
         Modules mods = Modules.get();
         if (mods == null) return;
         AntiToS tos = mods.get(AntiToS.class);
+        if (tos == null) return;   // 26.1: 启动期模块可能未注册
         if (!tos.isActive() || !tos.containsBlacklistedText(this.title.getString())) return;
         MutableComponent txt = Component.literal(tos.censorText(this.title.getString()));
         this.title = txt.setStyle(this.title.getStyle());

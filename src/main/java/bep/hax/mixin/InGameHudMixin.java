@@ -34,6 +34,7 @@ public class InGameHudMixin {
         Modules modules = Modules.get();
         if (modules == null) return;
         AntiToS antiToS = modules.get(AntiToS.class);
+        if (antiToS == null) return;   // 26.1: 启动期模块可能未注册
         if (!antiToS.isActive()) return;
         if (antiToS.containsBlacklistedText(itemName.get().getString())) {
             itemName.set(Component.empty().append(antiToS.censorText(itemName.get().getString())).withStyle(this.lastToolHighlight.getRarity().color()));

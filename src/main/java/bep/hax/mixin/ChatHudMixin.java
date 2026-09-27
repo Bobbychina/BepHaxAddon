@@ -58,6 +58,7 @@ public class ChatHudMixin {
         Modules modules = Modules.get();
         if (modules == null) return message;
         AntiToS antiToS = modules.get(AntiToS.class);
+        if (antiToS == null) return message;   // 26.1: 启动期模块可能未注册
         if (!antiToS.isActive()) return message;
         MutableComponent mText = Component.literal(antiToS.censorText(message.getString()));
         return (antiToS.containsBlacklistedText(message.getString()) ? mText.setStyle(message.getStyle()) : message);
@@ -68,6 +69,7 @@ public class ChatHudMixin {
         Modules modules = Modules.get();
         if (modules == null) return;
         AntiToS antiToS = modules.get(AntiToS.class);
+        if (antiToS == null) return;   // 26.1: 启动期模块可能未注册
         if (!antiToS.isActive()) return;
         if (antiToS.chatMode.get() == AntiToS.ChatMode.Remove && antiToS.containsBlacklistedText(message.getString())) ci.cancel();
     }

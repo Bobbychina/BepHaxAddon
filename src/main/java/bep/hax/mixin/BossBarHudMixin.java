@@ -16,6 +16,7 @@ public class BossBarHudMixin {
         Modules modules = Modules.get();
         if (modules == null) return;
         AntiToS antiToS = modules.get(AntiToS.class);
+        if (antiToS == null) return;   // 26.1: 启动期模块可能未注册
         if (!antiToS.isActive()) return;
         if (antiToS.containsBlacklistedText(bossBar.getName().getString())) {
             bossBar.setName(Component.literal(antiToS.censorText(bossBar.getName().getString()).formatted(bossBar.getName().getStyle())));

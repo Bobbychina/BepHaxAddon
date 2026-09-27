@@ -21,6 +21,7 @@ public abstract class ClientPlayerInteractionManagerMixin {
         Modules mods = Modules.get();
         if (mods == null) return;
         RapidFire rf = mods.get(RapidFire.class);
+        if (rf == null) return;   // 26.1: 启动期模块可能未注册
         if (!rf.isActive() || !rf.charging) return;
         ci.cancel();
     }
