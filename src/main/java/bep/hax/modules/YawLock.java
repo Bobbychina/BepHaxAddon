@@ -38,7 +38,7 @@ public class YawLock extends Module {
     }
     @Override
     public void onActivate() {
-        float currentYaw = mc.player.getYaw();
+        float currentYaw = mc.player.getYRot();
         float normalizedYaw = (currentYaw % 360 + 360) % 360;
         int closestMultiple = Math.round(normalizedYaw / 45f);
         lockedYaw = (closestMultiple * 45) % 360;
@@ -57,9 +57,9 @@ public class YawLock extends Module {
             }
             yawToSet = lockedYaw + jitter;
         }
-        mc.player.setYaw(yawToSet);
-        if (mc.player.hasVehicle()) {
-            mc.player.getVehicle().setYaw(yawToSet);
+        mc.player.setYRot(yawToSet);
+        if (mc.player.isPassenger()) {
+            mc.player.getVehicle().setYRot(yawToSet);
         }
     }
 }

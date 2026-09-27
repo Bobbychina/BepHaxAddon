@@ -2,8 +2,8 @@ package bep.hax.mixin;
 import bep.hax.modules.ElytraFlyPlusPlus;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.systems.modules.Modules;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.ai.brain.Brain;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.Brain;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -29,7 +29,7 @@ public abstract class LivingEntityMixin
         if (efly == null) efly = Modules.get().get(ElytraFlyPlusPlus.class);
         return efly;
     }
-    @Inject(at = @At("HEAD"), method = "Lnet/minecraft/entity/LivingEntity;tickMovement()V")
+    @Inject(at = @At("HEAD"), method = "Lnet/minecraft/world/entity/LivingEntity;tickMovement()V")
     private void tickMovement(CallbackInfo ci)
     {
         ElytraFlyPlusPlus eflyModule = getEfly();
@@ -39,7 +39,7 @@ public abstract class LivingEntityMixin
             this.jumpingCooldown = 0;
         }
     }
-    @Inject(at = @At("HEAD"), method = "Lnet/minecraft/entity/LivingEntity;isGliding()Z", cancellable = true)
+    @Inject(at = @At("HEAD"), method = "Lnet/minecraft/world/entity/LivingEntity;isGliding()Z", cancellable = true)
     private void isGliding(CallbackInfoReturnable<Boolean> cir)
     {
         ElytraFlyPlusPlus eflyModule = getEfly();

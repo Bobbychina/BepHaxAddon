@@ -9,14 +9,14 @@ import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.utils.player.InvUtils;
 import meteordevelopment.meteorclient.utils.player.SlotUtils;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.screen.PlayerScreenHandler;
-import net.minecraft.screen.CraftingScreenHandler;
-import net.minecraft.screen.ScreenHandler;
-import net.minecraft.screen.slot.SlotActionType;
-import net.minecraft.text.Text;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.inventory.InventoryMenu;
+import net.minecraft.world.inventory.CraftingMenu;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.ContainerInput;
+import net.minecraft.network.chat.Component;
 import java.util.ArrayList;
 import java.util.List;
 public class MapDuplicator extends Module {
@@ -80,7 +80,7 @@ public class MapDuplicator extends Module {
         if (!silentCrafting.get()) {
             mc.execute(() -> {
                 if (mc.player != null) {
-                    mc.setScreen(new net.minecraft.client.gui.screen.ingame.InventoryScreen(mc.player));
+                    mc.setScreen(new net.minecraft.client.gui.screens.inventory.InventoryScreen(mc.player));
                 }
             });
         }
@@ -92,12 +92,12 @@ public class MapDuplicator extends Module {
     }
     @EventHandler
     private void onTick(TickEvent.Post event) {
-        if (mc.player == null || mc.world == null) return;
+        if (mc.player == null || mc.level == null) return;
         tickCounter++;
         if (!isCrafting) {
             if (!silentCrafting.get()) {
-                if (!(mc.player.currentScreenHandler instanceof PlayerScreenHandler) &&
-                    !(mc.player.currentScreenHandler instanceof CraftingScreenHandler)) {
+                if (!(mc.player.containerMenu instanceof InventoryMenu) &&
+                    !(mc.player.containerMenu instanceof CraftingMenu)) {
                     return;
                 }
             }
@@ -126,7 +126,7 @@ public class MapDuplicator extends Module {
         emptyMapsAvailable = 0;
         craftingQueue.clear();
         for (int i = 0; i < 9; i++) {
-            ItemStack stack = mc.player.getInventory().getStack(i);
+            ItemStack stack = mc.player.getInventory().getItem(i);
             if (stack.getItem() == Items.FILLED_MAP && stack.getCount() > 0) {
                 mapsToDuplicate += 1;
                 for (int loop = 0; loop < craftingLoops.get(); loop++) {
@@ -134,8 +134,8 @@ public class MapDuplicator extends Module {
                 }
             }
         }
-        for (int i = 9; i < mc.player.getInventory().size(); i++) {
-            ItemStack stack = mc.player.getInventory().getStack(i);
+        for (int i = 9; i < mc.player.getInventory().getContainerSize(); i++) {
+            ItemStack stack = mc.player.getInventory().getItem(i);
             if (stack.getItem() == Items.FILLED_MAP && stack.getCount() > 0) {
                 mapsToDuplicate += 1;
                 for (int loop = 0; loop < craftingLoops.get(); loop++) {
@@ -144,25 +144,25 @@ public class MapDuplicator extends Module {
             }
         }
         for (int i = 0; i < 9; i++) {
-            ItemStack stack = mc.player.getInventory().getStack(i);
+            ItemStack stack = mc.player.getInventory().getItem(i);
             if (stack.getItem() == Items.MAP) {
                 emptyMapsAvailable += stack.getCount();
             }
         }
-        for (int i = 9; i < mc.player.getInventory().size(); i++) {
-            ItemStack stack = mc.player.getInventory().getStack(i);
+        for (int i = 9; i < mc.player.getInventory().getContainerSize(); i++) {
+            ItemStack stack = mc.player.getInventory().getItem(i);
             if (stack.getItem() == Items.MAP) {
                 emptyMapsAvailable += stack.getCount();
             }
         }
-        if (mc.player.currentScreenHandler instanceof PlayerScreenHandler ||
-            mc.player.currentScreenHandler instanceof CraftingScreenHandler) {
-            ScreenHandler handler = mc.player.currentScreenHandler;
-            if (handler instanceof PlayerScreenHandler) {
+        if (mc.player.containerMenu instanceof InventoryMenu ||
+            mc.player.containerMenu instanceof CraftingMenu) {
+            AbstractContainerMenu handler = mc.player.containerMenu;
+            if (handler instanceof InventoryMenu) {
                 for (int i = 1; i <= 4; i++) {
                     try {
                         if (i < handler.slots.size()) {
-                            ItemStack stack = handler.getSlot(i).getStack();
+                            ItemStack stack = handler.getSlot(i).getItem();
                             if (stack.getItem() == Items.MAP) {
                                 emptyMapsAvailable += stack.getCount();
                             }
@@ -172,11 +172,11 @@ public class MapDuplicator extends Module {
                     }
                 }
             }
-            else if (handler instanceof CraftingScreenHandler) {
+            else if (handler instanceof CraftingMenu) {
                 for (int i = 1; i <= 9; i++) {
                     try {
                         if (i < handler.slots.size()) {
-                            ItemStack stack = handler.getSlot(i).getStack();
+                            ItemStack stack = handler.getSlot(i).getItem();
                             if (stack.getItem() == Items.MAP) {
                                 emptyMapsAvailable += stack.getCount();
                             }
@@ -222,8 +222,8 @@ public class MapDuplicator extends Module {
             return;
         }
         if (!silentCrafting.get()) {
-            if (!(mc.player.currentScreenHandler instanceof PlayerScreenHandler) &&
-                !(mc.player.currentScreenHandler instanceof CraftingScreenHandler)) {
+            if (!(mc.player.containerMenu instanceof InventoryMenu) &&
+                !(mc.player.containerMenu instanceof CraftingMenu)) {
                 if (showStatus.get()) {
                     error("Please open your inventory or a crafting table to continue duplication.");
                 }
@@ -309,8 +309,8 @@ public class MapDuplicator extends Module {
     }
     private boolean isValidSlot(int slotId) {
         try {
-            if (mc.player == null || mc.player.currentScreenHandler == null) return false;
-            ScreenHandler handler = mc.player.currentScreenHandler;
+            if (mc.player == null || mc.player.containerMenu == null) return false;
+            AbstractContainerMenu handler = mc.player.containerMenu;
             if (slotId < 0 || slotId >= handler.slots.size()) return false;
             return handler.getSlot(slotId) != null;
         } catch (Exception e) {
@@ -319,12 +319,12 @@ public class MapDuplicator extends Module {
     }
     private void clearCraftingGrid() {
         try {
-            ScreenHandler handler = mc.player.currentScreenHandler;
-            if (handler instanceof PlayerScreenHandler || handler instanceof CraftingScreenHandler) {
-                int startSlot = (handler instanceof PlayerScreenHandler) ? 1 : 1;
-                int endSlot = (handler instanceof PlayerScreenHandler) ? 4 : 9;
+            AbstractContainerMenu handler = mc.player.containerMenu;
+            if (handler instanceof InventoryMenu || handler instanceof CraftingMenu) {
+                int startSlot = (handler instanceof InventoryMenu) ? 1 : 1;
+                int endSlot = (handler instanceof InventoryMenu) ? 4 : 9;
                 for (int slot = startSlot; slot <= endSlot; slot++) {
-                    if (isValidSlot(slot) && handler.getSlot(slot).hasStack()) {
+                    if (isValidSlot(slot) && handler.getSlot(slot).hasItem()) {
                         InvUtils.click().slotId(slot);
                         int emptySlot = findEmptyInventorySlot();
                         if (emptySlot >= 0) {
@@ -346,8 +346,8 @@ public class MapDuplicator extends Module {
         }
     }
     private int findEmptyInventorySlot() {
-        for (int i = 0; i < mc.player.getInventory().size(); i++) {
-            ItemStack stack = mc.player.getInventory().getStack(i);
+        for (int i = 0; i < mc.player.getInventory().getContainerSize(); i++) {
+            ItemStack stack = mc.player.getInventory().getItem(i);
             if (stack.isEmpty()) {
                 return i;
             }
@@ -356,28 +356,28 @@ public class MapDuplicator extends Module {
     }
     private int findNextEmptyMap() {
         for (int i = 0; i < 9; i++) {
-            ItemStack stack = mc.player.getInventory().getStack(i);
+            ItemStack stack = mc.player.getInventory().getItem(i);
             if (stack.getItem() == Items.MAP) {
                 return SlotUtils.indexToId(i);
             }
         }
         for (int i = 9; i < 36; i++) {
-            ItemStack stack = mc.player.getInventory().getStack(i);
+            ItemStack stack = mc.player.getInventory().getItem(i);
             if (stack.getItem() == Items.MAP) {
                 return SlotUtils.indexToId(i);
             }
         }
-        ScreenHandler handler = mc.player.currentScreenHandler;
-        if (handler instanceof PlayerScreenHandler) {
+        AbstractContainerMenu handler = mc.player.containerMenu;
+        if (handler instanceof InventoryMenu) {
             for (int i = 1; i <= 4; i++) {
-                ItemStack stack = handler.getSlot(i).getStack();
+                ItemStack stack = handler.getSlot(i).getItem();
                 if (stack.getItem() == Items.MAP) {
                     return i;
                 }
             }
-        } else if (handler instanceof CraftingScreenHandler) {
+        } else if (handler instanceof CraftingMenu) {
             for (int i = 1; i <= 9; i++) {
-                ItemStack stack = handler.getSlot(i).getStack();
+                ItemStack stack = handler.getSlot(i).getItem();
                 if (stack.getItem() == Items.MAP) {
                     return i;
                 }

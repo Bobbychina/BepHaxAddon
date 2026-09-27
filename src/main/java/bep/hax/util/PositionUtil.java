@@ -1,13 +1,13 @@
 package bep.hax.util;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.util.Mth;
 import bep.hax.util.BlastResistantBlocks;
 import java.util.ArrayList;
 import java.util.List;
 import static meteordevelopment.meteorclient.MeteorClient.mc;
 public class PositionUtil {
-    public static Box enclosingBox(List<BlockPos> posList) {
+    public static AABB enclosingBox(List<BlockPos> posList) {
         int minX = Integer.MAX_VALUE;
         int minY = Integer.MAX_VALUE;
         int minZ = Integer.MAX_VALUE;
@@ -34,18 +34,18 @@ public class PositionUtil {
                 maxZ = blockPos.getZ();
             }
         }
-        return new Box(minX, minY, minZ, maxX, maxY, maxZ);
+        return new AABB(minX, minY, minZ, maxX, maxY, maxZ);
     }
     public static BlockPos getRoundedBlockPos(final double x, final double y, final double z) {
-        final int flooredX = MathHelper.floor(x);
+        final int flooredX = Mth.floor(x);
         final int flooredY = (int) Math.round(y);
-        final int flooredZ = MathHelper.floor(z);
+        final int flooredZ = Mth.floor(z);
         return new BlockPos(flooredX, flooredY, flooredZ);
     }
-    public static boolean isBedrock(Box box, BlockPos pos) {
+    public static boolean isBedrock(AABB box, BlockPos pos) {
         return getAllInBox(box, pos).stream().anyMatch(BlastResistantBlocks::isUnbreakable);
     }
-    public static List<BlockPos> getAllInBox(Box box, BlockPos pos) {
+    public static List<BlockPos> getAllInBox(AABB box, BlockPos pos) {
         final List<BlockPos> intersections = new ArrayList<>();
         for (int x = (int) Math.floor(box.minX); x < Math.ceil(box.maxX); x++) {
             for (int z = (int) Math.floor(box.minZ); z < Math.ceil(box.maxZ); z++) {
@@ -54,7 +54,7 @@ public class PositionUtil {
         }
         return intersections;
     }
-    public static List<BlockPos> getAllInBox(Box box) {
+    public static List<BlockPos> getAllInBox(AABB box) {
         final List<BlockPos> intersections = new ArrayList<>();
         for (int x = (int) Math.floor(box.minX); x < Math.ceil(box.maxX); x++) {
             for (int y = (int) Math.floor(box.minY); y < Math.ceil(box.maxY); y++) {
@@ -66,8 +66,8 @@ public class PositionUtil {
         return intersections;
     }
     public static boolean isPhasing() {
-        if (mc.player == null || mc.world == null) return false;
+        if (mc.player == null || mc.level == null) return false;
         return getAllInBox(mc.player.getBoundingBox()).stream()
-                .anyMatch(blockPos -> !mc.world.getBlockState(blockPos).getCollisionShape(mc.world, blockPos).isEmpty());
+                .anyMatch(blockPos -> !mc.level.getBlockState(blockPos).getCollisionShape(mc.level, blockPos).isEmpty());
     }
 }

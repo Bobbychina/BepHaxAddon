@@ -4,11 +4,11 @@ import bep.hax.util.PushEntityEvent;
 import meteordevelopment.meteorclient.MeteorClient;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import meteordevelopment.meteorclient.systems.modules.render.NoRender;
-import net.minecraft.client.render.Frustum;
-import net.minecraft.client.render.entity.EntityRenderer;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityPose;
-import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.client.renderer.culling.Frustum;
+import net.minecraft.client.renderer.entity.EntityRenderer;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.Pose;
+import net.minecraft.world.entity.player.Player;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -27,17 +27,17 @@ public class EntityMixin {
             if (efly == null) efly = Modules.get().get(ElytraFlyPlusPlus.class);
             return efly;
         }
-        @Inject(at = @At("HEAD"), method = "Lnet/minecraft/entity/Entity;getPose()Lnet/minecraft/entity/EntityPose;", cancellable = true)
-        private void getPose(CallbackInfoReturnable<EntityPose> cir) {
+        @Inject(at = @At("HEAD"), method = "Lnet/minecraft/world/entity/Entity;getPose()Lnet/minecraft/world/entity/Pose;", cancellable = true)
+        private void getPose(CallbackInfoReturnable<Pose> cir) {
             ElytraFlyPlusPlus eflyModule = getEfly();
-            if (eflyModule != null && eflyModule.enabled() && this.uuid == mc.player.getUuid()) {
-                cir.setReturnValue(EntityPose.STANDING);
+            if (eflyModule != null && eflyModule.enabled() && this.uuid == mc.player.getUUID()) {
+                cir.setReturnValue(Pose.STANDING);
             }
         }
-        @Inject(at = @At("HEAD"), method = "Lnet/minecraft/entity/Entity;isSprinting()Z", cancellable = true)
+        @Inject(at = @At("HEAD"), method = "Lnet/minecraft/world/entity/Entity;isSprinting()Z", cancellable = true)
         private void isSprinting(CallbackInfoReturnable<Boolean> cir) {
             ElytraFlyPlusPlus eflyModule = getEfly();
-            if (eflyModule != null && eflyModule.enabled() && this.uuid == mc.player.getUuid()) {
+            if (eflyModule != null && eflyModule.enabled() && this.uuid == mc.player.getUUID()) {
                 cir.setReturnValue(true);
             }
         }
@@ -54,7 +54,7 @@ public class EntityMixin {
     public static abstract class EntityRendererHooks {
         @Inject(method = "shouldRender", at = @At("HEAD"), cancellable = true)
         private void shouldRender(Entity entity, Frustum frustum, double x, double y, double z, CallbackInfoReturnable<Boolean> cir) {
-            if (!(entity instanceof PlayerEntity player)) return;
+            if (!(entity instanceof Player player)) return;
             Modules mods = Modules.get();
             if (mods == null) return;
             NoRender noRender = mods.get(NoRender.class);

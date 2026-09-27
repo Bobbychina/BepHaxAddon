@@ -10,9 +10,9 @@ import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.client.gui.screen.DeathScreen;
-import net.minecraft.network.packet.s2c.play.HealthUpdateS2CPacket;
-import net.minecraft.network.packet.s2c.play.DeathMessageS2CPacket;
+import net.minecraft.client.gui.screens.DeathScreen;
+import net.minecraft.network.protocol.game.ClientboundSetHealthPacket;
+import net.minecraft.network.protocol.game.ClientboundPlayerCombatKillPacket;
 public class GhostMode extends Module {
     private final SettingGroup sgGeneral = settings.getDefaultGroup();
     private final Setting<Boolean> fullFood = sgGeneral.add(new BoolSetting.Builder()
@@ -53,8 +53,8 @@ public class GhostMode extends Module {
         super.onDeactivate();
         active = false;
         warning("You are no longer in a ghost mode!");
-        if (mc.player != null && mc.player.networkHandler != null) {
-            mc.player.requestRespawn();
+        if (mc.player != null && mc.player.connection != null) {
+            mc.player.respawn();
             info("Respawn request has been sent to the server.");
         }
     }
@@ -73,13 +73,13 @@ public class GhostMode extends Module {
         } else if (mc.player.getHealth() <= 0f) {
             mc.player.setHealth(1f);
         }
-        if (fullFood.get() && mc.player.getHungerManager().getFoodLevel() < 20) {
-            mc.player.getHungerManager().setFoodLevel(20);
+        if (fullFood.get() && mc.player.getFoodData().getFoodLevel() < 20) {
+            mc.player.getFoodData().setFoodLevel(20);
         }
-        if (mc.player.getAbilities().flying && !mc.player.getAbilities().allowFlying) {
+        if (mc.player.getAbilities().flying && !mc.player.getAbilities().mayfly) {
             mc.player.getAbilities().flying = false;
         }
-        if (mc.player.isDead()) {
+        if (mc.player.isDeadOrDying()) {
             mc.player.setHealth(maintainHealth.get() ? healthValue.get().floatValue() : 1f);
         }
     }
@@ -96,7 +96,7 @@ public class GhostMode extends Module {
     @EventHandler
     private void onReceivePacket(PacketEvent.Receive event) {
         if (!active) return;
-        if (blockDeathPackets.get() && event.packet instanceof HealthUpdateS2CPacket packet) {
+        if (blockDeathPackets.get() && event.packet instanceof ClientboundSetHealthPacket packet) {
             try {
                 var healthField = packet.getClass().getDeclaredField("health");
                 healthField.setAccessible(true);
@@ -110,7 +110,7 @@ public class GhostMode extends Module {
             } catch (Exception e) {
             }
         }
-        if (blockDeathPackets.get() && event.packet instanceof DeathMessageS2CPacket) {
+        if (blockDeathPackets.get() && event.packet instanceof ClientboundPlayerCombatKillPacket) {
             event.cancel();
         }
     }

@@ -12,13 +12,13 @@ import meteordevelopment.meteorclient.settings.StringSetting;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
 import meteordevelopment.orbit.EventPriority;
-import net.minecraft.text.Text;
-import net.minecraft.text.TextContent;
-import net.minecraft.text.TranslatableTextContent;
-import net.minecraft.text.Style;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ComponentContents;
+import net.minecraft.network.chat.contents.TranslatableContents;
+import net.minecraft.network.chat.Style;
+import net.minecraft.ChatFormatting;
+import net.minecraft.resources.Identifier;
+import net.minecraft.core.BlockPos;
 import java.awt.Desktop;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -305,20 +305,20 @@ public class WebChat extends Module {
         }
         while (!commandQueue.isEmpty()) {
             String message = commandQueue.poll();
-            if (message != null && mc.player != null && mc.player.networkHandler != null) {
+            if (message != null && mc.player != null && mc.player.connection != null) {
                 if (message.startsWith("/")) {
-                    mc.player.networkHandler.sendChatCommand(message.substring(1));
+                    mc.player.connection.sendCommand(message.substring(1));
                 } else {
-                    mc.player.networkHandler.sendChatMessage(message);
+                    mc.player.connection.sendChat(message);
                 }
             }
         }
         if (mc.player != null && showCoordinates.get()) {
-            BlockPos pos = mc.player.getBlockPos();
+            BlockPos pos = mc.player.blockPosition();
             currentX = pos.getX();
             currentY = pos.getY();
             currentZ = pos.getZ();
-            Identifier dimId = mc.world.getRegistryKey().getValue();
+            Identifier dimId = mc.level.dimension().identifier();
             if (dimId.toString().contains("the_nether")) {
                 currentDimension = "Nether";
             } else if (dimId.toString().contains("the_end")) {
@@ -331,7 +331,7 @@ public class WebChat extends Module {
     @EventHandler(priority = EventPriority.HIGHEST)
     private void onReceiveMessage(ReceiveMessageEvent event) {
         if (!serverRunning || event.getMessage() == null) return;
-        Text msg = event.getMessage();
+        Component msg = event.getMessage();
         String plainText = stripFormatting(msg.getString());
         if (!shouldShowMessage(plainText, msg)) return;
         String timestamp = showTimestamps.get() ? "[" + LocalTime.now().format(TIME_FMT) + "] " : "";
@@ -342,7 +342,7 @@ public class WebChat extends Module {
     private void onSendMessage(SendMessageEvent event) {
         if (!serverRunning || event.message == null) return;
         String timestamp = showTimestamps.get() ? "[" + LocalTime.now().format(TIME_FMT) + "] " : "";
-        String displayMessage = timestamp + "<" + mc.getSession().getUsername() + "> " + event.message;
+        String displayMessage = timestamp + "<" + mc.getUser().getName() + "> " + event.message;
         addMessage(displayMessage, "#ffffff", "sent");
     }
     @EventHandler
@@ -363,7 +363,7 @@ public class WebChat extends Module {
         String timestamp = showTimestamps.get() ? "[" + LocalTime.now().format(TIME_FMT) + "] " : "";
         addMessage(timestamp + "[SYSTEM] " + message, "#ffc864", "system");
     }
-    private boolean shouldShowMessage(String plainText, Text msg) {
+    private boolean shouldShowMessage(String plainText, Component msg) {
         if (plainText == null || plainText.isEmpty()) return false;
         boolean isPlayerChat = plainText.matches("^<[^>]+>.*") ||
                                plainText.contains(" whispers") ||
@@ -373,18 +373,18 @@ public class WebChat extends Module {
         if (!showDeathMessages.get() && isDeathMessage(msg)) return false;
         return true;
     }
-    private boolean isDeathMessage(Text msg) {
-        TextContent content = msg.getContent();
-        if (content instanceof TranslatableTextContent tc) {
+    private boolean isDeathMessage(Component msg) {
+        ComponentContents content = msg.getContents();
+        if (content instanceof TranslatableContents tc) {
             String key = tc.getKey();
             return key != null && key.startsWith("death.");
         }
         return false;
     }
-    private String getColorForMessage(String message, Text text) {
+    private String getColorForMessage(String message, Component text) {
         Style style = text.getStyle();
         if (style != null && style.getColor() != null) {
-            Formatting formatting = Formatting.byName(style.getColor().getName());
+            ChatFormatting formatting = ChatFormatting.getByName(style.getColor().serialize());
             if (formatting != null) {
                 return getHexFromFormatting(formatting);
             }
@@ -401,7 +401,7 @@ public class WebChat extends Module {
             return "#c8c8c8";
         }
     }
-    private String getHexFromFormatting(Formatting formatting) {
+    private String getHexFromFormatting(ChatFormatting formatting) {
         return switch (formatting) {
             case BLACK -> "#000000";
             case DARK_BLUE -> "#0000aa";
@@ -432,9 +432,9 @@ public class WebChat extends Module {
         if (!pageTitle.get().isEmpty()) {
             return pageTitle.get();
         }
-        if (mc.getCurrentServerEntry() != null) {
-            return mc.getCurrentServerEntry().address;
-        } else if (mc.isInSingleplayer()) {
+        if (mc.getCurrentServer() != null) {
+            return mc.getCurrentServer().ip;
+        } else if (mc.isLocalServer()) {
             return "Singleplayer";
         } else {
             return "Minecraft Web Chat";

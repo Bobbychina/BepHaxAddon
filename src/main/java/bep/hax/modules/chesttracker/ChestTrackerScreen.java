@@ -1,24 +1,24 @@
 package bep.hax.modules.chesttracker;
 import bep.hax.modules.ItemSearchBar;
 import meteordevelopment.meteorclient.systems.modules.Modules;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.Click;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.registry.Registries;
-import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
+import net.minecraft.core.BlockPos;
 import java.util.*;
 import java.util.stream.Collectors;
 public class ChestTrackerScreen extends Screen {
     private final ChestTrackerModule module;
     private final ChestTrackerDataV2 data;
-    private TextFieldWidget searchField;
+    private EditBox searchField;
     private String searchQuery = "";
     private List<ItemEntry> allItems = new ArrayList<>();
     private List<ItemEntry> filteredItems = new ArrayList<>();
@@ -32,8 +32,8 @@ public class ChestTrackerScreen extends Screen {
     private static final int SCROLLBAR_WIDTH = 8;
     private static final int MAX_PANEL_HEIGHT = 600;
     private static final int MIN_VISIBLE_ROWS = 5;
-    private ButtonWidget clearSearchButton;
-    private ButtonWidget sortButton;
+    private Button clearSearchButton;
+    private Button sortButton;
     private SortMode currentSortMode = SortMode.COUNT_DESC;
     private boolean isDraggingScrollbar = false;
     private int scrollbarDragStartY = 0;
@@ -44,7 +44,7 @@ public class ChestTrackerScreen extends Screen {
     private int cachedTotalRows;
     private int cachedVisibleHeight;
     public ChestTrackerScreen(ChestTrackerModule module) {
-        super(Text.literal("Chest Tracker"));
+        super(Component.literal("Chest Tracker"));
         this.module = module;
         this.data = module.getData();
     }
@@ -56,26 +56,26 @@ public class ChestTrackerScreen extends Screen {
         if (itemSearchBar != null && itemSearchBar.isActive()) {
             initialSearch = itemSearchBar.searchQuery.get();
         }
-        searchField = new TextFieldWidget(
+        searchField = new EditBox(
             this.textRenderer,
             this.width / 2 - 110,
             20,
             200,
             20,
-            Text.literal("Search items...")
+            Component.literal("Search items...")
         );
         searchField.setMaxLength(50);
-        searchField.setPlaceholder(Text.literal("Search items..."));
-        searchField.setChangedListener(this::onSearchChanged);
+        searchField.setHint(Component.literal("Search items..."));
+        searchField.setResponder(this::onSearchChanged);
         if (!initialSearch.isEmpty()) {
-            searchField.setText(initialSearch);
+            searchField.setValue(initialSearch);
             this.searchQuery = initialSearch;
         }
         this.addSelectableChild(searchField);
-        clearSearchButton = ButtonWidget.builder(
-            Text.literal("§cx"),
+        clearSearchButton = Button.builder(
+            Component.literal("§cx"),
             button -> {
-                searchField.setText("");
+                searchField.setValue("");
                 this.searchQuery = "";
                 filterItems();
                 if (itemSearchBar != null && itemSearchBar.isActive()) {
@@ -83,19 +83,19 @@ public class ChestTrackerScreen extends Screen {
                 }
             }
         )
-        .dimensions(this.width / 2 + 95, 20, 20, 20)
+        .bounds(this.width / 2 + 95, 20, 20, 20)
         .build();
         this.addDrawableChild(clearSearchButton);
-        sortButton = ButtonWidget.builder(
-            Text.literal("Sort: " + currentSortMode.getDisplayName()),
+        sortButton = Button.builder(
+            Component.literal("Sort: " + currentSortMode.getDisplayName()),
             button -> {
                 currentSortMode = currentSortMode.next();
-                button.setMessage(Text.literal("Sort: " + currentSortMode.getDisplayName()));
+                button.setMessage(Component.literal("Sort: " + currentSortMode.getDisplayName()));
                 sortItems();
                 filterItems();
             }
         )
-        .dimensions(this.width / 2 - 220, 20, 100, 20)
+        .bounds(this.width / 2 - 220, 20, 100, 20)
         .build();
         this.addDrawableChild(sortButton);
         loadItems();
@@ -112,8 +112,8 @@ public class ChestTrackerScreen extends Screen {
         }
         for (Map.Entry<String, Integer> entry : itemCounts.entrySet()) {
             Identifier id = Identifier.tryParse(entry.getKey());
-            if (id != null && Registries.ITEM.containsId(id)) {
-                Item item = Registries.ITEM.get(id);
+            if (id != null && BuiltInRegistries.ITEM.containsKey(id)) {
+                Item item = BuiltInRegistries.ITEM.get(id);
                 allItems.add(new ItemEntry(item, entry.getValue()));
             }
         }
@@ -173,7 +173,7 @@ public class ChestTrackerScreen extends Screen {
         cachedMaxY = TOP_PADDING + cachedVisibleHeight;
     }
     @Override
-    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
         updateCachedBounds();
         context.fill(0, 0, this.width, this.height, 0xF0000000);
         int panelWidth = (ITEMS_PER_ROW * ITEM_SIZE) + 20;
@@ -209,9 +209,9 @@ public class ChestTrackerScreen extends Screen {
         renderTooltip(context, mouseX, mouseY);
     }
     @Override
-    public void renderBackground(DrawContext context, int mouseX, int mouseY, float delta) {
+    public void renderBackground(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
     }
-    private void renderItemGrid(DrawContext context, int mouseX, int mouseY) {
+    private void renderItemGrid(GuiGraphicsExtractor context, int mouseX, int mouseY) {
         int index = scrollOffset * ITEMS_PER_ROW;
         int maxIndex = filteredItems.size();
         int panelWidth = (ITEMS_PER_ROW * ITEM_SIZE) + 20;
@@ -276,7 +276,7 @@ public class ChestTrackerScreen extends Screen {
         }
         return String.valueOf(number);
     }
-    private void renderScrollbar(DrawContext context, int mouseX, int mouseY) {
+    private void renderScrollbar(GuiGraphicsExtractor context, int mouseX, int mouseY) {
         if (maxScroll <= 0) return;
         int panelWidth = (ITEMS_PER_ROW * ITEM_SIZE) + 20;
         int scrollbarX = this.width / 2 + panelWidth / 2 + 5;
@@ -294,7 +294,7 @@ public class ChestTrackerScreen extends Screen {
         context.fill(scrollbarX + 1, thumbY, scrollbarX + SCROLLBAR_WIDTH - 1, thumbY + 1, 0xFF00FF00);
         context.fill(scrollbarX + 1, thumbY + thumbHeight - 1, scrollbarX + SCROLLBAR_WIDTH - 1, thumbY + thumbHeight, 0xFF005500);
     }
-    private void renderTooltip(DrawContext context, int mouseX, int mouseY) {
+    private void renderTooltip(GuiGraphicsExtractor context, int mouseX, int mouseY) {
         int index = scrollOffset * ITEMS_PER_ROW;
         int maxIndex = filteredItems.size();
         int visibleRows = (cachedVisibleHeight / ITEM_SIZE) + 2;
@@ -317,29 +317,29 @@ public class ChestTrackerScreen extends Screen {
                     if (client != null && client.player != null) {
                         for (TrackedContainer container : containers) {
                             BlockPos pos = container.getPosition();
-                            double distSq = client.player.squaredDistanceTo(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5);
+                            double distSq = client.player.distanceToSqr(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5);
                             if (distSq <= renderDist * renderDist) {
                                 withinRange++;
                             }
                         }
                     }
-                    List<Text> tooltip = new ArrayList<>();
-                    tooltip.add(Text.literal("§f§l" + entry.item.getName().getString()));
-                    tooltip.add(Text.literal(""));
-                    tooltip.add(Text.literal("§7Total Amount: §a" + formatCountFull(entry.count)));
-                    tooltip.add(Text.literal("§7Found in: §e" + containers.size() + " §7container(s)"));
+                    List<Component> tooltip = new ArrayList<>();
+                    tooltip.add(Component.literal("§f§l" + entry.item.getName().getString()));
+                    tooltip.add(Component.literal(""));
+                    tooltip.add(Component.literal("§7Total Amount: §a" + formatCountFull(entry.count)));
+                    tooltip.add(Component.literal("§7Found in: §e" + containers.size() + " §7container(s)"));
                     if (withinRange > 0 && withinRange < containers.size()) {
-                        tooltip.add(Text.literal("§7Will highlight: §e" + withinRange + " §7nearby"));
-                        tooltip.add(Text.literal("§8(Increase render distance for more)"));
+                        tooltip.add(Component.literal("§7Will highlight: §e" + withinRange + " §7nearby"));
+                        tooltip.add(Component.literal("§8(Increase render distance for more)"));
                     } else if (withinRange == 0) {
-                        tooltip.add(Text.literal("§cAll containers are far away!"));
-                        tooltip.add(Text.literal("§8(Increase render distance in settings)"));
+                        tooltip.add(Component.literal("§cAll containers are far away!"));
+                        tooltip.add(Component.literal("§8(Increase render distance in settings)"));
                     }
-                    tooltip.add(Text.literal(""));
-                    tooltip.add(Text.literal("§e§l» Click to Highlight All Within Range «"));
+                    tooltip.add(Component.literal(""));
+                    tooltip.add(Component.literal("§e§l» MouseButtonEvent to Highlight All Within Range «"));
                     ItemSearchBar itemSearchBar = Modules.get().get(ItemSearchBar.class);
                     if (itemSearchBar != null && itemSearchBar.isActive()) {
-                        tooltip.add(Text.literal("§7(Also searches in ItemSearchBar)"));
+                        tooltip.add(Component.literal("§7(Also searches in ItemSearchBar)"));
                     }
                     context.drawTooltip(this.textRenderer, tooltip, mouseX, mouseY);
                     return;
@@ -349,7 +349,7 @@ public class ChestTrackerScreen extends Screen {
         }
     }
     @Override
-    public boolean mouseClicked(Click click, boolean doubled) {
+    public boolean mouseClicked(MouseButtonEvent click, boolean doubled) {
         double mouseX = click.x();
         double mouseY = click.y();
         int button = click.button();
@@ -411,7 +411,7 @@ public class ChestTrackerScreen extends Screen {
         if (itemSearchBar != null && itemSearchBar.isActive()) {
             String itemName = entry.item.getName().getString();
             itemSearchBar.updateSearchQuery(itemName);
-            searchField.setText(itemName);
+            searchField.setValue(itemName);
             this.searchQuery = itemName;
             filterItems();
         }
@@ -420,7 +420,7 @@ public class ChestTrackerScreen extends Screen {
             double renderDist = module.getRenderDistance();
             for (TrackedContainer container : results) {
                 BlockPos pos = container.getPosition();
-                double distSq = client.player.squaredDistanceTo(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5);
+                double distSq = client.player.distanceToSqr(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5);
                 if (distSq <= renderDist * renderDist) {
                     withinRange++;
                 }
@@ -430,12 +430,12 @@ public class ChestTrackerScreen extends Screen {
             String msg = withinRange < results.size()
                 ? String.format("§aLit: §e%d§7/§f%d §7(%d far)", withinRange, results.size(), results.size() - withinRange)
                 : String.format("§aLit: §e%d §7boxes", results.size());
-            client.player.sendMessage(Text.literal(msg), false);
+            client.player.sendMessage(Component.literal(msg), false);
         }
         this.close();
     }
     @Override
-    public boolean mouseDragged(Click click, double deltaX, double deltaY) {
+    public boolean mouseDragged(MouseButtonEvent click, double deltaX, double deltaY) {
         double mouseX = click.x();
         double mouseY = click.y();
         if (isDraggingScrollbar && maxScroll > 0) {
@@ -455,7 +455,7 @@ public class ChestTrackerScreen extends Screen {
         return super.mouseDragged(click, deltaX, deltaY);
     }
     @Override
-    public boolean mouseReleased(Click click) {
+    public boolean mouseReleased(MouseButtonEvent click) {
         int button = click.button();
         if (isDraggingScrollbar && button == 0) {
             isDraggingScrollbar = false;

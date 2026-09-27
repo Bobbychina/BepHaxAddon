@@ -1,9 +1,9 @@
 package bep.hax.util;
 import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.core.BlockPos;
 import java.util.Set;
 import static meteordevelopment.meteorclient.MeteorClient.mc;
 public class BlastResistantBlocks {
@@ -22,28 +22,28 @@ public class BlastResistantBlocks {
         Blocks.BARRIER
     ));
     public static boolean isBreakable(BlockPos pos) {
-        if (mc.world == null) {
+        if (mc.level == null) {
             return false;
         }
-        return isBreakable(mc.world.getBlockState(pos).getBlock());
+        return isBreakable(mc.level.getBlockState(pos).getBlock());
     }
     public static boolean isBreakable(Block block) {
         return !UNBREAKABLE.contains(block);
     }
     public static boolean isUnbreakable(BlockPos pos) {
-        if (mc.world == null) {
+        if (mc.level == null) {
             return false;
         }
-        return isUnbreakable(mc.world.getBlockState(pos).getBlock());
+        return isUnbreakable(mc.level.getBlockState(pos).getBlock());
     }
     public static boolean isUnbreakable(Block block) {
         return UNBREAKABLE.contains(block);
     }
     public static boolean isBlastResistant(BlockPos pos) {
-        if (mc.world == null) {
+        if (mc.level == null) {
             return false;
         }
-        return isBlastResistant(mc.world.getBlockState(pos).getBlock());
+        return isBlastResistant(mc.level.getBlockState(pos).getBlock());
     }
     public static boolean isBlastResistant(BlockState state) {
         return isBlastResistant(state.getBlock());

@@ -2,30 +2,30 @@ package bep.hax.mixin;
 import meteordevelopment.meteorclient.MeteorClient;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import bep.hax.modules.RespawnPointBlocker;
-import net.minecraft.block.Block;
-import net.minecraft.client.sound.PositionedSoundInstance;
-import net.minecraft.sound.SoundEvent;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.client.network.ClientPlayerInteractionManager;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
+import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.client.multiplayer.MultiPlayerGameMode;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.core.BlockPos;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-@Mixin(ClientPlayerInteractionManager.class)
+@Mixin(MultiPlayerGameMode.class)
 public class RespawnPointBlockerMixin {
     @Inject(method = "interactBlock", at = @At("HEAD"), cancellable = true)
-    private void onInteractBlock(ClientPlayerEntity player, Hand hand, BlockHitResult hitResult, CallbackInfoReturnable<ActionResult> cir) {
+    private void onInteractBlock(LocalPlayer player, InteractionHand hand, BlockHitResult hitResult, CallbackInfoReturnable<InteractionResult> cir) {
         RespawnPointBlocker module = Modules.get().get(RespawnPointBlocker.class);
         if (!module.isActive()) return;
         BlockPos blockPos = hitResult.getBlockPos();
-        BlockState blockState = MeteorClient.mc.world.getBlockState(blockPos);
+        BlockState blockState = MeteorClient.mc.level.getBlockState(blockPos);
         Block block = blockState.getBlock();
         if (isRespawnPointBlock(block)) {
             boolean shouldBlock = false;
@@ -35,7 +35,7 @@ public class RespawnPointBlockerMixin {
                 shouldBlock = true;
             }
             if (shouldBlock) {
-                cir.setReturnValue(ActionResult.FAIL);
+                cir.setReturnValue(InteractionResult.FAIL);
                 provideFeedback(module, block);
             }
         }
@@ -59,7 +59,7 @@ public class RespawnPointBlockerMixin {
         if (module.soundFeedback.get() && !module.feedbackSound.get().isEmpty()) {
             SoundEvent sound = module.feedbackSound.get().get(0);
             float volume = module.soundVolume.get() / 100.0f;
-            MeteorClient.mc.getSoundManager().play(PositionedSoundInstance.master(sound, volume, 1.0f));
+            MeteorClient.mc.getSoundManager().play(SimpleSoundInstance.forUI(sound, volume, 1.0f));
         }
     }
 }

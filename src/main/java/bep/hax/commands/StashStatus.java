@@ -3,14 +3,14 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import meteordevelopment.meteorclient.commands.Command;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import bep.hax.modules.StashMover;
-import net.minecraft.command.CommandSource;
+import net.minecraft.commands.SharedSuggestionProvider;
 import static meteordevelopment.meteorclient.MeteorClient.mc;
 public class StashStatus extends Command {
     public StashStatus() {
         super("stashstatus", "Check StashMover areas and configuration");
     }
     @Override
-    public void build(LiteralArgumentBuilder<CommandSource> builder) {
+    public void build(LiteralArgumentBuilder<SharedSuggestionProvider> builder) {
         builder.executes(context -> {
             if (mc.player == null) return 0;
             StashMover module = Modules.get().get(StashMover.class);

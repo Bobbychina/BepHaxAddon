@@ -14,30 +14,30 @@ import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.meteorclient.utils.player.InvUtils;
 import meteordevelopment.meteorclient.utils.render.color.SettingColor;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.block.ShapeContext;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.decoration.EndCrystalEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.BlockItem;
-import net.minecraft.network.packet.Packet;
-import net.minecraft.network.packet.c2s.play.HandSwingC2SPacket;
-import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
-import net.minecraft.network.packet.c2s.play.PlayerInteractBlockC2SPacket;
-import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket;
-import net.minecraft.network.packet.BundlePacket;
-import net.minecraft.network.packet.s2c.play.BlockUpdateS2CPacket;
-import net.minecraft.network.packet.s2c.play.EntitySpawnS2CPacket;
-import net.minecraft.network.packet.s2c.play.ExplosionS2CPacket;
-import net.minecraft.util.Hand;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.boss.enderdragon.EndCrystal;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ServerboundSwingPacket;
+import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
+import net.minecraft.network.protocol.game.ServerboundUseItemOnPacket;
+import net.minecraft.network.protocol.game.ServerboundInteractPacket;
+import net.minecraft.network.protocol.BundlePacket;
+import net.minecraft.network.protocol.game.ClientboundBlockUpdatePacket;
+import net.minecraft.network.protocol.game.ClientboundAddEntityPacket;
+import net.minecraft.network.protocol.game.ClientboundExplodePacket;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.core.Direction;
+import net.minecraft.world.phys.Vec3;
 import java.util.*;
 public class Surround extends PVPModule {
     private final SettingGroup sgGeneral = settings.getDefaultGroup();
@@ -175,7 +175,7 @@ public class Surround extends PVPModule {
         Blocks.CRYING_OBSIDIAN,
         Blocks.ENDER_CHEST
     );
-    private static final BlockState DEFAULT_OBSIDIAN_STATE = Blocks.OBSIDIAN.getDefaultState();
+    private static final BlockState DEFAULT_OBSIDIAN_STATE = Blocks.OBSIDIAN.defaultBlockState();
     private final Map<BlockPos, Long> packets = new HashMap<>();
     private final List<BlockPos> surround = new ArrayList<>();
     private final List<BlockPos> placements = new ArrayList<>();
@@ -217,13 +217,13 @@ public class Surround extends PVPModule {
     }
     @EventHandler
     private void onTick(TickEvent.Pre event) {
-        if (mc.player == null || mc.world == null) return;
+        if (mc.player == null || mc.level == null) return;
         blocksPlaced = 0;
         if (jumpDisable.get() && (mc.player.getY() - prevY > 0.5 || mc.player.fallDistance > 1.5f)) {
             toggle();
             return;
         }
-        if (!multitask.get() && mc.player.isUsingItem() && mc.player.getActiveHand() == Hand.MAIN_HAND) {
+        if (!multitask.get() && mc.player.isUsingItem() && mc.player.getUsedItemHand() == InteractionHand.MAIN_HAND) {
             surround.clear();
             placements.clear();
             return;
@@ -253,8 +253,8 @@ public class Surround extends PVPModule {
                     continue;
                 }
                 Direction direction = getPlaceSideInternal(block);
-                if (direction == null && !supportBlocks.contains(block.down())) {
-                    supportBlocks.add(block.down());
+                if (direction == null && !supportBlocks.contains(block.below())) {
+                    supportBlocks.add(block.below());
                 }
             }
             placements.addAll(supportBlocks);
@@ -272,9 +272,9 @@ public class Surround extends PVPModule {
     }
     @EventHandler
     private void onPacketReceive(PacketEvent.Receive event) {
-        if (mc.player == null || mc.world == null) return;
+        if (mc.player == null || mc.level == null) return;
         if (event.packet instanceof BundlePacket bundlePacket) {
-            for (Object subPacketObj : bundlePacket.getPackets()) {
+            for (Object subPacketObj : bundlePacket.subPackets()) {
                 if (!(subPacketObj instanceof Packet<?> subPacket)) continue;
                 handlePackets(subPacket);
             }
@@ -286,11 +286,11 @@ public class Surround extends PVPModule {
         if (timing.get() != TimingMode.SEQUENTIAL) {
             return;
         }
-        if (serverPacket instanceof BlockUpdateS2CPacket packet) {
-            final BlockState blockState = packet.getState();
+        if (serverPacket instanceof ClientboundBlockUpdatePacket packet) {
+            final BlockState blockState = packet.getBlockState();
             final BlockPos targetPos = packet.getPos();
             if (surround.contains(targetPos)) {
-                if (blockState.isReplaceable() && mc.world.canPlace(DEFAULT_OBSIDIAN_STATE, targetPos, ShapeContext.absent())) {
+                if (blockState.canBeReplaced() && mc.level.isUnobstructed(DEFAULT_OBSIDIAN_STATE, targetPos, CollisionContext.empty())) {
                     final int slot = getResistantBlockSlot();
                     if (slot == -1) {
                         return;
@@ -304,9 +304,9 @@ public class Surround extends PVPModule {
         if (blocksPlaced > shiftTicks.get() * 2) {
             return;
         }
-        if (serverPacket instanceof ExplosionS2CPacket packet && prePlaceExplosion.get()) {
-            Vec3d center = ((ExplosionS2CPacketAccessor) (Object) packet).getCenter();
-            BlockPos pos = BlockPos.ofFloored(center.x, center.y, center.z);
+        if (serverPacket instanceof ClientboundExplodePacket packet && prePlaceExplosion.get()) {
+            Vec3 center = ((ExplosionS2CPacketAccessor) (Object) packet).getCenter();
+            BlockPos pos = BlockPos.containing(center.x, center.y, center.z);
             if (surround.contains(pos)) {
                 final int slot = getResistantBlockSlot();
                 if (slot == -1) {
@@ -315,10 +315,10 @@ public class Surround extends PVPModule {
                 placeBlockDirect(pos, slot);
             }
         }
-        if (serverPacket instanceof EntitySpawnS2CPacket packet &&
-            packet.getEntityType().equals(EntityType.END_CRYSTAL) && prePlaceTick.get()) {
+        if (serverPacket instanceof ClientboundAddEntityPacket packet &&
+            packet.getType().equals(EntityType.END_CRYSTAL) && prePlaceTick.get()) {
             for (BlockPos pos : surround) {
-                if (!pos.equals(BlockPos.ofFloored(packet.getX(), packet.getY(), packet.getZ()))) {
+                if (!pos.equals(BlockPos.containing(packet.getX(), packet.getY(), packet.getZ()))) {
                     continue;
                 }
                 final int slot = getResistantBlockSlot();
@@ -338,14 +338,14 @@ public class Surround extends PVPModule {
                 System.currentTimeMillis() - placed < shiftDelay.get() * 50.0) {
                 continue;
             }
-            if (!mc.world.getBlockState(surroundPos).isReplaceable()) {
+            if (!mc.level.getBlockState(surroundPos).canBeReplaced()) {
                 continue;
             }
-            double dist = mc.player.squaredDistanceTo(surroundPos.toCenterPos());
+            double dist = mc.player.distanceToSqr(surroundPos.getCenter());
             if (dist > placeRange.get() * placeRange.get()) {
                 continue;
             }
-            if (mc.world.canPlace(DEFAULT_OBSIDIAN_STATE, surroundPos, ShapeContext.absent())) {
+            if (mc.level.isUnobstructed(DEFAULT_OBSIDIAN_STATE, surroundPos, CollisionContext.empty())) {
                 placementList.add(surroundPos);
             }
         }
@@ -353,9 +353,9 @@ public class Surround extends PVPModule {
     }
     private List<BlockPos> calculateSurround() {
         Set<BlockPos> positions = new HashSet<>();
-        BlockPos playerPos = mc.player.getBlockPos();
+        BlockPos playerPos = mc.player.blockPosition();
         int footY = playerPos.getY();
-        Box box = mc.player.getBoundingBox();
+        AABB box = mc.player.getBoundingBox();
         int minX = (int) Math.floor(box.minX);
         int maxX = (int) Math.floor(box.maxX - 0.0001);
         int minZ = (int) Math.floor(box.minZ);
@@ -376,29 +376,29 @@ public class Surround extends PVPModule {
         if (headLevel.get()) {
             Set<BlockPos> headPositions = new HashSet<>();
             for (BlockPos foot : footBlocks) {
-                BlockPos up = foot.up();
+                BlockPos up = foot.above();
                 headPositions.add(up.north());
                 headPositions.add(up.south());
                 headPositions.add(up.east());
                 headPositions.add(up.west());
             }
             for (BlockPos foot : footBlocks) {
-                headPositions.remove(foot.up());
+                headPositions.remove(foot.above());
             }
             positions.addAll(headPositions);
         }
         if (coverHead.get()) {
             for (BlockPos foot : footBlocks) {
-                positions.add(foot.up(2));
+                positions.add(foot.above(2));
             }
         }
         if (mineExtend.get()) {
             Set<BlockPos> extended = new HashSet<>();
             for (BlockPos pos : new ArrayList<>(positions)) {
-                if (mc.world.getBlockState(pos).isReplaceable()) continue;
-                if (mc.world.getBlockState(pos).getHardness(mc.world, pos) < 0) continue;
-                for (Direction dir : Direction.Type.HORIZONTAL) {
-                    BlockPos extPos = pos.offset(dir);
+                if (mc.level.getBlockState(pos).canBeReplaced()) continue;
+                if (mc.level.getBlockState(pos).getDestroySpeed(mc.level, pos) < 0) continue;
+                for (Direction dir : Direction.Plane.HORIZONTAL) {
+                    BlockPos extPos = pos.relative(dir);
                     if (!footBlocks.contains(extPos) && !positions.contains(extPos)) {
                         extended.add(extPos);
                     }
@@ -408,11 +408,11 @@ public class Surround extends PVPModule {
         }
         return new ArrayList<>(positions);
     }
-    public List<BlockPos> calculateSurround(PlayerEntity player) {
+    public List<BlockPos> calculateSurround(Player player) {
         Set<BlockPos> positions = new HashSet<>();
-        BlockPos playerPos = player.getBlockPos();
+        BlockPos playerPos = player.blockPosition();
         int footY = playerPos.getY();
-        Box box = player.getBoundingBox();
+        AABB box = player.getBoundingBox();
         int minX = (int) Math.floor(box.minX);
         int maxX = (int) Math.floor(box.maxX - 0.0001);
         int minZ = (int) Math.floor(box.minZ);
@@ -433,29 +433,29 @@ public class Surround extends PVPModule {
         if (headLevel.get()) {
             Set<BlockPos> headPositions = new HashSet<>();
             for (BlockPos foot : footBlocks) {
-                BlockPos up = foot.up();
+                BlockPos up = foot.above();
                 headPositions.add(up.north());
                 headPositions.add(up.south());
                 headPositions.add(up.east());
                 headPositions.add(up.west());
             }
             for (BlockPos foot : footBlocks) {
-                headPositions.remove(foot.up());
+                headPositions.remove(foot.above());
             }
             positions.addAll(headPositions);
         }
         if (coverHead.get()) {
             for (BlockPos foot : footBlocks) {
-                positions.add(foot.up(2));
+                positions.add(foot.above(2));
             }
         }
         if (mineExtend.get()) {
             Set<BlockPos> extended = new HashSet<>();
             for (BlockPos pos : new ArrayList<>(positions)) {
-                if (mc.world.getBlockState(pos).isReplaceable()) continue;
-                if (mc.world.getBlockState(pos).getHardness(mc.world, pos) < 0) continue;
-                for (Direction dir : Direction.Type.HORIZONTAL) {
-                    BlockPos extPos = pos.offset(dir);
+                if (mc.level.getBlockState(pos).canBeReplaced()) continue;
+                if (mc.level.getBlockState(pos).getDestroySpeed(mc.level, pos) < 0) continue;
+                for (Direction dir : Direction.Plane.HORIZONTAL) {
+                    BlockPos extPos = pos.relative(dir);
                     if (!footBlocks.contains(extPos) && !positions.contains(extPos)) {
                         extended.add(extPos);
                     }
@@ -502,59 +502,59 @@ public class Surround extends PVPModule {
     private void airPlace(BlockPos pos) {
         Direction side = getPlaceSideInternal(pos);
         if (side == null) side = Direction.UP;
-        BlockPos neighbor = pos.offset(side);
+        BlockPos neighbor = pos.relative(side);
         Direction opposite = side.getOpposite();
-        Vec3d hitPos = Vec3d.ofCenter(neighbor).add(Vec3d.of(opposite.getVector()).multiply(0.5));
+        Vec3 hitPos = Vec3.atCenterOf(neighbor).add(Vec3.atLowerCornerOf(opposite.getUnitVec3i()).scale(0.5));
         if (rotate.get()) {
-            float[] angles = bep.hax.util.RotationUtils.getRotationsTo(mc.player.getEyePos(), hitPos);
+            float[] angles = bep.hax.util.RotationUtils.getRotationsTo(mc.player.getEyePosition(), hitPos);
             setRotationSilent(angles[0], angles[1]);
         }
         BlockHitResult hit = new BlockHitResult(hitPos, opposite, neighbor, false);
-        mc.player.networkHandler.sendPacket(new PlayerActionC2SPacket(
-            PlayerActionC2SPacket.Action.SWAP_ITEM_WITH_OFFHAND,
-            BlockPos.ORIGIN,
+        mc.player.connection.send(new ServerboundPlayerActionPacket(
+            ServerboundPlayerActionPacket.Action.SWAP_ITEM_WITH_OFFHAND,
+            BlockPos.ZERO,
             Direction.DOWN
         ));
-        mc.player.networkHandler.sendPacket(new PlayerInteractBlockC2SPacket(
-            Hand.OFF_HAND,
+        mc.player.connection.send(new ServerboundUseItemOnPacket(
+            InteractionHand.OFF_HAND,
             hit,
             0
         ));
-        mc.player.networkHandler.sendPacket(new PlayerActionC2SPacket(
-            PlayerActionC2SPacket.Action.SWAP_ITEM_WITH_OFFHAND,
-            BlockPos.ORIGIN,
+        mc.player.connection.send(new ServerboundPlayerActionPacket(
+            ServerboundPlayerActionPacket.Action.SWAP_ITEM_WITH_OFFHAND,
+            BlockPos.ZERO,
             Direction.DOWN
         ));
-        mc.player.networkHandler.sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
+        mc.player.connection.send(new ServerboundSwingPacket(InteractionHand.MAIN_HAND));
     }
     private boolean normalPlace(BlockPos pos) {
         Direction side = getPlaceSideInternal(pos);
         if (side == null) return false;
-        BlockPos neighbor = pos.offset(side);
+        BlockPos neighbor = pos.relative(side);
         Direction opposite = side.getOpposite();
-        Vec3d hitPos = Vec3d.ofCenter(neighbor).add(Vec3d.of(opposite.getVector()).multiply(0.5));
+        Vec3 hitPos = Vec3.atCenterOf(neighbor).add(Vec3.atLowerCornerOf(opposite.getUnitVec3i()).scale(0.5));
         if (rotate.get()) {
-            float[] angles = bep.hax.util.RotationUtils.getRotationsTo(mc.player.getEyePos(), hitPos);
+            float[] angles = bep.hax.util.RotationUtils.getRotationsTo(mc.player.getEyePosition(), hitPos);
             setRotationSilent(angles[0], angles[1]);
         }
         BlockHitResult hitResult = new BlockHitResult(hitPos, opposite, neighbor, false);
-        mc.getNetworkHandler().sendPacket(new PlayerInteractBlockC2SPacket(
-            Hand.MAIN_HAND,
+        mc.getConnection().send(new ServerboundUseItemOnPacket(
+            InteractionHand.MAIN_HAND,
             hitResult,
             0
         ));
-        mc.getNetworkHandler().sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
+        mc.getConnection().send(new ServerboundSwingPacket(InteractionHand.MAIN_HAND));
         return true;
     }
     private void attackCrystals(List<BlockPos> positions) {
         for (BlockPos pos : positions) {
-            Entity crystal = mc.world.getOtherEntities(null, new Box(pos)).stream()
-                .filter(e -> e instanceof EndCrystalEntity)
+            Entity crystal = mc.level.getEntities(null, new AABB(pos)).stream()
+                .filter(e -> e instanceof EndCrystal)
                 .findFirst()
                 .orElse(null);
             if (crystal != null) {
-                mc.getNetworkHandler().sendPacket(PlayerInteractEntityC2SPacket.attack(crystal, mc.player.isSneaking()));
-                mc.getNetworkHandler().sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
+                mc.getConnection().send(ServerboundInteractPacket.createAttackPacket(crystal, mc.player.isShiftKeyDown()));
+                mc.getConnection().send(new ServerboundSwingPacket(InteractionHand.MAIN_HAND));
                 return;
             }
         }
@@ -578,8 +578,8 @@ public class Surround extends PVPModule {
     }
     private Direction getPlaceSideInternal(BlockPos pos) {
         for (Direction direction : Direction.values()) {
-            BlockPos neighbor = pos.offset(direction);
-            net.minecraft.block.BlockState state = mc.world.getBlockState(neighbor);
+            BlockPos neighbor = pos.relative(direction);
+            net.minecraft.world.level.block.state.BlockState state = mc.level.getBlockState(neighbor);
             if (state.isAir() || !state.getFluidState().isEmpty()) {
                 continue;
             }

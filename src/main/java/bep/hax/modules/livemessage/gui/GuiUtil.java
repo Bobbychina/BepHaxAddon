@@ -1,7 +1,7 @@
 package bep.hax.modules.livemessage.gui;
 import bep.hax.modules.livemessage.util.LivemessageUtil;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import java.util.UUID;
 public class GuiUtil {
     public static int getAlpha(int color) {
@@ -115,18 +115,18 @@ public class GuiUtil {
             currentValue = initialValue;
         }
     }
-    public static void drawRect(DrawContext context, int x, int y, int w, int h, int color) {
+    public static void drawRect(GuiGraphicsExtractor context, int x, int y, int w, int h, int color) {
         context.fill(x, y, x + w, y + h, color);
     }
-    public static void drawTooltip(DrawContext context, String text, int x, int y) {
-        MinecraftClient mc = MinecraftClient.getInstance();
-        int width = mc.textRenderer.getWidth(text) + 8;
+    public static void drawTooltip(GuiGraphicsExtractor context, String text, int x, int y) {
+        Minecraft mc = Minecraft.getInstance();
+        int width = mc.font.width(text) + 8;
         int height = 12;
         context.fill(x, y, x + width, y + height, getRGBA(0, 0, 0, 200));
         context.fill(x, y, x + width, y + 1, getRGBA(80, 80, 255, 255));
         context.fill(x, y + height - 1, x + width, y + height, getRGBA(80, 80, 255, 255));
         context.fill(x, y, x + 1, y + height, getRGBA(80, 80, 255, 255));
         context.fill(x + width - 1, y, x + width, y + height, getRGBA(80, 80, 255, 255));
-        context.drawText(mc.textRenderer, text, x + 4, y + 2, getSingleRGB(255), false);
+        context.drawText(mc.font, text, x + 4, y + 2, getSingleRGB(255), false);
     }
 }

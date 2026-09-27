@@ -5,18 +5,18 @@ import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.utils.render.color.Color;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.LightningEntity;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.network.packet.s2c.play.EntityStatusS2CPacket;
-import net.minecraft.particle.ParticleTypes;
-import net.minecraft.particle.ParticleType;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.sound.SoundEvent;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LightningBolt;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.network.protocol.game.ClientboundEntityEventPacket;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.core.particles.ParticleType;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.Level;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundEvent;
 import java.util.List;
 public class KillEffects extends Module {
     private final SettingGroup sgGeneral = settings.getDefaultGroup();
@@ -61,7 +61,7 @@ public class KillEffects extends Module {
     public final Setting<List<SoundEvent>> soundEvents = sgGeneral.add(new SoundEventListSetting.Builder()
         .name("sound-events")
         .description("Types of sounds to play. Only the first sound in the list will be played.")
-        .defaultValue(SoundEvents.ENTITY_LIGHTNING_BOLT_THUNDER)
+        .defaultValue(SoundEvents.LIGHTNING_BOLT_THUNDER)
         .visible(() -> effectType.get() == EffectType.PARTICLE)
         .build()
     );
@@ -98,10 +98,10 @@ public class KillEffects extends Module {
     }
     @EventHandler
     private void onPacketReceive(meteordevelopment.meteorclient.events.packets.PacketEvent.Receive event) {
-        if (!(event.packet instanceof EntityStatusS2CPacket packet)) return;
-        if (packet.getStatus() == 3) {
+        if (!(event.packet instanceof ClientboundEntityEventPacket packet)) return;
+        if (packet.getEventId() == 3) {
             try {
-                Entity entity = packet.getEntity(mc.world);
+                Entity entity = packet.getEntity(mc.level);
                 if (entity != null && entity != mc.player && isValidEntity(entity)) {
                     mc.execute(() -> triggerKillEffect(entity));
                 }
@@ -110,14 +110,14 @@ public class KillEffects extends Module {
         }
     }
     private void triggerKillEffect(Entity entity) {
-        Vec3d pos = entity.getEntityPos();
+        Vec3 pos = entity.position();
         switch (effectType.get()) {
             case ENTITY -> spawnEntityEffect(pos);
             case PARTICLE -> spawnParticleEffect(pos);
         }
     }
-    private void spawnEntityEffect(Vec3d pos) {
-        if (mc.world == null) return;
+    private void spawnEntityEffect(Vec3 pos) {
+        if (mc.level == null) return;
         switch (entityEffect.get()) {
             case LIGHTNING_BOLT -> {
                 for (int i = 0; i < entityAmount.get(); i++) {
@@ -126,15 +126,15 @@ public class KillEffects extends Module {
             }
         }
     }
-    private void spawnRealLightning(Vec3d pos) {
-        if (mc.world == null) return;
-        LightningEntity lightning = new LightningEntity(EntityType.LIGHTNING_BOLT, mc.world);
-        lightning.refreshPositionAfterTeleport(pos.x, pos.y, pos.z);
-        lightning.setCosmetic(true);
-        mc.world.addEntity(lightning);
+    private void spawnRealLightning(Vec3 pos) {
+        if (mc.level == null) return;
+        LightningBolt lightning = new LightningBolt(EntityType.LIGHTNING_BOLT, mc.level);
+        lightning.snapTo(pos.x, pos.y, pos.z);
+        lightning.setVisualOnly(true);
+        mc.level.addEntity(lightning);
     }
-    private void spawnParticleEffect(Vec3d pos) {
-        if (mc.world == null) return;
+    private void spawnParticleEffect(Vec3 pos) {
+        if (mc.level == null) return;
         java.util.concurrent.ThreadLocalRandom random = java.util.concurrent.ThreadLocalRandom.current();
         List<ParticleType<?>> selectedParticles = particleTypes.get();
         if (!selectedParticles.isEmpty()) {
@@ -143,7 +143,7 @@ public class KillEffects extends Module {
                 double offsetX = (random.nextDouble() - 0.5) * 4.0;
                 double offsetY = random.nextDouble() * 2.0;
                 double offsetZ = (random.nextDouble() - 0.5) * 4.0;
-                if (particleType instanceof net.minecraft.particle.ParticleEffect particleEffect) {
+                if (particleType instanceof net.minecraft.core.particles.ParticleOptions particleEffect) {
                 }
             }
         }
@@ -151,12 +151,12 @@ public class KillEffects extends Module {
         if (!selectedSounds.isEmpty()) {
             float volume = soundVolume.get() / 100.0f;
             SoundEvent sound = selectedSounds.get(0);
-            mc.world.playSound(mc.player, pos.x, pos.y, pos.z,
+            mc.level.playSound(mc.player, pos.x, pos.y, pos.z,
                 sound,
-                net.minecraft.sound.SoundCategory.AMBIENT, volume, 1.0f);
+                net.minecraft.sounds.SoundSource.AMBIENT, volume, 1.0f);
         }
     }
-    private void spawnFallbackParticles(Vec3d pos) {
+    private void spawnFallbackParticles(Vec3 pos) {
         java.util.concurrent.ThreadLocalRandom random = java.util.concurrent.ThreadLocalRandom.current();
         for (int j = 0; j < 20; j++) {
             double offsetX = (random.nextDouble() - 0.5) * 4.0;
@@ -167,12 +167,12 @@ public class KillEffects extends Module {
     private boolean isValidEntity(Entity entity) {
         if (entity == null) return false;
         try {
-            if (entity instanceof PlayerEntity) {
+            if (entity instanceof Player) {
                 return players.get();
-            } else if (entity instanceof net.minecraft.entity.mob.HostileEntity) {
+            } else if (entity instanceof net.minecraft.world.entity.monster.Monster) {
                 return hostileMobs.get();
-            } else if (entity instanceof net.minecraft.entity.passive.PassiveEntity &&
-                       !(entity instanceof net.minecraft.entity.mob.HostileEntity)) {
+            } else if (entity instanceof net.minecraft.world.entity.AgeableMob &&
+                       !(entity instanceof net.minecraft.world.entity.monster.Monster)) {
                 return passiveMobs.get();
             }
             return false;

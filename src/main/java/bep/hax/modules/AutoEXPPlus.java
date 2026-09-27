@@ -10,12 +10,12 @@ import meteordevelopment.meteorclient.utils.player.InvUtils;
 import meteordevelopment.meteorclient.utils.player.Rotations;
 import meteordevelopment.meteorclient.utils.player.SlotUtils;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.component.type.AttributeModifierSlot;
-import net.minecraft.enchantment.Enchantments;
-import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.util.Hand;
+import net.minecraft.world.entity.EquipmentSlotGroup;
+import net.minecraft.world.item.enchantment.Enchantments;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.InteractionHand;
 public class AutoEXPPlus extends Module {
     private final SettingGroup sgGeneral = settings.getDefaultGroup();
     private final Setting<Mode> mode = sgGeneral.add(new EnumSetting.Builder<Mode>()
@@ -73,14 +73,14 @@ public class AutoEXPPlus extends Module {
     private void onTick(TickEvent.Pre event) {
         if (repairingI == -1) {
             if (mode.get() != Mode.Hands) {
-                net.minecraft.entity.EquipmentSlot[] armorSlots = {
-                    net.minecraft.entity.EquipmentSlot.FEET,
-                    net.minecraft.entity.EquipmentSlot.LEGS,
-                    net.minecraft.entity.EquipmentSlot.CHEST,
-                    net.minecraft.entity.EquipmentSlot.HEAD
+                net.minecraft.world.entity.EquipmentSlot[] armorSlots = {
+                    net.minecraft.world.entity.EquipmentSlot.FEET,
+                    net.minecraft.world.entity.EquipmentSlot.LEGS,
+                    net.minecraft.world.entity.EquipmentSlot.CHEST,
+                    net.minecraft.world.entity.EquipmentSlot.HEAD
                 };
                 for (int i = 0; i < armorSlots.length; i++) {
-                    ItemStack armorItem = mc.player.getEquippedStack(armorSlots[i]);
+                    ItemStack armorItem = mc.player.getItemBySlot(armorSlots[i]);
                     if (ignoreElytra.get() && armorItem.getItem() == Items.ELYTRA) continue;
                     if (needsRepair(armorItem, minThreshold.get())) {
                         repairingI = SlotUtils.ARMOR_START + i;
@@ -89,16 +89,16 @@ public class AutoEXPPlus extends Module {
                 }
             }
             if (mode.get() != Mode.Armor && repairingI == -1) {
-                for (Hand hand : Hand.values()) {
-                    if (needsRepair(mc.player.getStackInHand(hand), minThreshold.get())) {
-                        repairingI = hand == Hand.MAIN_HAND ? ((PlayerInventoryAccessor) mc.player.getInventory()).getSelectedSlot() : SlotUtils.OFFHAND;
+                for (InteractionHand hand : InteractionHand.values()) {
+                    if (needsRepair(mc.player.getItemInHand(hand), minThreshold.get())) {
+                        repairingI = hand == InteractionHand.MAIN_HAND ? ((PlayerInventoryAccessor) mc.player.getInventory()).getSelectedSlot() : SlotUtils.OFFHAND;
                         break;
                     }
                 }
             }
         }
         if (repairingI != -1) {
-            if (!needsRepair(mc.player.getInventory().getStack(repairingI), maxThreshold.get())) {
+            if (!needsRepair(mc.player.getInventory().getItem(repairingI), maxThreshold.get())) {
                 repairingI = -1;
                 return;
             }
@@ -108,13 +108,13 @@ public class AutoEXPPlus extends Module {
                     if (!replenish.get()) return;
                     InvUtils.move().from(exp.slot()).toHotbar(slot.get() - 1);
                 }
-                Rotations.rotate(mc.player.getYaw(), 90, () -> {
+                Rotations.rotate(mc.player.getYRot(), 90, () -> {
                     if (exp.getHand() != null) {
-                        mc.interactionManager.interactItem(mc.player, exp.getHand());
+                        mc.gameMode.useItem(mc.player, exp.getHand());
                     }
                     else {
                         InvUtils.swap(exp.slot(), true);
-                        mc.interactionManager.interactItem(mc.player, Hand.MAIN_HAND);
+                        mc.gameMode.useItem(mc.player, InteractionHand.MAIN_HAND);
                         InvUtils.swapBack();
                     }
                 });
@@ -123,7 +123,7 @@ public class AutoEXPPlus extends Module {
     }
     private boolean needsRepair(ItemStack itemStack, double threshold) {
         if (itemStack.isEmpty() || !Utils.hasEnchantments(itemStack, Enchantments.MENDING)) return false;
-        return (itemStack.getMaxDamage() - itemStack.getDamage()) / (double) itemStack.getMaxDamage() * 100 <= threshold;
+        return (itemStack.getMaxDamage() - itemStack.getDamageValue()) / (double) itemStack.getMaxDamage() * 100 <= threshold;
     }
     public enum Mode {
         Armor,

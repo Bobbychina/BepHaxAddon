@@ -7,44 +7,43 @@ import java.time.Duration;
 import java.nio.file.Files;
 import java.time.LocalDate;
 import bep.hax.Bep;
-import net.minecraft.block.*;
-import net.minecraft.text.Text;
+import net.minecraft.world.level.block.*;
+import net.minecraft.network.chat.Component;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
-import net.minecraft.text.Style;
+import net.minecraft.network.chat.Style;
 import bep.hax.util.MsgUtil;
 import bep.hax.util.LogUtil;
 import bep.hax.util.MapUtil;
-import net.minecraft.world.World;
-import org.jetbrains.annotations.Nullable;
+import net.minecraft.world.level.Level;
 import java.util.stream.Collectors;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.text.ClickEvent;
-import net.minecraft.text.HoverEvent;
-import net.minecraft.nbt.NbtCompound;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.network.chat.ClickEvent;
+import net.minecraft.network.chat.HoverEvent;
+import net.minecraft.nbt.CompoundTag;
 import bep.hax.util.StardustUtil;
-import net.minecraft.world.biome.Biome;
+import net.minecraft.world.level.biome.Biome;
 import bep.hax.util.StardustUtil.*;
-import net.minecraft.util.hit.HitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.ChunkPos;
-import net.minecraft.util.math.Direction;
+import net.minecraft.world.phys.HitResult;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.core.Direction;
 import bep.hax.config.StardustConfig;
-import net.minecraft.registry.RegistryKey;
+import net.minecraft.resources.ResourceKey;
 import java.time.format.DateTimeFormatter;
-import net.minecraft.world.biome.BiomeKeys;
-import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.world.level.biome.Biomes;
+import net.minecraft.world.phys.shapes.VoxelShape;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.world.chunk.WorldChunk;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.meteorclient.utils.Utils;
-import net.minecraft.block.entity.SignBlockEntity;
-import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.world.level.block.entity.SignBlockEntity;
+import net.minecraft.client.player.LocalPlayer;
 import meteordevelopment.meteorclient.renderer.ShapeMode;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.events.world.TickEvent;
@@ -54,10 +53,12 @@ import meteordevelopment.meteorclient.utils.render.RenderUtils;
 import meteordevelopment.meteorclient.events.packets.PacketEvent;
 import meteordevelopment.meteorclient.events.world.ChunkDataEvent;
 import meteordevelopment.meteorclient.events.render.Render3DEvent;
-import net.minecraft.network.packet.s2c.common.DisconnectS2CPacket;
-import net.minecraft.network.packet.s2c.play.PlayerRespawnS2CPacket;
+import net.minecraft.network.protocol.common.ClientboundDisconnectPacket;
+import net.minecraft.network.protocol.game.ClientboundRespawnPacket;
 import meteordevelopment.meteorclient.utils.render.color.SettingColor;
 import meteordevelopment.meteorclient.systems.modules.render.blockesp.ESPBlockData;
+import net.minecraft.world.level.block.state.properties.WoodType;
+import net.minecraft.world.level.block.state.BlockState;
 public class ChatSigns extends Module {
     public ChatSigns() {
         super(Bep.STARDUST, "ChatSigns", "Read nearby signs in your chat.");
@@ -155,7 +156,7 @@ public class ChatSigns extends Module {
     private final Setting<TextColor> oldSignColor = oldSignGroup.add(
         new EnumSetting.Builder<TextColor>()
             .name("old-sign-color")
-            .description("Text color for signs that might be old.")
+            .description("Component color for signs that might be old.")
             .defaultValue(TextColor.Yellow)
             .visible(showOldSigns::get)
             .build()
@@ -326,10 +327,10 @@ public class ChatSigns extends Module {
     private int clusterAmount = 0;
     private int fullClusterAmount = 0;
     private int emptyClusterAmount = 0;
-    @Nullable private Text disconnectReason = null;
-    @Nullable private BlockPos lastFocusedSign = null;
-    @Nullable private BlockPos lastFullClusterPos = null;
-    @Nullable private BlockPos lastEmptyClusterPos = null;
+    private Component disconnectReason = null;
+    private BlockPos lastFocusedSign = null;
+    private BlockPos lastFullClusterPos = null;
+    private BlockPos lastEmptyClusterPos = null;
     private final HashSet<BlockPos> posSet = new HashSet<>();
     private final HashSet<BlockPos> oldSet = new HashSet<>();
     private final ArrayList<String> blacklisted = new ArrayList<>();
@@ -340,20 +341,19 @@ public class ChatSigns extends Module {
     private final HashMap<BlockPos, Long> signsToHighlight = new HashMap<>();
     private final Pattern fullYearsPattern = Pattern.compile("202[0-9]");
     private final Pattern fullDatesPattern = Pattern.compile("\\b(\\d{1,2}[-/\\. _,'+]\\d{1,2}[-/\\. _,'+]\\d{2,4}|\\d{4}[-/\\. _,'+]\\d{1,2}[-/\\. _,'+]\\d{1,2})\\b");
-    @Nullable
     private BlockPos getTargetedSign() {
-        ClientPlayerEntity player = mc.player;
-        if (player == null || mc.world == null) return null;
-        int viewDistance = mc.options.getViewDistance().getValue();
+        LocalPlayer player = mc.player;
+        if (player == null || mc.level == null) return null;
+        int viewDistance = mc.options.renderDistance().get();
         double maxRangeBlocks = viewDistance * 16;
-        HitResult trace = mc.getCameraEntity().raycast(maxRangeBlocks, 0F, false);
+        HitResult trace = mc.getCameraEntity().pick(maxRangeBlocks, 0F, false);
         if (trace != null) {
             BlockPos pos = ((BlockHitResult) trace).getBlockPos();
-            if (mc.world.getBlockEntity(pos) instanceof SignBlockEntity) return pos;
+            if (mc.level.getBlockEntity(pos) instanceof SignBlockEntity) return pos;
         }
         return null;
     }
-    private ArrayList<SignBlockEntity> getNearbySigns(WorldChunk chunk) {
+    private ArrayList<SignBlockEntity> getNearbySigns(LevelChunk chunk) {
         ArrayList<SignBlockEntity> signs = new ArrayList<>();
         Map<BlockPos, BlockEntity> blockEntities = chunk.getBlockEntities();
         if (blockEntities == null) return signs;
@@ -363,9 +363,8 @@ public class ChatSigns extends Module {
         return signs;
     }
     private boolean isSignEmpty(SignBlockEntity sbe) {
-        return !sbe.getFrontText().hasText(mc.player) && !sbe.getBackText().hasText(mc.player);
+        return !sbe.getFrontText().hasMessage(mc.player) && !sbe.getBackText().hasMessage(mc.player);
     }
-    @Nullable
     private LocalDate parseDate(String dateStr) {
         String[] delimiters = {
             ".", "-", "_", ",", "'", "+", "\\"
@@ -393,12 +392,12 @@ public class ChatSigns extends Module {
         }
         return null;
     }
-    private String formatSignText(SignBlockEntity sign, WorldChunk chunk) {
-        if (mc.world == null || isSignEmpty(sign)) return "";
+    private String formatSignText(SignBlockEntity sign, LevelChunk chunk) {
+        if (mc.level == null || isSignEmpty(sign)) return "";
         ArrayList<String> lines = new ArrayList<>();
         String color = signColor.get().label;
         String format = textFormat.get().label;
-        for (Text line : sign.getFrontText().getMessages(false)) {
+        for (Component line : sign.getFrontText().getMessages(false)) {
             line.visit(msg -> {
                 if (chatFormat.get()) {
                     lines.add(msg);
@@ -409,15 +408,15 @@ public class ChatSigns extends Module {
             });
         }
         boolean couldBeOld = false;
-        RegistryKey<World> dimension = mc.world.getRegistryKey();
-        if (dimension != World.NETHER || !ignoreNether.get()) {
+        ResourceKey<Level> dimension = mc.level.dimension();
+        if (dimension != Level.NETHER || !ignoreNether.get()) {
             if (!String.join(" ", lines).contains("**Pre-1.19 Sign restored by 0xTas' SignHistorian**")) {
                 WoodType woodType = WoodType.BAMBOO;
-                Block block = sign.getCachedState().getBlock();
+                Block block = sign.getBlockState().getBlock();
                 if (block instanceof SignBlock signBlock) woodType = signBlock.getWoodType();
                 else if (block instanceof WallSignBlock wallSignBlock) woodType = wallSignBlock.getWoodType();
                 if (woodType == WoodType.OAK) {
-                    NbtCompound metadata = sign.createNbt(mc.world.getRegistryManager());
+                    CompoundTag metadata = sign.saveWithoutMetadata(mc.level.registryAccess());
                     if (!metadata.toString().contains("{\"extra\":[") && !lines.isEmpty()) {
                         String testString = String.join(" ", lines);
                         Matcher fullYearsMatcher = fullYearsPattern.matcher(testString);
@@ -438,7 +437,7 @@ public class ChatSigns extends Module {
         if (!couldBeOld && showOldSigns.get() && onlyOldSigns.get()) return "";
         if (couldBeOld && showOldSigns.get()) {
             color = oldSignColor.get().label;
-            oldSet.add(sign.getPos());
+            oldSet.add(sign.getBlockPos());
         }
         String signText = chatFormat.get() ?
             String.join("\n"+ color + format, lines) : String.join(" ", lines);
@@ -456,80 +455,80 @@ public class ChatSigns extends Module {
                 .append(chatFormat.get() ? signText.replace("\n", "\n     ") : signText.trim());
         }
         if (showCoords.get()) {
-            BlockPos pos = sign.getPos();
+            BlockPos pos = sign.getBlockPos();
             txt.append(chatFormat.get() ? "\n§8[" : " §8[")
                 .append(color).append(pos.getX()).append("§8, ")
                 .append(color).append(pos.getY()).append("§8, ").append(color).append(pos.getZ()).append("§r§8]");
         }
         return txt.toString();
     }
-    private boolean inNewChunk(WorldChunk chunk, MinecraftClient mc, RegistryKey<World> dimension) {
-        if (mc.world == null) return false;
+    private boolean inNewChunk(LevelChunk chunk, Minecraft mc, ResourceKey<Level> dimension) {
+        if (mc.level == null) return false;
         ChunkPos chunkPos = chunk.getPos();
         if (chunkCache.containsKey(chunkPos)) {
             return chunkCache.get(chunkPos);
         }
-        if (dimension == World.NETHER) {
-            BlockPos startPosDebris = chunkPos.getBlockPos(0, 0, 0);
-            BlockPos endPosDebris = chunkPos.getBlockPos(15, 118, 15);
+        if (dimension == Level.NETHER) {
+            BlockPos startPosDebris = chunkPos.getBlockAt(0, 0, 0);
+            BlockPos endPosDebris = chunkPos.getBlockAt(15, 118, 15);
             int newBlocks = 0;
-            for (BlockPos pos : BlockPos.iterate(startPosDebris, endPosDebris)) {
+            for (BlockPos pos : BlockPos.betweenClosed(startPosDebris, endPosDebris)) {
                 if (newBlocks >= 13) {
                     chunkCache.put(chunkPos, true);
                     return true;
                 }
-                Block block = mc.world.getBlockState(pos).getBlock();
+                Block block = mc.level.getBlockState(pos).getBlock();
                 if (block == Blocks.ANCIENT_DEBRIS || block == Blocks.BLACKSTONE || block == Blocks.BASALT
                     || block == Blocks.WARPED_NYLIUM || block == Blocks.CRIMSON_NYLIUM || block == Blocks.SOUL_SOIL) ++newBlocks;
             }
             chunkCache.put(chunkPos, (newBlocks >= 13));
             return newBlocks >= 13;
-        } else if (dimension == World.OVERWORLD){
-            BlockPos startPosAltStones = chunkPos.getBlockPos(0, 0, 0);
-            BlockPos endPosAltStones = chunkPos.getBlockPos(15, 128, 15);
+        } else if (dimension == Level.OVERWORLD){
+            BlockPos startPosAltStones = chunkPos.getBlockAt(0, 0, 0);
+            BlockPos endPosAltStones = chunkPos.getBlockAt(15, 128, 15);
             int newBlocks = 0;
-            for (BlockPos pos : BlockPos.iterate(startPosAltStones, endPosAltStones)) {
+            for (BlockPos pos : BlockPos.betweenClosed(startPosAltStones, endPosAltStones)) {
                 if (newBlocks >=  33) {
                     chunkCache.put(chunkPos, true);
                     return true;
                 }
-                Block block = mc.world.getBlockState(pos).getBlock();
+                Block block = mc.level.getBlockState(pos).getBlock();
                 if (block == Blocks.ANDESITE || block == Blocks.GRANITE || block == Blocks.DIORITE) ++newBlocks;
             }
             chunkCache.put(chunkPos, (newBlocks >= 33));
             return newBlocks >= 33;
-        } else if (dimension == World.END) {
-            RegistryKey<Biome> biome = mc.world
-                .getBiome(new BlockPos(chunkPos.getCenterX(), 64, chunkPos.getCenterZ()))
-                .getKey().orElse(BiomeKeys.GROVE);
-            boolean bl = !(biome == BiomeKeys.THE_END || biome == BiomeKeys.PLAINS);
+        } else if (dimension == Level.END) {
+            ResourceKey<Biome> biome = mc.level
+                .getBiome(new BlockPos(chunkPos.getMiddleBlockX(), 64, chunkPos.getMiddleBlockZ()))
+                .unwrapKey().orElse(Biomes.GROVE);
+            boolean bl = !(biome == Biomes.THE_END || biome == Biomes.PLAINS);
             chunkCache.put(chunkPos, bl);
             return bl;
         }
         chunkCache.put(chunkPos, true);
         return true;
     }
-    private void chatSigns(List<SignBlockEntity> signs, WorldChunk chunk, MinecraftClient mc) {
-        if (mc.world == null || signs.isEmpty()) return;
+    private void chatSigns(List<SignBlockEntity> signs, LevelChunk chunk, Minecraft mc) {
+        if (mc.level == null || signs.isEmpty()) return;
         signs.forEach(sign -> {
             ++clusterAmount;
-            String textOnSign = Arrays.stream(sign.getFrontText().getMessages(false)).map(Text::getString).collect(Collectors.joining(" ")).trim();
+            String textOnSign = Arrays.stream(sign.getFrontText().getMessages(false)).map(Component::getString).collect(Collectors.joining(" ")).trim();
             if (signMessages.containsKey(textOnSign) && ignoreDuplicates.get()) {
                 ++fullClusterAmount;
-                lastFullClusterPos = sign.getPos();
+                lastFullClusterPos = sign.getBlockPos();
                 return;
             }
-            if (chatMode.get() == ChatMode.ESP && posSet.contains(sign.getPos())) return;
+            if (chatMode.get() == ChatMode.ESP && posSet.contains(sign.getBlockPos())) return;
             if (chatMode.get() == ChatMode.Both) {
-                if (posSet.contains(sign.getPos())) {
-                    if (!sign.getPos().equals(lastFocusedSign)) return;
+                if (posSet.contains(sign.getBlockPos())) {
+                    if (!sign.getBlockPos().equals(lastFocusedSign)) return;
                 }
             }
             String msg = formatSignText(sign, chunk);
-            posSet.add(sign.getPos());
+            posSet.add(sign.getBlockPos());
             if (msg.isBlank()) {
                 ++emptyClusterAmount;
-                lastEmptyClusterPos = sign.getPos();
+                lastEmptyClusterPos = sign.getBlockPos();
                 return;
             }
             if (signBlacklist.get() && !blacklisted.isEmpty()) {
@@ -537,22 +536,22 @@ public class ChatSigns extends Module {
                     if (blacklisted.stream().anyMatch(line -> textOnSign.contains(line.trim()))) {
                         if (waypointsIgnoreBlacklist.get()) {
                             ++fullClusterAmount;
-                            lastFullClusterPos = sign.getPos();
+                            lastFullClusterPos = sign.getBlockPos();
                         }
                         return;
                     }
                 } else if (blacklisted.stream().anyMatch(line -> textOnSign.toLowerCase().contains(line.trim().toLowerCase()))) {
                     if (waypointsIgnoreBlacklist.get()) {
                         ++fullClusterAmount;
-                        lastFullClusterPos = sign.getPos();
+                        lastFullClusterPos = sign.getBlockPos();
                     }
                     return;
                 }
             }
             ++fullClusterAmount;
-            lastFullClusterPos = sign.getPos();
+            lastFullClusterPos = sign.getBlockPos();
             Style clickESP = Style.EMPTY;
-            if (signMessages.containsKey(textOnSign) && !sign.getPos().equals(lastFocusedSign)) {
+            if (signMessages.containsKey(textOnSign) && !sign.getBlockPos().equals(lastFocusedSign)) {
                 int timesSeen = signMessages.get(textOnSign) + 1;
                 signMessages.put(textOnSign, timesSeen);
                 msg = msg + " " + "§8[§7§ox§4§o"+ timesSeen + "§r§8]";
@@ -561,8 +560,8 @@ public class ChatSigns extends Module {
                 signMessages.put(textOnSign, 1);
             }
             if (chatSpeed.get() > 0) {
-                jobQueue.add(new ChatSignsJob(Text.literal(msg).setStyle(clickESP), textOnSign.hashCode()));
-            } else ((IChatHud) mc.inGameHud.getChatHud()).meteor$add(Text.literal(msg).setStyle(clickESP), textOnSign.hashCode());
+                jobQueue.add(new ChatSignsJob(Component.literal(msg).setStyle(clickESP), textOnSign.hashCode()));
+            } else ((IChatHud) mc.gui.getChat()).meteor$add(Component.literal(msg).setStyle(clickESP), textOnSign.hashCode());
         });
     }
     private void initBlacklistText() {
@@ -587,13 +586,13 @@ public class ChatSigns extends Module {
         } else signsToHighlight.put(pos, timestamp);
         return true;
     }
-    private Vec3d getTracerOffset(BlockState state, BlockPos pos) {
+    private Vec3 getTracerOffset(BlockState state, BlockPos pos) {
         double offsetX;
         double offsetY;
         double offsetZ;
         try {
             if (state.getBlock() instanceof WallSignBlock) {
-                Direction facing = state.get(WallSignBlock.FACING);
+                Direction facing = state.getValue(WallSignBlock.FACING);
                 switch (facing) {
                     case NORTH -> {
                         offsetX = pos.getX() + .5;
@@ -621,32 +620,32 @@ public class ChatSigns extends Module {
                         offsetZ = pos.getZ() + .5;
                     }
                 }
-            } else return Vec3d.ofCenter(pos);
+            } else return Vec3.atCenterOf(pos);
         } catch (Exception err) {
             LogUtil.error("Failed to get tracer offset. Why: " + err, this.name);
-            return Vec3d.ofCenter(pos);
+            return Vec3.atCenterOf(pos);
         }
-        return new Vec3d(offsetX, offsetY, offsetZ);
+        return new Vec3(offsetX, offsetY, offsetZ);
     }
-    private void doForceKick(Text reason) {
+    private void doForceKick(Component reason) {
         disconnectReason = reason;
         StardustUtil.illegalDisconnect(true, StardustConfig.illegalDisconnectMethodSetting.get());
     }
     @Override
     public void onActivate() {
-        if (mc.player == null || mc.world == null) return;
+        if (mc.player == null || mc.level == null) return;
         if (signBlacklist.get() && StardustUtil.checkOrCreateFile(mc, BLACKLIST_FILE)) initBlacklistText();
-        BlockPos pos = mc.player.getBlockPos();
+        BlockPos pos = mc.player.blockPosition();
         if (chatMode.get() == ChatMode.ESP || chatMode.get() == ChatMode.Both) {
-            int viewDistance = mc.options.getViewDistance().getValue();
+            int viewDistance = mc.options.renderDistance().get();
             int startChunkX = (pos.getX() - (viewDistance * 16)) >> 4;
             int endChunkX = (pos.getX() + (viewDistance * 16)) >> 4;
             int startChunkZ = (pos.getZ() - (viewDistance * 16)) >> 4;
             int endChunkZ = (pos.getZ() + (viewDistance * 16)) >> 4;
             for (int x = startChunkX; x < endChunkX; x++) {
                 for (int z = startChunkZ; z < endChunkZ; z++) {
-                    if (mc.world.isChunkLoaded(x, z)) {
-                        WorldChunk chunk = mc.world.getChunk(x, z);
+                    if (mc.level.isChunkLoaded(x, z)) {
+                        LevelChunk chunk = mc.level.getChunk(x, z);
                         List<SignBlockEntity> signs = getNearbySigns(chunk);
                         chatSigns(signs, chunk, mc);
                     }
@@ -676,11 +675,11 @@ public class ChatSigns extends Module {
     }
     @EventHandler
     private void onPacketReceived(PacketEvent.Receive event) {
-        if (disconnectReason != null && event.packet instanceof DisconnectS2CPacket packet) {
+        if (disconnectReason != null && event.packet instanceof ClientboundDisconnectPacket packet) {
             ((DisconnectS2CPacketAccessor)(Object) packet).setReason(disconnectReason);
             signBoardAutoLog.set(false);
             return;
-        }else if (!(event.packet instanceof PlayerRespawnS2CPacket)) return;
+        }else if (!(event.packet instanceof ClientboundRespawnPacket)) return;
         posSet.clear();
         oldSet.clear();
         chunkCache.clear();
@@ -688,7 +687,7 @@ public class ChatSigns extends Module {
     }
     @EventHandler
     private void onReceiveChunkData(ChunkDataEvent event) {
-        if (mc.world == null || mc.player == null) return;
+        if (mc.level == null || mc.player == null) return;
         if (chatMode.get() != ChatMode.Targeted) {
             List<SignBlockEntity> signs = getNearbySigns(event.chunk());
             chatSigns(signs, event.chunk(), mc);
@@ -715,19 +714,19 @@ public class ChatSigns extends Module {
             }
         }
         if (signBoardAutoLog.get() && clusterAmount >= signBoardAutoLogAmount.get()) {
-            Text reason = Text.literal("§8[§a§oChatSigns§8] §7Disconnected you because you rendered a cluster of §a§o"+ clusterAmount + " §7signs§a!");
+            Component reason = Component.literal("§8[§a§oChatSigns§8] §7Disconnected you because you rendered a cluster of §a§o"+ clusterAmount + " §7signs§a!");
             if (forceKick.get()) {
                 doForceKick(reason);
             } else {
                 signBoardAutoLog.set(false);
                 StardustUtil.disableAutoReconnect();
-                mc.getNetworkHandler().onDisconnect(new DisconnectS2CPacket(reason));
+                mc.getConnection().onDisconnect(new ClientboundDisconnectPacket(reason));
             }
             toggle();
             return;
         }
         if (chatMode.get() == ChatMode.ESP) return;
-        if (mc.world == null || mc.player == null) return;
+        if (mc.level == null || mc.player == null) return;
         if (timer >= 65535) timer = 0;
         else if (timer % 6000 == 0) signMessages.clear();
         ++timer;
@@ -744,21 +743,21 @@ public class ChatSigns extends Module {
             }
             if (targetedSign.equals(lastFocusedSign) && repeatMode.get() == RepeatMode.Focus) return;
             else if (!targetedSign.equals(lastFocusedSign)) lastFocusedSign = targetedSign;
-            WorldChunk chunk = mc.world.getChunk(targetedSign.getX() >> 4, targetedSign.getZ() >> 4);
+            LevelChunk chunk = mc.level.getChunk(targetedSign.getX() >> 4, targetedSign.getZ() >> 4);
             if (repeatMode.get() == RepeatMode.Cooldown) {
                 if (cooldowns.containsKey(targetedSign)) {
                     Instant now = Instant.now();
                     Instant stamp = cooldowns.get(targetedSign);
                     if (Duration.between(stamp, now).toSeconds() < repeatSeconds.get()) return;
-                    if (mc.world.getBlockEntity(targetedSign) instanceof SignBlockEntity sign) chatSigns(List.of(sign), chunk, mc);
-                } else if (mc.world.getBlockEntity(targetedSign) instanceof SignBlockEntity sign) {
+                    if (mc.level.getBlockEntity(targetedSign) instanceof SignBlockEntity sign) chatSigns(List.of(sign), chunk, mc);
+                } else if (mc.level.getBlockEntity(targetedSign) instanceof SignBlockEntity sign) {
                     chatSigns(List.of(sign), chunk, mc);
                 }
-            }else if (mc.world.getBlockEntity(targetedSign) instanceof SignBlockEntity sign) chatSigns(List.of(sign), chunk, mc);
+            }else if (mc.level.getBlockEntity(targetedSign) instanceof SignBlockEntity sign) chatSigns(List.of(sign), chunk, mc);
             cooldowns.put(targetedSign, Instant.now());
             for (BlockEntity be : Utils.blockEntities()) {
-                if (be instanceof SignBlockEntity sbe && !posSet.contains(sbe.getPos())) {
-                    WorldChunk sbeChunk = mc.world.getChunk(sbe.getPos().getX() >> 4, sbe.getPos().getZ() >> 4);
+                if (be instanceof SignBlockEntity sbe && !posSet.contains(sbe.getBlockPos())) {
+                    LevelChunk sbeChunk = mc.level.getChunk(sbe.getBlockPos().getX() >> 4, sbe.getBlockPos().getZ() >> 4);
                     chatSigns(List.of(sbe), sbeChunk, mc);
                 }
             }
@@ -768,17 +767,17 @@ public class ChatSigns extends Module {
             if (chatSpeed.get() <= 0) {
                 for (int n = 0; n < jobQueue.size(); n++) {
                     ChatSignsJob job = jobQueue.removeFirst();
-                    ((IChatHud) mc.inGameHud.getChatHud()).meteor$add(job.getMessage(), job.getHashcode());
+                    ((IChatHud) mc.gui.getChat()).meteor$add(job.getMessage(), job.getHashcode());
                 }
             } else {
                 ChatSignsJob job = jobQueue.removeFirst();
-                ((IChatHud) mc.inGameHud.getChatHud()).meteor$add(job.getMessage(), job.getHashcode());
+                ((IChatHud) mc.gui.getChat()).meteor$add(job.getMessage(), job.getHashcode());
             }
         }
     }
     @EventHandler
     private void onRender(Render3DEvent event) {
-        if (mc.player == null || mc.world == null) return;
+        if (mc.player == null || mc.level == null) return;
         ESPBlockData highlight = clickESPSettings.get();
         List<BlockPos> signsToRemove = new ArrayList<>();
         if (!signsToHighlight.isEmpty()) {
@@ -790,24 +789,24 @@ public class ChatSigns extends Module {
                         continue;
                     }
                 }
-                BlockState state = mc.world.getBlockState(p);
-                BlockEntity sbe = mc.world.getBlockEntity(p);
+                BlockState state = mc.level.getBlockState(p);
+                BlockEntity sbe = mc.level.getBlockEntity(p);
                 if (highlight.tracer && highlight.tracerColor.a > 0) {
-                    Vec3d offset = getTracerOffset(state, p);
+                    Vec3 offset = getTracerOffset(state, p);
                     event.renderer.line(
                         RenderUtils.center.x, RenderUtils.center.y, RenderUtils.center.z,
-                        offset.getX(), offset.getY(), offset.getZ(), highlight.tracerColor
+                        offset.x(), offset.y(), offset.z(), highlight.tracerColor
                     );
                 }
                 if (state == null || sbe == null) continue;
                 if (!(sbe instanceof SignBlockEntity)) continue;
-                VoxelShape shape = state.getOutlineShape(mc.world, p);
-                double x1 = p.getX() + shape.getMin(Direction.Axis.X);
-                double y1 = p.getY() + shape.getMin(Direction.Axis.Y);
-                double z1 = p.getZ() + shape.getMin(Direction.Axis.Z);
-                double x2 = p.getX() + shape.getMax(Direction.Axis.X);
-                double y2 = p.getY() + shape.getMax(Direction.Axis.Y);
-                double z2 = p.getZ() + shape.getMax(Direction.Axis.Z);
+                VoxelShape shape = state.getShape(mc.level, p);
+                double x1 = p.getX() + shape.min(Direction.Axis.X);
+                double y1 = p.getY() + shape.min(Direction.Axis.Y);
+                double z1 = p.getZ() + shape.min(Direction.Axis.Z);
+                double x2 = p.getX() + shape.max(Direction.Axis.X);
+                double y2 = p.getY() + shape.max(Direction.Axis.Y);
+                double z2 = p.getZ() + shape.max(Direction.Axis.Z);
                 event.renderer.box(
                     x1, y1, z1, x2, y2, z2,
                     highlight.sideColor, highlight.lineColor, highlight.shapeMode, 0
@@ -820,25 +819,25 @@ public class ChatSigns extends Module {
         if (!renderOldSigns.get()) return;
         List<BlockPos> inRange = oldSet
             .stream()
-            .filter(pos -> pos.isWithinDistance(mc.player.getBlockPos(), mc.options.getViewDistance().getValue() * 16+32))
+            .filter(pos -> pos.closerThan(mc.player.blockPosition(), mc.options.renderDistance().get() * 16+32))
             .toList();
         ESPBlockData esp = espSettings.get();
         for (BlockPos pos : inRange) {
-            BlockState state = mc.world.getBlockState(pos);
+            BlockState state = mc.level.getBlockState(pos);
             if (!(state.getBlock() instanceof SignBlock) && !(state.getBlock() instanceof WallSignBlock)) continue;
-            VoxelShape shape = state.getOutlineShape(mc.world, pos);
-            double x1 = pos.getX() + shape.getMin(Direction.Axis.X);
-            double y1 = pos.getY() + shape.getMin(Direction.Axis.Y);
-            double z1 = pos.getZ() + shape.getMin(Direction.Axis.Z);
-            double x2 = pos.getX() + shape.getMax(Direction.Axis.X);
-            double y2 = pos.getY() + shape.getMax(Direction.Axis.Y);
-            double z2 = pos.getZ() + shape.getMax(Direction.Axis.Z);
+            VoxelShape shape = state.getShape(mc.level, pos);
+            double x1 = pos.getX() + shape.min(Direction.Axis.X);
+            double y1 = pos.getY() + shape.min(Direction.Axis.Y);
+            double z1 = pos.getZ() + shape.min(Direction.Axis.Z);
+            double x2 = pos.getX() + shape.max(Direction.Axis.X);
+            double y2 = pos.getY() + shape.max(Direction.Axis.Y);
+            double z2 = pos.getZ() + shape.max(Direction.Axis.Z);
             event.renderer.box(
                 x1, y1, z1, x2, y2, z2,
                 esp.sideColor, esp.lineColor, esp.shapeMode, 0
             );
             if (esp.tracer) {
-                Vec3d offsetVec = getTracerOffset(state, pos);
+                Vec3 offsetVec = getTracerOffset(state, pos);
                 event.renderer.line(
                     RenderUtils.center.x,
                     RenderUtils.center.y,
@@ -851,8 +850,8 @@ public class ChatSigns extends Module {
             }
         }
     }
-    private record ChatSignsJob(Text message, int hashcode) {
-        public Text getMessage() { return this.message; }
+    private record ChatSignsJob(Component message, int hashcode) {
+        public Component getMessage() { return this.message; }
         public int getHashcode() { return this.hashcode; }
     }
 }

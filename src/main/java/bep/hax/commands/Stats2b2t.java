@@ -4,15 +4,15 @@ import java.time.ZoneId;
 import java.time.Instant;
 import com.google.gson.Gson;
 import bep.hax.Bep;
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
 import java.time.ZonedDateTime;
 import bep.hax.util.LogUtil;
 import java.util.concurrent.TimeUnit;
 import bep.hax.util.StardustUtil;
 import java.time.format.DateTimeFormatter;
-import net.minecraft.command.CommandSource;
+import net.minecraft.commands.SharedSuggestionProvider;
 import bep.hax.util.commands.ApiHandler;
-import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.client.player.LocalPlayer;
 import meteordevelopment.meteorclient.commands.Command;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
@@ -21,18 +21,18 @@ public class Stats2b2t extends Command {
     private final String API_ENDPOINT = "/stats/player?playerName=";
     public Stats2b2t() { super("stats2b2t", "Fetch stats for a 2b2t player from api.2b2t.vc.", "stats"); }
     @Override
-    public void build(LiteralArgumentBuilder<CommandSource> builder) {
+    public void build(LiteralArgumentBuilder<SharedSuggestionProvider> builder) {
         builder.then(argument("player", StringArgumentType.word()).executes(ctx -> {
             MeteorExecutor.execute(() -> {
-                ClientPlayerEntity player = mc.player;
+                LocalPlayer player = mc.player;
                 if (player == null) return;
                 String playerString = ctx.getArgument("player", String.class);
                 String requestString = ApiHandler.API_2B2T_URL + API_ENDPOINT + playerString.trim();
                 String response = new ApiHandler().fetchResponse(requestString);
                 if (response == null) return;
                 if (response.equals("204 Undocumented")) {
-                    player.sendMessage(
-                        Text.of(
+                    player.sendSystemMessage(
+                        Component.literal(
                             "§8<"+ StardustUtil.rCC()+"§o✨"+"§r§8> §4§oPlayer not found§7..."
                         ), false
                     );
@@ -115,8 +115,8 @@ public class Stats2b2t extends Command {
                             }
                         }
                         String kdRatioString = String.valueOf((float) stats.killCount / (float) stats.deathCount);
-                        player.sendMessage(
-                            Text.of(
+                        player.sendSystemMessage(
+                            Component.literal(
                                 "§8<" + StardustUtil.rCC() + "§o✨" + "§r§8> §7§oStats for "+cc+"§o" + playerString + "§7§o:\n"
                                     + "    §7Joins: "+cc+"§o"+stats.joinCount+"\n    §7Leaves: "+cc+"§o"+stats.leaveCount
                                     + "\n    §7K/D Ratio: "+cc+"§o"+kdRatioString

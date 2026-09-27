@@ -17,14 +17,14 @@ import meteordevelopment.meteorclient.utils.Utils;
 import meteordevelopment.meteorclient.utils.render.RenderUtils;
 import meteordevelopment.meteorclient.utils.render.color.SettingColor;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.network.packet.s2c.common.DisconnectS2CPacket;
-import net.minecraft.text.Text;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.Heightmap;
-import net.minecraft.world.chunk.Chunk;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.network.protocol.common.ClientboundDisconnectPacket;
+import net.minecraft.network.chat.Component;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.level.chunk.ChunkAccess;
 import java.io.*;
 import java.util.HashSet;
 import static bep.hax.util.Utils.sendWebhook;
@@ -102,12 +102,12 @@ public class HighlightOldLava extends Module
     );
     protected static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private HashSet<BlockPos> oldLava;
-    private HashSet<Vec3d> loadedChunks;
+    private HashSet<Vec3> loadedChunks;
     public HighlightOldLava()
     {
         super(Bep.STASH, "highlight-old-lava", "Highlights lava that has already flowed down");
         oldLava = new HashSet<BlockPos>();
-        loadedChunks = new HashSet<Vec3d>();
+        loadedChunks = new HashSet<Vec3>();
     }
     @Override
     public WWidget getWidget(GuiTheme theme)
@@ -126,7 +126,7 @@ public class HighlightOldLava extends Module
     public void onActivate()
     {
         oldLava = new HashSet<BlockPos>();
-        loadedChunks = new HashSet<Vec3d>();
+        loadedChunks = new HashSet<Vec3>();
         try {
             File lavaPosFile = new File(new File(new File(MeteorClient.FOLDER, "HighlightOldLava"), Utils.getFileWorldName()),  "lavaPos.json");
             FileReader reader = new FileReader(lavaPosFile);
@@ -134,7 +134,7 @@ public class HighlightOldLava extends Module
             reader.close();
             File loadedChunksFile = new File(new File(new File(MeteorClient.FOLDER, "HighlightOldLava"), Utils.getFileWorldName()),  "loadedChunks.json");
             FileReader reader2 = new FileReader(loadedChunksFile);
-            loadedChunks = GSON.fromJson(reader2, new TypeToken<HashSet<Vec3d>>(){}.getType());
+            loadedChunks = GSON.fromJson(reader2, new TypeToken<HashSet<Vec3>>(){}.getType());
             reader2.close();
         } catch (Exception ignored) {
         }
@@ -162,8 +162,8 @@ public class HighlightOldLava extends Module
     private void onRender(Render3DEvent event) {
         if ((logMode.get() == Mode.Highlight) || (logMode.get() == Mode.Both)) {
             for (BlockPos blockPos : oldLava) {
-                if (Math.sqrt(mc.player.squaredDistanceTo(blockPos.toCenterPos())) <= renderDistance.get()) {
-                    RenderUtils.renderTickingBlock(blockPos.toImmutable(), sideColor.get(), lineColor.get(), shapeMode.get(), 0, 8, true, false);
+                if (Math.sqrt(mc.player.distanceToSqr(blockPos.getCenter())) <= renderDistance.get()) {
+                    RenderUtils.renderTickingBlock(blockPos.immutable(), sideColor.get(), lineColor.get(), shapeMode.get(), 0, 8, true, false);
                 }
             }
         }
@@ -171,17 +171,17 @@ public class HighlightOldLava extends Module
     @EventHandler
     private void onChunkData(ChunkDataEvent event)
     {
-        Chunk chunk = event.chunk();
-        Vec3d chunkPos = chunk.getPos().getStartPos().toCenterPos();
+        ChunkAccess chunk = event.chunk();
+        Vec3 chunkPos = chunk.getPos().getWorldPosition().getCenter();
         if (loadedChunks.contains(chunkPos)) return;
         loadedChunks.add(chunkPos);
         HashSet<BlockPos> toAdd = new HashSet<BlockPos>();
         boolean chunkLogged = false;
-        for (int x = chunk.getPos().getStartX(); x <= chunk.getPos().getEndX(); x++)
+        for (int x = chunk.getPos().getMinBlockX(); x <= chunk.getPos().getMaxBlockX(); x++)
         {
-            for (int z = chunk.getPos().getStartZ(); z <= chunk.getPos().getEndZ(); z++)
+            for (int z = chunk.getPos().getMinBlockZ(); z <= chunk.getPos().getMaxBlockZ(); z++)
             {
-                int height = chunk.getHeightmap(Heightmap.Type.WORLD_SURFACE).get(x - chunk.getPos().getStartX(), z - chunk.getPos().getStartZ());
+                int height = chunk.getOrCreateHeightmapUnprimed(Heightmap.Types.WORLD_SURFACE).getFirstAvailable(x - chunk.getPos().getMinBlockX(), z - chunk.getPos().getMinBlockZ());
                 for (int y = height; y > searchAbove.get(); y--)
                 {
                     BlockPos blockPos = new BlockPos(x, y, z);
@@ -193,7 +193,7 @@ public class HighlightOldLava extends Module
                         boolean heightFound = true;
                         for (int i = 1; i < lavaHeight.get(); i++)
                         {
-                            if (chunk.getBlockState(blockPos.add(0, i, 0)).getBlock() != Blocks.LAVA)
+                            if (chunk.getBlockState(blockPos.offset(0, i, 0)).getBlock() != Blocks.LAVA)
                             {
                                 heightFound = false;
                                 break;
@@ -203,9 +203,9 @@ public class HighlightOldLava extends Module
                         {
                             if ((logMode.get() == Mode.LogWebhook || logMode.get() == Mode.Both) && !webhookLink.get().isEmpty())
                             {
-                                new Thread(() -> sendWebhook(webhookLink.get(), "Old Chunk Found", "At: " + blockPos.getX() + " " + blockPos.getZ(), (ping.get() ? discordId.get() : null), mc.player.getGameProfile().name())).start();
+                                new Thread(() -> sendWebhook(webhookLink.get(), "Old ChunkAccess Found", "At: " + blockPos.getX() + " " + blockPos.getZ(), (ping.get() ? discordId.get() : null), mc.player.getGameProfile().name())).start();
                             }
-                            if (disconnectOnFound.get()) mc.player.networkHandler.onDisconnect(new DisconnectS2CPacket(Text.literal("[HighlightOldLava] Old lava was found.")));
+                            if (disconnectOnFound.get()) mc.player.connection.onDisconnect(new ClientboundDisconnectPacket(Component.literal("[HighlightOldLava] Old lava was found.")));
                             oldLava.add(blockPos);
                             return;
                         }

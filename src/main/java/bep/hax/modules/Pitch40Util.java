@@ -7,7 +7,7 @@ import meteordevelopment.meteorclient.systems.modules.Modules;
 import meteordevelopment.meteorclient.systems.modules.movement.elytrafly.ElytraFly;
 import meteordevelopment.meteorclient.utils.player.InvUtils;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.util.Hand;
+import net.minecraft.world.InteractionHand;
 import meteordevelopment.meteorclient.systems.modules.movement.elytrafly.ElytraFlightModes;
 import static bep.hax.util.Utils.firework;
 public class Pitch40Util extends Module {
@@ -99,7 +99,7 @@ public class Pitch40Util extends Module {
             if (elytraSwapSlot != -1)
             {
                 InvUtils.swap(elytraSwapSlot, true);
-                mc.interactionManager.interactItem(mc.player, Hand.MAIN_HAND);
+                mc.gameMode.useItem(mc.player, InteractionHand.MAIN_HAND);
                 InvUtils.swapBack();
                 elytraSwapSlot = -1;
             }
@@ -108,10 +108,10 @@ public class Pitch40Util extends Module {
                 resetBounds();
                 return;
             }
-            if (mc.player.getPitch() == -40)
+            if (mc.player.getXRot() == -40)
             {
                 goingUp = true;
-                if (autoFirework.get() && mc.player.getVelocity().y < velocityThreshold.get() && mc.player.getY() < (double)getElytraFly().settings.get("pitch40-upper-bounds").get())
+                if (autoFirework.get() && mc.player.getDeltaMovement().y < velocityThreshold.get() && mc.player.getY() < (double)getElytraFly().settings.get("pitch40-upper-bounds").get())
                 {
                     if (fireworkCooldown == 0) {
                         int launchStatus = firework(mc, false);
@@ -123,14 +123,14 @@ public class Pitch40Util extends Module {
                     }
                 }
             }
-            else if (autoBoundAdjust.get() && goingUp && mc.player.getVelocity().y <= 0) {
+            else if (autoBoundAdjust.get() && goingUp && mc.player.getDeltaMovement().y <= 0) {
                 goingUp = false;
                 resetBounds();
             }
         }
         else
         {
-            if (!mc.player.getAbilities().allowFlying)
+            if (!mc.player.getAbilities().mayfly)
             {
                 getElytraFly().toggle();
                 resetBounds();

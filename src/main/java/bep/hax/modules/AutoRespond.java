@@ -126,7 +126,7 @@ public class AutoRespond extends Module {
     }
     @EventHandler
     private void onReceiveMessage(ReceiveMessageEvent event) {
-        if (mc.player == null || mc.world == null) return;
+        if (mc.player == null || mc.level == null) return;
         String messageText = event.getMessage().getString();
         ChatMessage parsedMessage = parseMessage(messageText);
         if (parsedMessage == null) {
@@ -175,7 +175,7 @@ public class AutoRespond extends Module {
     }
     @EventHandler
     private void onTick(TickEvent.Pre event) {
-        if (mc.player == null || mc.world == null) return;
+        if (mc.player == null || mc.level == null) return;
         if (pendingResponse != null && System.currentTimeMillis() >= responseScheduledTime) {
             sendResponse(pendingResponse, pendingTargetPlayer);
             pendingResponse = null;
@@ -256,7 +256,7 @@ public class AutoRespond extends Module {
         } else {
             finalMessage = message;
         }
-        mc.player.networkHandler.sendChatMessage(finalMessage);
+        mc.player.connection.sendChat(finalMessage);
         if (logTriggers.get()) {
             info("Sent response: %s", finalMessage);
         }

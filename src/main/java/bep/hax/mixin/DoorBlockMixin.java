@@ -1,6 +1,6 @@
 package bep.hax.mixin;
-import net.minecraft.block.Block;
-import net.minecraft.block.DoorBlock;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.DoorBlock;
 import bep.hax.modules.AutoDoors;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;

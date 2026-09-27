@@ -5,12 +5,12 @@ import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.utils.player.InvUtils;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.item.*;
+import net.minecraft.world.item.*;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
-import net.minecraft.screen.slot.SlotActionType;
-import net.minecraft.network.packet.c2s.play.ClickSlotC2SPacket;
-import net.minecraft.screen.sync.ItemStackHash;
+import net.minecraft.world.inventory.ContainerInput;
+import net.minecraft.network.protocol.game.ServerboundContainerClickPacket;
+import net.minecraft.network.HashedStack;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
@@ -152,7 +152,7 @@ public class Replenish extends Module {
     }
     @EventHandler
     private void onTick(TickEvent.Pre event) {
-        if (mc.player == null || mc.world == null) return;
+        if (mc.player == null || mc.level == null) return;
         if (delayTicks > 0) {
             delayTicks--;
             return;
@@ -170,14 +170,14 @@ public class Replenish extends Module {
         int refillsThisTick = 0;
         for (int hotbarSlot = 0; hotbarSlot < 9; hotbarSlot++) {
             if (refillsThisTick >= maxRefillsPerTick.get()) break;
-            ItemStack hotbarStack = mc.player.getInventory().getStack(hotbarSlot);
+            ItemStack hotbarStack = mc.player.getInventory().getItem(hotbarSlot);
             if (hotbarStack.isEmpty()) {
                 hotbarItemNames.remove(hotbarSlot);
                 continue;
             }
             if (!shouldRefillItem(hotbarStack)) continue;
             int currentSize = hotbarStack.getCount();
-            int maxSize = hotbarStack.getMaxCount();
+            int maxSize = hotbarStack.getMaxStackSize();
             if (smartRefill.get()) {
                 Integer lastSize = lastStackSizes.get(hotbarSlot);
                 if (lastSize != null && lastSize > currentSize && currentSize <= 1) {
@@ -200,7 +200,7 @@ public class Replenish extends Module {
     }
     private boolean shouldRefillItem(ItemStack stack) {
         Item item = stack.getItem();
-        if (refillAllStackable.get() && stack.getMaxCount() > 1) {
+        if (refillAllStackable.get() && stack.getMaxStackSize() > 1) {
             return true;
         }
         if (refillTotems.get() && item == Items.TOTEM_OF_UNDYING) return true;
@@ -208,7 +208,7 @@ public class Replenish extends Module {
         if (refillGaps.get() && (item == Items.GOLDEN_APPLE || item == Items.ENCHANTED_GOLDEN_APPLE)) return true;
         if (refillFireworks.get() && item == Items.FIREWORK_ROCKET) return true;
         if (refillBlocks.get() && item instanceof BlockItem) return true;
-        if (refillFood.get() && item.getComponents().contains(net.minecraft.component.DataComponentTypes.FOOD)) return true;
+        if (refillFood.get() && item.components().has(net.minecraft.core.component.DataComponents.FOOD)) return true;
         if (refillTools.get() && (item instanceof ShovelItem || item instanceof AxeItem || item instanceof HoeItem || item.toString().toLowerCase().contains("pickaxe"))) return true;
         if (refillWeapons.get() && (item.toString().toLowerCase().contains("sword") || item instanceof BowItem || item instanceof CrossbowItem)) return true;
         if (refillProjectiles.get() && (item instanceof ArrowItem || item == Items.FIREWORK_ROCKET)) return true;
@@ -216,7 +216,7 @@ public class Replenish extends Module {
         return false;
     }
     private boolean attemptRefill(int hotbarSlot, ItemStack hotbarStack) {
-        if (respectCustomNames.get() && hotbarStack.getMaxCount() > 1) {
+        if (respectCustomNames.get() && hotbarStack.getMaxStackSize() > 1) {
             String currentName = getItemName(hotbarStack);
             String trackedName = hotbarItemNames.get(hotbarSlot);
             if (trackedName == null) {
@@ -228,7 +228,7 @@ public class Replenish extends Module {
                 hotbarItemNames.remove(hotbarSlot);
                 return false;
             }
-            ItemStack sourceStack = mc.player.getInventory().getStack(sourceSlot);
+            ItemStack sourceStack = mc.player.getInventory().getItem(sourceSlot);
             String sourceName = getItemName(sourceStack);
             if (!trackedName.equals(sourceName)) {
                 if (hotbarStack.getCount() > 1) {
@@ -251,8 +251,8 @@ public class Replenish extends Module {
         return true;
     }
     private String getItemName(ItemStack stack) {
-        if (stack.contains(net.minecraft.component.DataComponentTypes.CUSTOM_NAME)) {
-            net.minecraft.text.Text customName = stack.get(net.minecraft.component.DataComponentTypes.CUSTOM_NAME);
+        if (stack.has(net.minecraft.core.component.DataComponents.CUSTOM_NAME)) {
+            net.minecraft.network.chat.Component customName = stack.get(net.minecraft.core.component.DataComponents.CUSTOM_NAME);
             if (customName != null) {
                 return customName.getString();
             }
@@ -268,7 +268,7 @@ public class Replenish extends Module {
             bestCount = Integer.MAX_VALUE;
         }
         for (int i = 9; i < 36; i++) {
-            ItemStack stack = mc.player.getInventory().getStack(i);
+            ItemStack stack = mc.player.getInventory().getItem(i);
             if (stack.isEmpty()) continue;
             if (!canStack(targetStack, stack)) continue;
             if (maintainTool.get() && (targetStack.getItem() instanceof ShovelItem || targetStack.getItem() instanceof AxeItem || targetStack.getItem() instanceof HoeItem || targetStack.getItem().toString().toLowerCase().contains("pickaxe"))) {
@@ -292,13 +292,13 @@ public class Replenish extends Module {
     }
     private boolean canStack(ItemStack stack1, ItemStack stack2) {
         if (stack1.getItem() != stack2.getItem()) return false;
-        if (stack1.getMaxCount() == 1) {
+        if (stack1.getMaxStackSize() == 1) {
             return true;
         }
         if (respectCustomNames.get()) {
-            return ItemStack.areItemsEqual(stack1, stack2);
+            return ItemStack.isSameItem(stack1, stack2);
         } else {
-            return ItemStack.areItemsAndComponentsEqual(stack1, stack2);
+            return ItemStack.isSameItemSameComponents(stack1, stack2);
         }
     }
     private void performShiftClickRefill(RefillOperation operation) {
@@ -312,17 +312,17 @@ public class Replenish extends Module {
         InvUtils.move().from(operation.sourceSlot).to(operation.targetSlot - 36);
     }
     private void sendShiftClickPacket(int slot) {
-        int syncId = mc.player.currentScreenHandler.syncId;
-        mc.interactionManager.clickSlot(
+        int syncId = mc.player.containerMenu.containerId;
+        mc.gameMode.handleContainerInput(
             syncId,
             slot,
             0,
-            SlotActionType.QUICK_MOVE,
+            ContainerInput.QUICK_MOVE,
             mc.player
         );
     }
     private void processPendingRefills() {
-        if (mc.player.currentScreenHandler != mc.player.playerScreenHandler) {
+        if (mc.player.containerMenu != mc.player.inventoryMenu) {
             return;
         }
         int processed = 0;

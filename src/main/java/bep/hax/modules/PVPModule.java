@@ -13,10 +13,10 @@ public abstract class PVPModule extends Module {
         return null;
     }
     protected boolean isValidPlayer() {
-        return mc.player != null && mc.world != null && !mc.player.isRemoved();
+        return mc.player != null && mc.level != null && !mc.player.isRemoved();
     }
     protected boolean isInWorld() {
-        return mc.world != null && mc.player != null;
+        return mc.level != null && mc.player != null;
     }
     protected void safeToggle() {
         if (isActive()) {

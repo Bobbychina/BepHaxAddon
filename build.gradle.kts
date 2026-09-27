@@ -9,6 +9,11 @@ base {
 }
 
 repositories {
+    // 国内镜像优先
+    maven {
+        name = "AliyunPublic"
+        url = uri("https://maven.aliyun.com/repository/public")
+    }
     mavenCentral()
     maven {
         name = "meteor-maven"
@@ -30,28 +35,26 @@ repositories {
         }
     }
 }
+
 dependencies {
-    // Fabric
+    // Fabric —— 26.1 起未混淆：没有 mappings 行，mod 依赖也不再 remap
     minecraft(libs.minecraft)
-    mappings(variantOf(libs.yarn) { classifier("v2") })
-    modImplementation(libs.fabric.loader)
-    modImplementation(libs.fabric.api)
+    implementation(libs.fabric.loader)
+    implementation(libs.fabric.api)
 
     // Meteor
-    modImplementation(libs.meteor.client)
-    modApi(libs.baritone)
+    implementation(libs.meteor.client)
+    compileOnly(libs.baritone)
 
-    // XaeroPlus
-    modImplementation(libs.xaeroplus)
-    // XaeroWorldMap
-    modImplementation(libs.xaeros.worldmap)
-    // XaeroMinimap
-    modImplementation(libs.xaeros.minimap)
+    // XaeroPlus / Xaero（编译期）
+    compileOnly(libs.xaeroplus)
+    compileOnly(libs.xaeros.worldmap)
+    compileOnly(libs.xaeros.minimap)
 
-    // Include these libraries in the jar
-    modImplementation(libs.lambdaevents)
+    // 打进 jar 的库
+    implementation(libs.lambdaevents)
     include(libs.lambdaevents)
-    modImplementation(libs.caffeine)
+    implementation(libs.caffeine)
     include(libs.caffeine)
 }
 
@@ -79,18 +82,20 @@ tasks {
         }
     }
 
-    java {
-        sourceCompatibility = JavaVersion.VERSION_21
-        targetCompatibility = JavaVersion.VERSION_21
-    }
-
     withType<JavaCompile> {
         options.encoding = "UTF-8"
-        options.release = 21
+        options.release = 25
         options.compilerArgs.add("-Xlint:deprecation")
         options.compilerArgs.add("-Xlint:unchecked")
     }
 }
+
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(25))
+    }
+}
+
 loom {
     accessWidenerPath = file("src/main/resources/bep.accesswidener")
 }

@@ -2,9 +2,9 @@ package bep.hax.modules;
 import java.util.List;
 import java.util.ArrayList;
 import bep.hax.Bep;
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
 import bep.hax.util.MsgUtil;
-import net.minecraft.text.HoverEvent;
+import net.minecraft.network.chat.HoverEvent;
 import meteordevelopment.orbit.EventHandler;
 import meteordevelopment.orbit.EventPriority;
 import meteordevelopment.meteorclient.settings.Setting;
@@ -12,8 +12,8 @@ import meteordevelopment.meteorclient.settings.EnumSetting;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.events.packets.PacketEvent;
 import meteordevelopment.meteorclient.settings.StringListSetting;
-import net.minecraft.network.packet.s2c.play.GameMessageS2CPacket;
-import net.minecraft.network.packet.c2s.play.CommandExecutionC2SPacket;
+import net.minecraft.network.protocol.game.ClientboundSystemChatPacket;
+import net.minecraft.network.protocol.game.ServerboundChatCommandPacket;
 public class AdBlocker extends Module {
     public AdBlocker() { super(Bep.STARDUST, "AdBlocker", "Blocks advertisers in chat."); }
     public enum IgnoreStyle {
@@ -41,8 +41,8 @@ public class AdBlocker extends Module {
     );
     @EventHandler(priority = EventPriority.HIGHEST)
     private void onPacketReceive(PacketEvent.Receive event) {
-        if (mc.getNetworkHandler() == null) return;
-        if (!(event.packet instanceof GameMessageS2CPacket packet)) return;
+        if (mc.getConnection() == null) return;
+        if (!(event.packet instanceof ClientboundSystemChatPacket packet)) return;
         if (packet.content() == null) return;
         String content = packet.content().getString();
         for (String pattern : patterns.get()) {
@@ -67,13 +67,13 @@ public class AdBlocker extends Module {
                                     this.name
                                 );
                             }
-                            mc.getNetworkHandler().getConnection().send(
-                                new CommandExecutionC2SPacket(cmd + " " + culprit), null
+                            mc.getConnection().getConnection().send(
+                                new ServerboundChatCommandPacket(cmd + " " + culprit), null
                             );
                         }
                     } else {
-                        mc.getNetworkHandler().getConnection().send(
-                            new CommandExecutionC2SPacket(cmd + " " + name), null
+                        mc.getConnection().getConnection().send(
+                            new ServerboundChatCommandPacket(cmd + " " + name), null
                         );
                     }
                 }
@@ -88,17 +88,17 @@ public class AdBlocker extends Module {
         else if (parts[0].startsWith("<") && parts[0].endsWith(">")) name = parts[0].substring(1, parts[0].length() - 1);
         return name;
     }
-    private void extractNamesFromDeathMessage(Text msg, List<String> names) {
+    private void extractNamesFromDeathMessage(Component msg, List<String> names) {
         if (msg.getStyle().getHoverEvent() != null) {
             HoverEvent event = msg.getStyle().getHoverEvent();
             if (event instanceof HoverEvent.ShowText showTextEvent) {
-                Text value = showTextEvent.value();
+                Component value = showTextEvent.value();
                 if (value != null && value.getString().startsWith("Message ")) {
                     names.add(value.getString().substring(8).trim());
                 }
             }
         }
-        for (Text sibling : msg.getSiblings()) {
+        for (Component sibling : msg.getSiblings()) {
             extractNamesFromDeathMessage(sibling, names);
         }
     }

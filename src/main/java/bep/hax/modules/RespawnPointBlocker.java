@@ -10,15 +10,15 @@ import meteordevelopment.meteorclient.systems.modules.Categories;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
 import meteordevelopment.orbit.EventPriority;
-import net.minecraft.block.Block;
-import net.minecraft.sound.SoundEvent;
-import net.minecraft.sound.SoundEvents;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundEvents;
 import java.util.List;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.util.Hand;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.core.BlockPos;
 public class RespawnPointBlocker extends Module {
     private final SettingGroup sgGeneral = settings.createGroup("General");
     private final SettingGroup sgFeedback = settings.createGroup("Feedback");
@@ -49,7 +49,7 @@ public class RespawnPointBlocker extends Module {
     public final Setting<List<SoundEvent>> feedbackSound = sgFeedback.add(new SoundEventListSetting.Builder()
         .name("feedback-sound")
         .description("Sound to play when interaction is blocked. Only the first sound in the list will be played.")
-        .defaultValue(SoundEvents.ENTITY_VILLAGER_NO)
+        .defaultValue(SoundEvents.VILLAGER_NO)
         .build()
     );
     public final Setting<Integer> soundVolume = sgFeedback.add(new IntSetting.Builder()
@@ -67,7 +67,7 @@ public class RespawnPointBlocker extends Module {
     private void onInteractBlock(InteractBlockEvent event) {
         BlockHitResult hitResult = event.result;
         BlockPos blockPos = hitResult.getBlockPos();
-        BlockState blockState = mc.world.getBlockState(blockPos);
+        BlockState blockState = mc.level.getBlockState(blockPos);
         Block block = blockState.getBlock();
         if (isRespawnPointBlock(block)) {
             boolean shouldBlock = false;

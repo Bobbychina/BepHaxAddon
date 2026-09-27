@@ -6,9 +6,9 @@ import meteordevelopment.meteorclient.systems.hud.HudElementInfo;
 import meteordevelopment.meteorclient.systems.hud.HudRenderer;
 import meteordevelopment.meteorclient.utils.player.InvUtils;
 import meteordevelopment.meteorclient.utils.render.color.SettingColor;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import java.util.List;
 public class ItemCounterHud extends HudElement {
     public static final HudElementInfo<ItemCounterHud> INFO = new HudElementInfo<>(
@@ -184,8 +184,8 @@ public class ItemCounterHud extends HudElement {
             }
             renderer.item(stack, (int) curX, (int) curY, itemScale.get().floatValue(), true);
             String countText;
-            if (showStackCount.get() && stack.getMaxCount() > 1) {
-                double stacks = count / (double) stack.getMaxCount();
+            if (showStackCount.get() && stack.getMaxStackSize() > 1) {
+                double stacks = count / (double) stack.getMaxStackSize();
                 countText = String.format("%.1f", stacks);
             } else {
                 countText = String.valueOf(count);

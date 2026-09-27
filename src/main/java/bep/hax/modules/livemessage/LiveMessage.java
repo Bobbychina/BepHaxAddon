@@ -7,7 +7,7 @@ import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.utils.misc.Keybind;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.client.gui.screen.ChatScreen;
+import net.minecraft.client.gui.screens.ChatScreen;
 import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -149,10 +149,10 @@ public class LiveMessage extends Module {
         }
     }
     public void openGui() {
-        if (mc.currentScreen == null) {
+        if (mc.screen == null) {
             mc.setScreen(new LivemessageGui());
-        } else if (mc.currentScreen instanceof LivemessageGui) {
-            LivemessageGui gui = (LivemessageGui) mc.currentScreen;
+        } else if (mc.screen instanceof LivemessageGui) {
+            LivemessageGui gui = (LivemessageGui) mc.screen;
             boolean anyFieldFocused = false;
             for (bep.hax.modules.livemessage.gui.LiveWindow window : gui.liveWindows) {
                 if (window instanceof bep.hax.modules.livemessage.gui.ChatWindow) {

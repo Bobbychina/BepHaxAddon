@@ -13,17 +13,17 @@ import meteordevelopment.meteorclient.utils.Utils;
 import meteordevelopment.meteorclient.utils.world.BlockUtils;
 import meteordevelopment.orbit.EventHandler;
 import meteordevelopment.orbit.EventPriority;
-import net.minecraft.block.Block;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.BlockItem;
-import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
-import net.minecraft.network.packet.c2s.play.PlayerInteractBlockC2SPacket;
-import net.minecraft.util.Hand;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
+import net.minecraft.network.protocol.game.ServerboundUseItemOnPacket;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.core.Direction;
+import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -42,7 +42,7 @@ public abstract class AutoTrapMixin extends Module {
     @Shadow @Final private SettingGroup sgGeneral;
     @Shadow @Final private Setting<Boolean> rotate;
     @Shadow private List<BlockPos> placePositions;
-    @Shadow private PlayerEntity target;
+    @Shadow private Player target;
     @Unique private SettingGroup bephax$sgTrapMode;
     @Unique private Setting<Boolean> bephax$useExpandPattern;
     @Unique private Setting<Boolean> bephax$feetOnly;
@@ -54,7 +54,7 @@ public abstract class AutoTrapMixin extends Module {
     @Unique private Setting<Integer> bephax$yawStepLimit;
     @Unique private RotationUtils bephax$rotationManager;
     @Unique private InventoryManager bephax$inventoryManager;
-    @Unique private Vec3d bephax$targetRotation = null;
+    @Unique private Vec3 bephax$targetRotation = null;
     @Unique private boolean bephax$rotated = true;
     @Unique private int bephax$blocksPlacedThisTick = 0;
     @Unique private final Set<BlockPos> bephax$placedPositions = new HashSet<>();
@@ -148,7 +148,7 @@ public abstract class AutoTrapMixin extends Module {
         }
     }
     @Inject(method = "fillPlaceArray", at = @At("HEAD"), cancellable = true)
-    private void replaceFillPlaceArray(PlayerEntity targetPlayer, CallbackInfo ci) {
+    private void replaceFillPlaceArray(Player targetPlayer, CallbackInfo ci) {
         if (!bephax$useExpandPattern.get()) return;
         ci.cancel();
         placePositions.clear();
@@ -156,9 +156,9 @@ public abstract class AutoTrapMixin extends Module {
         bephax$improveTrapping(targetPlayer);
     }
     @Unique
-    private void bephax$improveTrapping(PlayerEntity target) {
+    private void bephax$improveTrapping(Player target) {
         Set<BlockPos> newPositions = new HashSet<>();
-        Box box = target.getBoundingBox();
+        AABB box = target.getBoundingBox();
         int minX = (int) Math.floor(box.minX);
         int maxX = (int) Math.floor(box.maxX - 0.0001);
         int minZ = (int) Math.floor(box.minZ);
@@ -171,7 +171,7 @@ public abstract class AutoTrapMixin extends Module {
             }
         }
         for (BlockPos foot : footBlocks) {
-            BlockPos floor = foot.down();
+            BlockPos floor = foot.below();
             if (BlockUtils.canPlace(floor)) {
                 newPositions.add(floor);
             }
@@ -185,17 +185,17 @@ public abstract class AutoTrapMixin extends Module {
         newPositions.removeAll(footBlocks);
         if (!bephax$feetOnly.get()) {
             for (BlockPos foot : footBlocks) {
-                BlockPos up = foot.up();
+                BlockPos up = foot.above();
                 newPositions.add(up.north());
                 newPositions.add(up.south());
                 newPositions.add(up.east());
                 newPositions.add(up.west());
             }
             for (BlockPos foot : footBlocks) {
-                newPositions.remove(foot.up());
+                newPositions.remove(foot.above());
             }
             for (BlockPos foot : footBlocks) {
-                newPositions.add(foot.up(2));
+                newPositions.add(foot.above(2));
             }
         }
         newPositions.removeIf(pos -> !BlockUtils.canPlace(pos));
@@ -206,11 +206,11 @@ public abstract class AutoTrapMixin extends Module {
     @EventHandler
     private void onSendPacket(PacketEvent.Send event) {
         if (!isActive() || !Utils.canUpdate() || mc.player == null) return;
-        if (event.packet instanceof PlayerInteractBlockC2SPacket packet) {
-            Hand hand = packet.getHand();
+        if (event.packet instanceof ServerboundUseItemOnPacket packet) {
+            InteractionHand hand = packet.getHand();
             if (hand == null) return;
-            if (mc.player.getStackInHand(hand).getItem() instanceof BlockItem) {
-                BlockPos targetPos = packet.getBlockHitResult().getBlockPos();
+            if (mc.player.getItemInHand(hand).getItem() instanceof BlockItem) {
+                BlockPos targetPos = packet.getHitResult().getBlockPos();
                 if (bephax$placedPositions.contains(targetPos)) {
                     event.cancel();
                     return;
@@ -232,36 +232,36 @@ public abstract class AutoTrapMixin extends Module {
         }
     }
     @Unique
-    private void bephax$placeGrimBlock(PlayerInteractBlockC2SPacket packet) {
-        BlockHitResult hitResult = packet.getBlockHitResult();
+    private void bephax$placeGrimBlock(ServerboundUseItemOnPacket packet) {
+        BlockHitResult hitResult = packet.getHitResult();
         int currentSlot = ((PlayerInventoryAccessor) mc.player.getInventory()).getSelectedSlot();
         bephax$inventoryManager.setSlot(currentSlot);
         if (bephax$grimRotate.get()) {
-            Vec3d blockPos = Vec3d.ofCenter(hitResult.getBlockPos());
+            Vec3 blockPos = Vec3.atCenterOf(hitResult.getBlockPos());
             bephax$applyRotation(blockPos);
         }
-        mc.player.networkHandler.sendPacket(new PlayerActionC2SPacket(
-            PlayerActionC2SPacket.Action.SWAP_ITEM_WITH_OFFHAND,
-            BlockPos.ORIGIN,
+        mc.player.connection.send(new ServerboundPlayerActionPacket(
+            ServerboundPlayerActionPacket.Action.SWAP_ITEM_WITH_OFFHAND,
+            BlockPos.ZERO,
             Direction.DOWN
         ));
-        mc.player.networkHandler.sendPacket(new PlayerInteractBlockC2SPacket(
-            Hand.OFF_HAND,
+        mc.player.connection.send(new ServerboundUseItemOnPacket(
+            InteractionHand.OFF_HAND,
             hitResult,
-            mc.player.currentScreenHandler.getRevision() + 2
+            mc.player.containerMenu.getStateId() + 2
         ));
-        mc.player.networkHandler.sendPacket(new PlayerActionC2SPacket(
-            PlayerActionC2SPacket.Action.SWAP_ITEM_WITH_OFFHAND,
-            BlockPos.ORIGIN,
+        mc.player.connection.send(new ServerboundPlayerActionPacket(
+            ServerboundPlayerActionPacket.Action.SWAP_ITEM_WITH_OFFHAND,
+            BlockPos.ZERO,
             Direction.DOWN
         ));
-        mc.player.swingHand(Hand.MAIN_HAND);
+        mc.player.swing(InteractionHand.MAIN_HAND);
     }
     @Unique
-    private void bephax$applyRotation(Vec3d target) {
+    private void bephax$applyRotation(Vec3 target) {
         if (mc.player == null) return;
         bephax$targetRotation = target;
-        float[] rotation = RotationUtils.getRotationsTo(mc.player.getEyePos(), target);
+        float[] rotation = RotationUtils.getRotationsTo(mc.player.getEyePosition(), target);
         if (bephax$yawStep.get()) {
             float serverYaw = bephax$rotationManager.getWrappedYaw();
             float targetYaw = rotation[0];
@@ -292,7 +292,7 @@ public abstract class AutoTrapMixin extends Module {
             bephax$rotated = true;
             return;
         }
-        float[] rotation = RotationUtils.getRotationsTo(mc.player.getEyePos(), bephax$targetRotation);
+        float[] rotation = RotationUtils.getRotationsTo(mc.player.getEyePosition(), bephax$targetRotation);
         float serverYaw = bephax$rotationManager.getWrappedYaw();
         float targetYaw = rotation[0];
         float diff = serverYaw - targetYaw;

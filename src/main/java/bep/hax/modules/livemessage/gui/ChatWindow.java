@@ -5,11 +5,11 @@ import bep.hax.modules.livemessage.util.LiveSkinUtil;
 import bep.hax.modules.livemessage.util.LivemessageUtil;
 import com.google.gson.Gson;
 import meteordevelopment.meteorclient.systems.friends.Friends;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
+import net.minecraft.util.Mth;
 import org.lwjgl.glfw.GLFW;
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -30,7 +30,7 @@ public class ChatWindow extends LiveWindow {
     int chatScrollPosition = 0;
     boolean scrolling = false;
     public boolean chatScrolledToBottom = true;
-    public TextFieldWidget inputField;
+    public EditBox inputField;
     public LivemessageUtil.ChatSettings chatSettings;
     final int chatBoxY = titlebarHeight + 44;
     final int chatBoxX = 5;
@@ -98,13 +98,13 @@ public class ChatWindow extends LiveWindow {
         initButtons();
         liveSkinUtil = LiveSkinUtil.get(liveProfile.uuid);
         msgString = "/msg " + liveProfile.username + " ";
-        this.inputField = new TextFieldWidget(mc.textRenderer, 9, this.h - 16, this.w - 18, 12, Text.literal(""));
+        this.inputField = new EditBox(mc.font, 9, this.h - 16, this.w - 18, 12, Component.literal(""));
         this.inputField.setMaxLength(256 - msgString.length());
-        this.inputField.setDrawsBackground(false);
+        this.inputField.setBordered(false);
         this.inputField.setFocused(true);
-        this.inputField.setText("");
-        this.inputField.setEditableColor(0xFFFFFFFF);
-        this.inputField.setUneditableColor(0xFF808080);
+        this.inputField.setValue("");
+        this.inputField.setTextColor(0xFFFFFFFF);
+        this.inputField.setTextColorUneditable(0xFF808080);
         chatScrollPosition = 0;
         chatScrolledToBottom = true;
         animateInStart = System.currentTimeMillis();
@@ -145,7 +145,7 @@ public class ChatWindow extends LiveWindow {
     }
     private void ignorePlayer() {
         if (mc.player != null) {
-            mc.player.networkHandler.sendChatCommand("ignorehard " + liveProfile.username);
+            mc.player.connection.sendCommand("ignorehard " + liveProfile.username);
         }
         LivemessageGui.liveWindows.remove(this);
         if (!LivemessageGui.liveWindows.isEmpty()) {
@@ -220,7 +220,7 @@ public class ChatWindow extends LiveWindow {
         }
     }
     public void addMessage(String message, boolean sentByMe) {
-        ChatMessage chatMessage = new ChatMessage(message, sentByMe, System.currentTimeMillis(), mc.player.getUuid());
+        ChatMessage chatMessage = new ChatMessage(message, sentByMe, System.currentTimeMillis(), mc.player.getUUID());
         chatHistory.add(chatMessage);
         saveChatMessage(chatMessage);
         if (!sentByMe && !active) {
@@ -233,9 +233,9 @@ public class ChatWindow extends LiveWindow {
         markAsRead();
         if (keyCode != GLFW.GLFW_KEY_ENTER && keyCode != GLFW.GLFW_KEY_KP_ENTER) {
             if (keyCode == GLFW.GLFW_KEY_PAGE_UP) {
-                chatScrollPosition = MathHelper.clamp(chatScrollPosition - 10, 0, Math.max(chatHistory.size() - 1, 0));
+                chatScrollPosition = Mth.clamp(chatScrollPosition - 10, 0, Math.max(chatHistory.size() - 1, 0));
             } else if (keyCode == GLFW.GLFW_KEY_PAGE_DOWN) {
-                chatScrollPosition = MathHelper.clamp(chatScrollPosition + 10, 0, Math.max(chatHistory.size() - 1, 0));
+                chatScrollPosition = Mth.clamp(chatScrollPosition + 10, 0, Math.max(chatHistory.size() - 1, 0));
             } else {
                 if (keyCode != 0 && lastKeyInput != null) {
                     this.inputField.keyPressed(lastKeyInput);
@@ -245,10 +245,10 @@ public class ChatWindow extends LiveWindow {
                 }
             }
         } else {
-            String s = this.inputField.getText().trim();
+            String s = this.inputField.getValue().trim();
             if (!s.isEmpty()) {
-                mc.player.networkHandler.sendChatCommand("msg " + liveProfile.username + " " + s);
-                this.inputField.setText("");
+                mc.player.connection.sendCommand("msg " + liveProfile.username + " " + s);
+                this.inputField.setValue("");
             }
         }
         super.keyTyped(typedChar, keyCode);
@@ -256,7 +256,7 @@ public class ChatWindow extends LiveWindow {
     @Override
     public void mouseWheel(int mWheelState) {
         markAsRead();
-        boolean shift = GLFW.glfwGetKey(mc.getWindow().getHandle(), GLFW.GLFW_KEY_LEFT_SHIFT) == GLFW.GLFW_PRESS;
+        boolean shift = GLFW.glfwGetKey(mc.getWindow().handle(), GLFW.GLFW_KEY_LEFT_SHIFT) == GLFW.GLFW_PRESS;
         int scrollAmount = (shift ? 10 : 1);
         if (mWheelState < 0) {
             chatScrollPosition = Math.min(chatScrollPosition + scrollAmount, Math.max(chatHistory.size() - 1, 0));
@@ -276,7 +276,7 @@ public class ChatWindow extends LiveWindow {
             int totalPixels = (h - (chatBoxY + 10 + chatBoxSize + scrollBarHeight));
             int maxScroll = chatHistory.size() - 1;
             int relativeMouseY = (int)mouseY - (dragY + chatBoxY + this.y);
-            chatScrollPosition = (int) MathHelper.clamp((relativeMouseY * maxScroll) / (float) totalPixels, 0, maxScroll);
+            chatScrollPosition = (int) Mth.clamp((relativeMouseY * maxScroll) / (float) totalPixels, 0, maxScroll);
         } else {
             super.handleMouseDrag(mouseX, mouseY);
         }
@@ -287,7 +287,7 @@ public class ChatWindow extends LiveWindow {
             int totalPixels = (h - (chatBoxY + 10 + chatBoxSize + scrollBarHeight));
             int maxScroll = chatHistory.size() - 1;
             int relativeMouseY = mouseY - (dragY + chatBoxY + this.y);
-            chatScrollPosition = (int) MathHelper.clamp((relativeMouseY * maxScroll) / (float) totalPixels, 0, maxScroll);
+            chatScrollPosition = (int) Mth.clamp((relativeMouseY * maxScroll) / (float) totalPixels, 0, maxScroll);
         }
         super.mouseClickMove(mouseX, mouseY, clickedMouseButton, timeSinceLastClick);
     }
@@ -344,7 +344,7 @@ public class ChatWindow extends LiveWindow {
             if (!url.startsWith("http://") && !url.startsWith("https://")) {
                 url = "https://" + url;
             }
-            net.minecraft.util.Util.getOperatingSystem().open(url);
+            net.minecraft.util.Util.getPlatform().open(url);
             bep.hax.modules.livemessage.LiveMessage.LOG.info("Opening URL: {}", url);
         } catch (Exception e) {
             bep.hax.modules.livemessage.LiveMessage.LOG.error("Failed to open URL: {}", url, e);
@@ -358,7 +358,7 @@ public class ChatWindow extends LiveWindow {
     public void markAsRead() {
         LivemessageGui.unreadMessages.put(liveProfile.uuid, 0);
     }
-    private void drawChatHistory(DrawContext context, int chatBoxX, int chatBoxY, int chatColorMe, int chatColorOther) {
+    private void drawChatHistory(GuiGraphicsExtractor context, int chatBoxX, int chatBoxY, int chatColorMe, int chatColorOther) {
         clickableLinks.clear();
         if (chatHistory.size() == 0) {
             context.drawText(fontRenderer, "You're chatting with " + liveProfile.username, chatBoxX + 4, chatBoxY + 5, getSingleRGB(96), false);
@@ -389,9 +389,9 @@ public class ChatWindow extends LiveWindow {
                 }
                 if (!isTrimmed)
                     message = timeFormat.format(timestamp) + message;
-                int maxWidth = w - (chatBoxX * 2 + 8 + (isTrimmed ? fontRenderer.getWidth("<00:00> ") : 0) + scrollBarWidth - 5);
+                int maxWidth = w - (chatBoxX * 2 + 8 + (isTrimmed ? fontRenderer.width("<00:00> ") : 0) + scrollBarWidth - 5);
                 String trimmed = fontRenderer.trimToWidth(message, maxWidth);
-                int baseX = chatBoxX + 4 + (isTrimmed ? fontRenderer.getWidth("<00:00> ") : 0);
+                int baseX = chatBoxX + 4 + (isTrimmed ? fontRenderer.width("<00:00> ") : 0);
                 int baseY = chatBoxY + 5 + 12 * drawHeight;
                 int baseColor = chatMessage.sentByMe ? chatColorMe : chatColorOther;
                 drawTextWithUrls(context, trimmed, baseX, baseY, baseColor);
@@ -407,7 +407,7 @@ public class ChatWindow extends LiveWindow {
         if (chatScrolledToBottom && chatBoxY + 5 + 12 * (drawHeight + 2) <= h - 34)
             chatScrolledToBottom = false;
     }
-    private void drawTextWithUrls(DrawContext context, String text, int x, int y, int baseColor) {
+    private void drawTextWithUrls(GuiGraphicsExtractor context, String text, int x, int y, int baseColor) {
         Matcher matcher = URL_PATTERN.matcher(text);
         int lastEnd = 0;
         int currentX = x;
@@ -415,16 +415,16 @@ public class ChatWindow extends LiveWindow {
             if (matcher.start() > lastEnd) {
                 String beforeUrl = text.substring(lastEnd, matcher.start());
                 context.drawText(fontRenderer, beforeUrl, currentX, y, baseColor, false);
-                currentX += fontRenderer.getWidth(beforeUrl);
+                currentX += fontRenderer.width(beforeUrl);
             }
             String url = matcher.group();
-            int urlWidth = fontRenderer.getWidth(url);
+            int urlWidth = fontRenderer.width(url);
             boolean hovering = lastMouseX >= (x + currentX - x) && lastMouseX <= (x + currentX - x + urlWidth) &&
-                               lastMouseY >= y && lastMouseY <= y + fontRenderer.fontHeight;
+                               lastMouseY >= y && lastMouseY <= y + fontRenderer.lineHeight;
             int urlColor = hovering ? getRGB(100, 200, 255) : getRGB(85, 170, 255);
             context.drawText(fontRenderer, url, currentX, y, urlColor, true);
-            drawRect(context, currentX - x, y + fontRenderer.fontHeight - 1 - (chatBoxY + 5), urlWidth, 1, urlColor);
-            clickableLinks.add(new ClickableLink(url, currentX, y, urlWidth, fontRenderer.fontHeight));
+            drawRect(context, currentX - x, y + fontRenderer.lineHeight - 1 - (chatBoxY + 5), urlWidth, 1, urlColor);
+            clickableLinks.add(new ClickableLink(url, currentX, y, urlWidth, fontRenderer.lineHeight));
             currentX += urlWidth;
             lastEnd = matcher.end();
         }
@@ -446,32 +446,32 @@ public class ChatWindow extends LiveWindow {
         float progress = fullSkinAnim.animate(removeHat && clicked && !dragging && !resizing && !scrolling ? 1F : 0F);
         return (int) (progress * 128f);
     }
-    private void drawProfilePic(DrawContext context, int x, int y) {
+    private void drawProfilePic(GuiGraphicsExtractor context, int x, int y) {
         boolean removeHat = (lastMouseX > this.x + x && lastMouseX < this.x + x + 32 && lastMouseY > this.y + y && lastMouseY < this.y + y + 32);
         float progress = fullSkinAnim.animate(removeHat && clicked && !dragging && !resizing && !scrolling ? 1F : 0F);
         int displaySize = Math.round(32 + (progress * 224));
         int displayX = Math.round(x - (progress * 32));
         int displayY = Math.round(y - (progress * 32));
-        net.minecraft.client.network.PlayerListEntry entry = mc.getNetworkHandler().getPlayerListEntry(liveProfile.uuid);
+        net.minecraft.client.multiplayer.PlayerInfo entry = mc.getConnection().getPlayerInfo(liveProfile.uuid);
         if (entry != null) {
-            net.minecraft.client.gui.PlayerSkinDrawer.draw(context, entry.getSkinTextures(), displayX, displayY, displaySize);
+            net.minecraft.client.gui.components.PlayerFaceRenderer.draw(context, entry.getSkin(), displayX, displayY, displaySize);
         }
     }
     @Override
-    public void drawWindow(DrawContext context, int bgColor, int fgColor) {
+    public void drawWindow(GuiGraphicsExtractor context, int bgColor, int fgColor) {
         boolean online = LivemessageUtil.checkOnlineStatus(liveProfile.uuid);
         title = "[DM] " + liveProfile.username;
         int unreads = LivemessageGui.unreadMessages.getOrDefault(liveProfile.uuid, 0);
         if (unreads > 0)
             title += " §l(" + unreads + ")";
-        scrollBarHeight = (chatHistory.size() < 2) ? 0 : (int) MathHelper.clamp(
+        scrollBarHeight = (chatHistory.size() < 2) ? 0 : (int) Mth.clamp(
             Math.floor((h - (chatBoxY + 10 + chatBoxSize)) / Math.max((chatHistory.size() - 1) / 10, 1)),
             10, (h - (chatBoxY + 10 + chatBoxSize)) / 2);
         super.drawWindow(context, bgColor, fgColor);
         drawRect(context, 3, titlebarHeight + 3, 36, 36, (online) ? getRGB(60, 148, 100) : getSingleRGB(128));
-        if (lastMouseX > x + 40 && lastMouseX < x + 40 + fontRenderer.getWidth(liveProfile.username) + 4 &&
+        if (lastMouseX > x + 40 && lastMouseX < x + 40 + fontRenderer.width(liveProfile.username) + 4 &&
             lastMouseY > y + titlebarHeight + 3 && lastMouseY < y + titlebarHeight + 4 + 12)
-            drawRect(context, 40, titlebarHeight + 3, fontRenderer.getWidth(liveProfile.username) + 4, 12, getSingleRGB(64));
+            drawRect(context, 40, titlebarHeight + 3, fontRenderer.width(liveProfile.username) + 4, 12, getSingleRGB(64));
         String displayUsername = liveProfile.username;
         int usernameColor = getSingleRGB(255);
         boolean isFriend = Friends.get().get(liveProfile.username) != null;
@@ -498,7 +498,7 @@ public class ChatWindow extends LiveWindow {
         drawRect(context, chatBoxX, chatBoxY + h - (chatBoxY + 5 + chatBoxSize), w - 10, chatBoxSize, inputBgColor);
         if (!online) {
             String warningIcon = "§l!";
-            int iconX = chatBoxX + w - 10 - fontRenderer.getWidth(warningIcon) - 3;
+            int iconX = chatBoxX + w - 10 - fontRenderer.width(warningIcon) - 3;
             int iconY = chatBoxY + h - (chatBoxY + 5 + chatBoxSize) + 2;
             context.drawText(fontRenderer, warningIcon, iconX + 1, iconY, getRGB(100, 20, 20), false);
             context.drawText(fontRenderer, warningIcon, iconX, iconY, getRGB(255, 85, 85), false);
@@ -527,9 +527,9 @@ public class ChatWindow extends LiveWindow {
         liveButtons.forEach(btn -> btn.drawTooltips(context));
     }
     @Override
-    public void drawTextFields(DrawContext context) {
+    public void drawTextFields(GuiGraphicsExtractor context) {
         context.getMatrices().translate((float)x, (float)y);
-        this.inputField.setEditableColor(active ? 0xFFFFFFFF : 0xFF808080);
+        this.inputField.setTextColor(active ? 0xFFFFFFFF : 0xFF808080);
         this.inputField.setX(8);
         this.inputField.setY(this.h - chatBoxSize - 2);
         this.inputField.setWidth(this.w - 18);

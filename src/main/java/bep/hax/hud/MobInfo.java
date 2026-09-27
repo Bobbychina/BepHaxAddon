@@ -8,9 +8,9 @@ import meteordevelopment.meteorclient.systems.hud.HudElementInfo;
 import meteordevelopment.meteorclient.systems.hud.HudRenderer;
 import meteordevelopment.meteorclient.utils.render.color.SettingColor;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.LivingEntity;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
 import java.util.*;
 public class MobInfo extends HudElement {
     public static final HudElementInfo<MobInfo> INFO = new HudElementInfo<>(
@@ -292,7 +292,7 @@ public class MobInfo extends HudElement {
     }
     @Override
     public void render(HudRenderer renderer) {
-        if (MeteorClient.mc.world == null || MeteorClient.mc.player == null) {
+        if (MeteorClient.mc.level == null || MeteorClient.mc.player == null) {
             String text = "Mob Info";
             renderer.text(text, x, y, titleColor.get(), false);
             setSize(renderer.textWidth(text, false), renderer.textHeight(false));
@@ -466,18 +466,18 @@ public class MobInfo extends HudElement {
     }
     @EventHandler
     private void onTick(TickEvent.Post event) {
-        if (MeteorClient.mc.world == null || MeteorClient.mc.player == null) return;
-        String dim = MeteorClient.mc.world.getRegistryKey().getValue().toString();
+        if (MeteorClient.mc.level == null || MeteorClient.mc.player == null) return;
+        String dim = MeteorClient.mc.level.dimension().identifier().toString();
         if (resetOnDimension.get() && !dim.equals(lastDim)) {
             reset();
             lastDim = dim;
             return;
         }
         nearby.clear();
-        for (Entity e : MeteorClient.mc.world.getEntities()) {
+        for (Entity e : MeteorClient.mc.level.entitiesForRendering()) {
             if (!(e instanceof LivingEntity)) continue;
             if (!entities.get().contains(e.getType())) continue;
-            UUID id = e.getUuid();
+            UUID id = e.getUUID();
             if (trackSpawnRate.get() && !tracked.contains(id)) {
                 tracked.add(id);
                 totalSpawned++;

@@ -1,17 +1,17 @@
 package bep.hax.modules.livemessage.gui;
 import bep.hax.modules.livemessage.LiveMessage;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gl.RenderPipelines;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.resources.Identifier;
+import net.minecraft.util.Mth;
 import org.lwjgl.glfw.GLFW;
 import java.util.ArrayList;
 import java.util.List;
 import static bep.hax.modules.livemessage.gui.GuiUtil.*;
 public class LiveWindow {
-    private static final Identifier ICONS_TEXTURE = Identifier.of("livemessage", "icons.png");
+    private static final Identifier ICONS_TEXTURE = Identifier.fromNamespaceAndPath("livemessage", "icons.png");
     public static int titlebarHeight = 17;
     public int x;
     public int y;
@@ -32,16 +32,16 @@ public class LiveWindow {
     public boolean resizing = false;
     public boolean closeButton = true;
     public int primaryColor = 0;
-    public TextRenderer fontRenderer;
+    public Font fontRenderer;
     boolean animateIn = true;
     long animateInStart;
-    protected MinecraftClient mc;
+    protected Minecraft mc;
     LiveWindow() {
-        mc = MinecraftClient.getInstance();
+        mc = Minecraft.getInstance();
         x = (int) (Math.random() * (LivemessageGui.screenWidth - w));
         y = (int) (Math.random() * (LivemessageGui.screenHeight - h));
-        fontRenderer = mc.textRenderer;
-        primaryColor = GuiUtil.getWindowColor(mc.player.getUuid());
+        fontRenderer = mc.font;
+        primaryColor = GuiUtil.getWindowColor(mc.player.getUUID());
         if (LivemessageGui.liveWindows.size() > 0)
             LivemessageGui.liveWindows.get(LivemessageGui.liveWindows.size() - 1).deactivateWindow();
         animateInStart = System.currentTimeMillis();
@@ -88,7 +88,7 @@ public class LiveWindow {
         public boolean isMouseOver() {
             return mouseInRect(gx(), by, bw, bh, lastMouseX, lastMouseY);
         }
-        public void draw(DrawContext context) {
+        public void draw(GuiGraphicsExtractor context) {
             int bgColor = isMouseOver() ? getSingleRGB(96) : getSingleRGB(64);
             drawRect(context, gx(), by, bw, bh, bgColor);
             int borderColor = isMouseOver() ? getSingleRGB(192) : getSingleRGB(96);
@@ -116,17 +116,17 @@ public class LiveWindow {
                         argb);
                 }
             } else if (!btnText.isEmpty()) {
-                context.drawText(fontRenderer, btnText, gx() + bw / 2 - fontRenderer.getWidth(btnText) / 2, by + 2, textColor, false);
+                context.drawText(fontRenderer, btnText, gx() + bw / 2 - fontRenderer.width(btnText) / 2, by + 2, textColor, false);
             }
         }
-        public void drawTooltips(DrawContext context) {
+        public void drawTooltips(GuiGraphicsExtractor context) {
             if (!tooltipText.isEmpty() && isMouseOver() && active)
                 drawTooltip(context, tooltipText);
         }
-        private void drawTooltip(DrawContext context, String text) {
+        private void drawTooltip(GuiGraphicsExtractor context, String text) {
             if (!active) return;
-            int textWidth = fontRenderer.getWidth(text);
-            int textHeight = fontRenderer.fontHeight;
+            int textWidth = fontRenderer.width(text);
+            int textHeight = fontRenderer.lineHeight;
             int padding = 3;
             int tooltipWidth = textWidth + padding * 2;
             int tooltipHeight = textHeight + padding * 2;
@@ -154,7 +154,7 @@ public class LiveWindow {
     }
     public void keyTyped(char typedChar, int keyCode) {
         if (keyCode == GLFW.GLFW_KEY_TAB && LivemessageGui.liveWindows.size() > 1) {
-            if (GLFW.glfwGetKey(mc.getWindow().getHandle(), GLFW.GLFW_KEY_LEFT_SHIFT) == GLFW.GLFW_PRESS) {
+            if (GLFW.glfwGetKey(mc.getWindow().handle(), GLFW.GLFW_KEY_LEFT_SHIFT) == GLFW.GLFW_PRESS) {
                 LiveWindow tempWindow = LivemessageGui.liveWindows.get(0);
                 LivemessageGui.liveWindows.remove(0);
                 tempWindow.activateWindow();
@@ -167,12 +167,12 @@ public class LiveWindow {
             deactivateWindow();
         }
     }
-    protected net.minecraft.client.input.KeyInput lastKeyInput;
-    protected net.minecraft.client.input.CharInput lastCharInput;
-    public void handleKeyInput(net.minecraft.client.input.KeyInput input) {
+    protected net.minecraft.client.input.KeyEvent lastKeyInput;
+    protected net.minecraft.client.input.CharacterEvent lastCharInput;
+    public void handleKeyInput(net.minecraft.client.input.KeyEvent input) {
         this.lastKeyInput = input;
     }
-    public void handleCharInput(net.minecraft.client.input.CharInput input) {
+    public void handleCharInput(net.minecraft.client.input.CharacterEvent input) {
         this.lastCharInput = input;
     }
     public void mouseClicked(int mouseX, int mouseY, int mouseButton) {
@@ -206,8 +206,8 @@ public class LiveWindow {
                 x = Math.max(0, (int)mouseX - dragX);
                 y = Math.max(0, (int)mouseY - dragY);
             } else if (resizing) {
-                w = MathHelper.clamp((int)mouseX - dragX - x, minw, maxw);
-                h = MathHelper.clamp((int)mouseY - dragY - y, minh, maxh);
+                w = Mth.clamp((int)mouseX - dragX - x, minw, maxw);
+                h = Mth.clamp((int)mouseY - dragY - y, minh, maxh);
             }
         }
     }
@@ -220,9 +220,9 @@ public class LiveWindow {
         active = false;
         mouseReleased(lastMouseX, lastMouseY, 0);
     }
-    public void preDrawWindow(DrawContext context) {
+    public void preDrawWindow(GuiGraphicsExtractor context) {
         if (fontRenderer == null)
-            fontRenderer = mc.textRenderer;
+            fontRenderer = mc.font;
         if (x + w > LivemessageGui.screenWidth)
             x = LivemessageGui.screenWidth - w;
         if (y + h > LivemessageGui.screenHeight)
@@ -239,9 +239,9 @@ public class LiveWindow {
         drawWindow(context, bgColor, fgColor);
         context.getMatrices().translate((float)-x, (float)-y);
     }
-    public void drawTextFields(DrawContext context) {
+    public void drawTextFields(GuiGraphicsExtractor context) {
     }
-    public void drawWindow(DrawContext context, int bgColor, int fgColor) {
+    public void drawWindow(GuiGraphicsExtractor context, int bgColor, int fgColor) {
         drawRect(context, 0, 0, w, h, bgColor);
         drawRectOutline(context, 0, 0, w, h, fgColor);
         drawRect(context, 0, 0, w, titlebarHeight, fgColor);
@@ -258,14 +258,14 @@ public class LiveWindow {
         }
         drawRectHalf(context, w - 6, h - 6, 6, 6, false, fgColor);
     }
-    public void drawRectHalf(DrawContext context, int x, int y, int w, int h, boolean top, int color) {
+    public void drawRectHalf(GuiGraphicsExtractor context, int x, int y, int w, int h, boolean top, int color) {
         if (top) {
             context.fill(x, y, x + w, y + h / 2, color);
         } else {
             context.fill(x + w / 2, y + h / 2, x + w, y + h, color);
         }
     }
-    public void drawRectOutline(DrawContext context, int x, int y, int w, int h, int color) {
+    public void drawRectOutline(GuiGraphicsExtractor context, int x, int y, int w, int h, int color) {
         context.fill(x, y, x + w, y + 1, color);
         context.fill(x, y + h - 1, x + w, y + h, color);
         context.fill(x, y, x + 1, y + h, color);

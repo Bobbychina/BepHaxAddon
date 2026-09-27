@@ -6,7 +6,7 @@ import meteordevelopment.meteorclient.systems.hud.HudElement;
 import meteordevelopment.meteorclient.systems.hud.HudElementInfo;
 import meteordevelopment.meteorclient.systems.hud.HudRenderer;
 import meteordevelopment.meteorclient.utils.render.color.SettingColor;
-import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.world.entity.player.Player;
 public class SpeedKMH extends HudElement {
     public static final HudElementInfo<SpeedKMH> INFO = new HudElementInfo<>(Bep.HUD_GROUP, "SpeedKMH", "Displays movement speed in KM/H.", SpeedKMH::new);
     private final SettingGroup sgGeneral = settings.getDefaultGroup();
@@ -63,7 +63,7 @@ public class SpeedKMH extends HudElement {
     }
     @Override
     public void render(HudRenderer renderer) {
-        if (MeteorClient.mc.world == null || MeteorClient.mc.player == null) {
+        if (MeteorClient.mc.level == null || MeteorClient.mc.player == null) {
             if (isInEditor()) {
                 String demoText = showTitle.get() ? "Speed\n25.3 KM/H" : "25.3 KM/H";
                 renderer.text(demoText, x, y, speedColor.get(), textShadow.get(), textScale.get());
@@ -94,11 +94,11 @@ public class SpeedKMH extends HudElement {
         setSize(maxWidth, height);
     }
     private void updateSpeed() {
-        PlayerEntity player = MeteorClient.mc.player;
+        Player player = MeteorClient.mc.player;
         if (player == null) return;
-        double velX = player.getVelocity().x;
-        double velZ = player.getVelocity().z;
-        double velY = player.getVelocity().y;
+        double velX = player.getDeltaMovement().x;
+        double velZ = player.getDeltaMovement().z;
+        double velY = player.getDeltaMovement().y;
         double speed;
         if (showHorizontalOnly.get()) {
             speed = Math.sqrt(velX * velX + velZ * velZ);

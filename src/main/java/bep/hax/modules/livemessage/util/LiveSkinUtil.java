@@ -1,8 +1,8 @@
 package bep.hax.modules.livemessage.util;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.PlayerListEntry;
-import net.minecraft.client.util.DefaultSkinHelper;
-import net.minecraft.util.Identifier;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.PlayerInfo;
+import net.minecraft.client.resources.DefaultPlayerSkin;
+import net.minecraft.resources.Identifier;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -30,7 +30,7 @@ public class LiveSkinUtil {
         return true;
     }
     public Identifier getLocationSkin() {
-        return DefaultSkinHelper.getTexture();
+        return DefaultPlayerSkin.getDefaultTexture();
     }
     public Identifier getLocationCape() {
         return null;

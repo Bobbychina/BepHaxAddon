@@ -1,7 +1,7 @@
 package bep.hax.modules.livemessage.util;
 import com.mojang.authlib.GameProfile;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.PlayerListEntry;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.PlayerInfo;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
@@ -26,9 +26,9 @@ public class LiveProfileCache {
     }
     private static UUID getUUIDFromTab(String username) {
         try {
-            MinecraftClient mc = MinecraftClient.getInstance();
-            if (mc.getNetworkHandler() == null) return null;
-            for (PlayerListEntry entry : mc.getNetworkHandler().getPlayerList()) {
+            Minecraft mc = Minecraft.getInstance();
+            if (mc.getConnection() == null) return null;
+            for (PlayerInfo entry : mc.getConnection().getOnlinePlayers()) {
                 GameProfile profile = entry.getProfile();
                 if (profile.name().equals(username))
                     return profile.id();
@@ -40,9 +40,9 @@ public class LiveProfileCache {
     }
     private static String getUsernameFromTab(UUID uuid) {
         try {
-            MinecraftClient mc = MinecraftClient.getInstance();
-            if (mc.getNetworkHandler() == null) return null;
-            PlayerListEntry entry = mc.getNetworkHandler().getPlayerListEntry(uuid);
+            Minecraft mc = Minecraft.getInstance();
+            if (mc.getConnection() == null) return null;
+            PlayerInfo entry = mc.getConnection().getPlayerInfo(uuid);
             if (entry != null) {
                 return entry.getProfile().name();
             }

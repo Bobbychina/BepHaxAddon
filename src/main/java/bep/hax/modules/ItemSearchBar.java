@@ -9,17 +9,17 @@ import meteordevelopment.meteorclient.systems.modules.Modules;
 import meteordevelopment.meteorclient.utils.Utils;
 import meteordevelopment.meteorclient.utils.render.color.SettingColor;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.client.gui.screen.ingame.HandledScreen;
-import net.minecraft.client.gui.screen.ingame.GenericContainerScreen;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.registry.Registries;
-import net.minecraft.screen.*;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.decoration.ItemFrameEntity;
-import net.minecraft.entity.decoration.GlowItemFrameEntity;
-import net.minecraft.util.math.Box;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.gui.screens.inventory.ContainerScreen;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.world.inventory.*;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.decoration.ItemFrame;
+import net.minecraft.world.entity.decoration.GlowItemFrame;
+import net.minecraft.world.phys.AABB;
 import org.lwjgl.glfw.GLFW;
 import java.util.WeakHashMap;
 import meteordevelopment.meteorclient.events.render.Render3DEvent;
@@ -240,18 +240,18 @@ public class ItemSearchBar extends Module {
             updateSearchQuery(searchQuery.get());
         }
         if (!chestTrackerIntegration.get() || !clickToSearchKey.get().isSet()) return;
-        if (mc.currentScreen == null || !(mc.currentScreen instanceof HandledScreen<?> screen)) {
+        if (mc.screen == null || !(mc.screen instanceof AbstractContainerScreen<?> screen)) {
             lastHoveredItem = null;
             return;
         }
         boolean keyDown = clickToSearchKey.get().isPressed();
         ItemStack hoveredStack = null;
-        if (screen.getScreenHandler() != null) {
-            double mouseX = mc.mouse.getX() * mc.getWindow().getScaledWidth() / mc.getWindow().getWidth();
-            double mouseY = mc.mouse.getY() * mc.getWindow().getScaledHeight() / mc.getWindow().getHeight();
-            for (var slot : screen.getScreenHandler().slots) {
-                if (isPointInSlot(screen, slot, mouseX, mouseY) && slot.hasStack()) {
-                    hoveredStack = slot.getStack();
+        if (screen.getMenu() != null) {
+            double mouseX = mc.mouseHandler.xpos() * mc.getWindow().getGuiScaledWidth() / mc.getWindow().getWidth();
+            double mouseY = mc.mouseHandler.ypos() * mc.getWindow().getGuiScaledHeight() / mc.getWindow().getHeight();
+            for (var slot : screen.getMenu().slots) {
+                if (isPointInSlot(screen, slot, mouseX, mouseY) && slot.hasItem()) {
+                    hoveredStack = slot.getItem();
                     break;
                 }
             }
@@ -262,7 +262,7 @@ public class ItemSearchBar extends Module {
                 lastHoveredItem = hoveredStack;
             } else if (!keyDown && middleMousePressed && lastHoveredItem != null) {
                 middleMousePressed = false;
-                String itemName = lastHoveredItem.getName().getString();
+                String itemName = lastHoveredItem.getHoverName().getString();
                 updateSearchQuery(itemName);
                 info("Searching for: " + itemName);
                 lastHoveredItem = null;
@@ -272,11 +272,11 @@ public class ItemSearchBar extends Module {
             middleMousePressed = false;
         }
     }
-    private boolean isPointInSlot(HandledScreen<?> screen, net.minecraft.screen.slot.Slot slot, double pointX, double pointY) {
+    private boolean isPointInSlot(AbstractContainerScreen<?> screen, net.minecraft.world.inventory.Slot slot, double pointX, double pointY) {
         int x = (screen.width - 176) / 2;
         int y = (screen.height - 166) / 2;
-        if (screen instanceof GenericContainerScreen) {
-        } else if (screen instanceof net.minecraft.client.gui.screen.ingame.InventoryScreen) {
+        if (screen instanceof ContainerScreen) {
+        } else if (screen instanceof net.minecraft.client.gui.screens.inventory.InventoryScreen) {
             x = (screen.width - 176) / 2;
             y = (screen.height - 166) / 2;
         }
@@ -285,14 +285,14 @@ public class ItemSearchBar extends Module {
         return pointX >= slotX && pointX < slotX + 16 &&
                pointY >= slotY && pointY < slotY + 16;
     }
-    private boolean shouldIgnoreCurrentScreenHandler(ClientPlayerEntity player) {
-        if (mc.currentScreen == null) return true;
-        if (player.currentScreenHandler == null) return true;
-        ScreenHandler handler = player.currentScreenHandler;
-        if (handler instanceof PlayerScreenHandler) return !ownInventory.get();
-        return !(handler instanceof AbstractFurnaceScreenHandler || handler instanceof GenericContainerScreenHandler
-            || handler instanceof Generic3x3ContainerScreenHandler || handler instanceof ShulkerBoxScreenHandler
-            || handler instanceof HopperScreenHandler || handler instanceof HorseScreenHandler);
+    private boolean shouldIgnoreCurrentScreenHandler(LocalPlayer player) {
+        if (mc.screen == null) return true;
+        if (player.containerMenu == null) return true;
+        AbstractContainerMenu handler = player.containerMenu;
+        if (handler instanceof InventoryMenu) return !ownInventory.get();
+        return !(handler instanceof AbstractFurnaceMenu || handler instanceof ChestMenu
+            || handler instanceof DispenserMenu || handler instanceof ShulkerBoxMenu
+            || handler instanceof HopperMenu || handler instanceof HorseInventoryMenu);
     }
     private boolean matchesSearchQuery(String text, String query) {
         if (caseSensitive.get()) {
@@ -328,17 +328,17 @@ public class ItemSearchBar extends Module {
                     searchQuery = queries[0].trim();
                 }
             }
-            for (Item item : Registries.ITEM) {
-                String itemName = item.getDefaultStack().getName().getString().toLowerCase();
+            for (Item item : BuiltInRegistries.ITEM) {
+                String itemName = item.getDefaultInstance().getHoverName().getString().toLowerCase();
                 if (itemName.equals(searchQuery)) {
                     searchItem = item;
                     break;
                 }
             }
             if (searchItem == null) {
-                for (Item item : Registries.ITEM) {
-                    String itemName = item.getDefaultStack().getName().getString().toLowerCase();
-                    String translationKey = item.getTranslationKey().toLowerCase();
+                for (Item item : BuiltInRegistries.ITEM) {
+                    String itemName = item.getDefaultInstance().getHoverName().getString().toLowerCase();
+                    String translationKey = item.getDescriptionId().toLowerCase();
                     String simplifiedKey = translationKey
                         .replace("item.minecraft.", "")
                         .replace("block.minecraft.", "")
@@ -353,13 +353,13 @@ public class ItemSearchBar extends Module {
             }
             chestTracker.searchItem(searchItem);
             if (searchItem != null) {
-                String itemDisplayName = searchItem.getDefaultStack().getName().getString();
+                String itemDisplayName = searchItem.getDefaultInstance().getHoverName().getString();
                 info("ChestTracker: Searching for §e" + itemDisplayName);
                 var results = chestTracker.getData().searchItem(searchItem);
                 if (!results.isEmpty()) {
                     final Item finalSearchItem = searchItem;
                     int totalCount = results.stream()
-                        .mapToInt(c -> c.getItemCount(Registries.ITEM.getId(finalSearchItem).toString()))
+                        .mapToInt(c -> c.getItemCount(BuiltInRegistries.ITEM.getKey(finalSearchItem).toString()))
                         .sum();
                     info("Found §a" + totalCount + "§r items in §e" + results.size() + "§r containers");
                 }
@@ -418,11 +418,11 @@ public class ItemSearchBar extends Module {
     }
     private boolean matchesItem(ItemStack stack, String query) {
         if (searchItemName.get()) {
-            String displayName = stack.getName().getString();
+            String displayName = stack.getHoverName().getString();
             if (matchesSearchQuery(displayName, query)) return true;
         }
         if (searchItemType.get()) {
-            String typeName = stack.getItem().getDefaultStack().getName().getString();
+            String typeName = stack.getItem().getDefaultInstance().getHoverName().getString();
             if (matchesSearchQuery(typeName, query)) return true;
         }
         if (searchLore.get()) {
@@ -433,7 +433,7 @@ public class ItemSearchBar extends Module {
     }
     @EventHandler
     private void onRender3D(Render3DEvent event) {
-        if (mc.world == null || mc.player == null) return;
+        if (mc.level == null || mc.player == null) return;
         if (!highlightItemFrames.get()) return;
         String query = !currentSearchQuery.isEmpty() ? currentSearchQuery.trim() : searchQuery.get().trim();
         if (query.isEmpty()) return;
@@ -441,12 +441,12 @@ public class ItemSearchBar extends Module {
         if (shapeMode == null) return;
         Color fillColor = new Color(frameFillColor.get());
         Color outlineColor = new Color(frameOutlineColor.get());
-        for (Entity entity : mc.world.getEntities()) {
-            if (!(entity instanceof ItemFrameEntity frame)) continue;
-            ItemStack heldStack = frame.getHeldItemStack();
+        for (Entity entity : mc.level.entitiesForRendering()) {
+            if (!(entity instanceof ItemFrame frame)) continue;
+            ItemStack heldStack = frame.getItem();
             if (heldStack.isEmpty()) continue;
             if (!matchesItemForFrame(heldStack, query)) continue;
-            Box box = frame.getBoundingBox();
+            AABB box = frame.getBoundingBox();
             event.renderer.box(box, fillColor, outlineColor, shapeMode, 0);
             if (frameRenderTracer.get()) {
                 event.renderer.line(

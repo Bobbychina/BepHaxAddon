@@ -4,8 +4,8 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import meteordevelopment.meteorclient.MeteorClient;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.PlayerListEntry;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.PlayerInfo;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -114,9 +114,9 @@ public class LivemessageUtil {
         }
     }
     public static boolean checkOnlineStatus(UUID uuid) {
-        MinecraftClient mc = MinecraftClient.getInstance();
-        if (mc.getNetworkHandler() == null) return false;
-        PlayerListEntry entry = mc.getNetworkHandler().getPlayerListEntry(uuid);
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.getConnection() == null) return false;
+        PlayerInfo entry = mc.getConnection().getPlayerInfo(uuid);
         return entry != null;
     }
 }

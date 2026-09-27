@@ -1,21 +1,21 @@
 package bep.hax.mixin;
-import net.minecraft.world.World;
-import net.minecraft.item.ItemStack;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.item.ItemStack;
 import bep.hax.modules.LoreLocator;
 import bep.hax.modules.ItemSearchBar;
-import net.minecraft.entity.LivingEntity;
+import net.minecraft.world.entity.LivingEntity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
-import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-@Mixin(DrawContext.class)
+@Mixin(GuiGraphicsExtractor.class)
 public abstract class DrawContextMixin {
     @Shadow
     public abstract void fill(int x1, int y1, int x2, int y2, int color);
-    @Inject(method = "drawItem(Lnet/minecraft/item/ItemStack;II)V", at = @At("HEAD"))
+    @Inject(method = "drawItem(Lnet/minecraft/world/item/ItemStack;II)V", at = @At("HEAD"))
     private void highlightNamedItems(ItemStack stack, int x, int y, CallbackInfo ci) {
         Modules modules = Modules.get();
         if (modules == null) return;
@@ -29,7 +29,7 @@ public abstract class DrawContextMixin {
             this.fill(x - 1, y - 1, x + 17, y + 17, isb.highlightColor.get().getPacked());
         }
     }
-    @Inject(method = "drawItemWithoutEntity(Lnet/minecraft/item/ItemStack;III)V", at = @At("HEAD"))
+    @Inject(method = "drawItemWithoutEntity(Lnet/minecraft/world/item/ItemStack;III)V", at = @At("HEAD"))
     private void highlightNamedItemsNoEntity(ItemStack stack, int x, int y, int seed, CallbackInfo ci) {
         Modules modules = Modules.get();
         if (modules == null) return;

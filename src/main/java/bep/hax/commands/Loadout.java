@@ -2,7 +2,7 @@ package bep.hax.commands;
 import bep.hax.util.MsgUtil;
 import bep.hax.modules.Loadouts;
 import bep.hax.util.StardustUtil;
-import net.minecraft.command.CommandSource;
+import net.minecraft.commands.SharedSuggestionProvider;
 import meteordevelopment.meteorclient.commands.Command;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
@@ -10,7 +10,7 @@ import meteordevelopment.meteorclient.systems.modules.Modules;
 public class Loadout extends Command {
     public Loadout() { super("loadout", "Save and load inventory configurations."); }
     @Override
-    public void build(LiteralArgumentBuilder<CommandSource> builder) {
+    public void build(LiteralArgumentBuilder<SharedSuggestionProvider> builder) {
         builder.then(literal("save").then(argument("name", StringArgumentType.word()).executes(ctx -> {
             String loadoutName = ctx.getArgument("name", String.class);
             Modules mods = Modules.get();

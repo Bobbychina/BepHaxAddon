@@ -5,12 +5,12 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import meteordevelopment.meteorclient.commands.Command;
 import meteordevelopment.meteorclient.systems.modules.Modules;
-import net.minecraft.command.CommandSource;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.registry.Registries;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.commands.SharedSuggestionProvider;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.Identifier;
+import net.minecraft.core.BlockPos;
 import java.util.List;
 import static com.mojang.brigadier.Command.SINGLE_SUCCESS;
 public class ChestTrackerCommand extends Command {
@@ -18,7 +18,7 @@ public class ChestTrackerCommand extends Command {
         super("chesttracker", "Search for items in tracked containers.", "ct", "track");
     }
     @Override
-    public void build(LiteralArgumentBuilder<CommandSource> builder) {
+    public void build(LiteralArgumentBuilder<SharedSuggestionProvider> builder) {
         builder.then(literal("search")
             .then(literal("hand").executes(context -> {
                 ChestTrackerModule module = Modules.get().get(ChestTrackerModule.class);
@@ -30,7 +30,7 @@ public class ChestTrackerCommand extends Command {
                     error("§cNot in-game!");
                     return SINGLE_SUCCESS;
                 }
-                ItemStack held = mc.player.getMainHandStack();
+                ItemStack held = mc.player.getMainHandItem();
                 if (held.isEmpty()) {
                     error("§cHand empty!");
                     return SINGLE_SUCCESS;
@@ -109,7 +109,7 @@ public class ChestTrackerCommand extends Command {
                     info("§e§lNearby (<" + r + "m):");
                     for (TrackedContainer c : all) {
                         BlockPos p = c.getPosition();
-                        double d = Math.sqrt(mc.player.squaredDistanceTo(p.getX() + 0.5, p.getY() + 0.5, p.getZ() + 0.5));
+                        double d = Math.sqrt(mc.player.distanceToSqr(p.getX() + 0.5, p.getY() + 0.5, p.getZ() + 0.5));
                         if (d <= r) {
                             String col = d <= module.getRenderDistance() ? "§a" : "§7";
                             info(String.format("%s[%d,%d,%d] §e%.0fm §b%d§7items%s",
@@ -130,14 +130,14 @@ public class ChestTrackerCommand extends Command {
             info("§cNone found: §f" + name);
             return;
         }
-        String itemId = Registries.ITEM.getId(item).toString();
+        String itemId = BuiltInRegistries.ITEM.getKey(item).toString();
         int total = 0, near = 0;
         double rd = module.getRenderDistance(), rdSq = rd * rd;
         for (TrackedContainer c : results) {
             total += c.getItemCount(itemId);
             if (mc.player != null) {
                 BlockPos p = c.getPosition();
-                if (mc.player.squaredDistanceTo(p.getX() + 0.5, p.getY() + 0.5, p.getZ() + 0.5) <= rdSq) near++;
+                if (mc.player.distanceToSqr(p.getX() + 0.5, p.getY() + 0.5, p.getZ() + 0.5) <= rdSq) near++;
             }
         }
         info(String.format("§a%,d §f%s §7in §e%d §7box%s", total, name, results.size(), results.size() > 1 ? "es" : ""));
@@ -147,13 +147,13 @@ public class ChestTrackerCommand extends Command {
     private Item findItem(String query) {
         query = query.toLowerCase().replace(" ", "_");
         Identifier id = Identifier.tryParse("minecraft:" + query);
-        if (id != null && Registries.ITEM.containsId(id)) {
-            return Registries.ITEM.get(id);
+        if (id != null && BuiltInRegistries.ITEM.containsKey(id)) {
+            return BuiltInRegistries.ITEM.get(id);
         }
-        for (Identifier itemId : Registries.ITEM.getIds()) {
+        for (Identifier itemId : BuiltInRegistries.ITEM.keySet()) {
             String path = itemId.getPath();
             if (path.contains(query)) {
-                return Registries.ITEM.get(itemId);
+                return BuiltInRegistries.ITEM.get(itemId);
             }
         }
         return null;

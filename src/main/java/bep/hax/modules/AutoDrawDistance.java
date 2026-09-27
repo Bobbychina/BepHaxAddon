@@ -1,12 +1,12 @@
 package bep.hax.modules;
 import bep.hax.Bep;
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
 import bep.hax.util.MsgUtil;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.option.GameOptions;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.Options;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
-import net.minecraft.client.option.SimpleOption;
+import net.minecraft.client.OptionInstance;
 import bep.hax.mixin.accessor.GameOptionsAccessor;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.IntSetting;
@@ -79,13 +79,13 @@ public class AutoDrawDistance extends Module {
     private final IntArrayList fpsData = new IntArrayList();
     private void updateDrawDistance(int distance) {
         boolean bl = Runtime.getRuntime().maxMemory() >= 1000000000L;
-        SimpleOption<Integer> viewDistance = new SimpleOption<>(
-            "options.renderDistance", SimpleOption.emptyTooltip(),
-            (optionText, value) -> GameOptions.getGenericValueText(optionText, Text.translatable("options.chunks", value)),
-            new SimpleOption.ValidatingIntSliderCallbacks(2, bl ? 32 : 16),
-            distance, value -> MinecraftClient.getInstance().worldRenderer.scheduleTerrainUpdate());
+        OptionInstance<Integer> viewDistance = new OptionInstance<>(
+            "options.renderDistance", OptionInstance.noTooltip(),
+            (optionText, value) -> Options.genericValueLabel(optionText, Component.translatable("options.chunks", value)),
+            new OptionInstance.IntRange(2, bl ? 32 : 16),
+            distance, value -> Minecraft.getInstance().levelRenderer.needsUpdate());
         ((GameOptionsAccessor) mc.options).setViewDistance(viewDistance);
-        mc.options.sendClientSettings();
+        mc.options.broadcastOptions();
         if (verbose.get() && !(mc.player == null)) {
             MsgUtil.updateModuleMsg("Updated view distance to§8: §2" + distance + "§7.", this.name, "viewDistDebugUpdate".hashCode());
         }
@@ -112,11 +112,11 @@ public class AutoDrawDistance extends Module {
             sweetSpot = false;
             sweetSpotCounter = 0;
         }
-        int currentFps = mc.getCurrentFps();
+        int currentFps = mc.getFps();
         fpsData.add(currentFps);
         ++timer;
         if (timer % 10 == 0) {
-            int drawDistance = mc.options.getViewDistance().getValue();
+            int drawDistance = mc.options.renderDistance().get();
             int averageFps = 0;
             for (int point : fpsData) {
                 averageFps += point;

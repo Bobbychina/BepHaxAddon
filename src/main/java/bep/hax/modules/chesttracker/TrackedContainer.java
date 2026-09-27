@@ -1,11 +1,11 @@
 package bep.hax.modules.chesttracker;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.registry.Registries;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.Identifier;
+import net.minecraft.core.BlockPos;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -32,7 +32,7 @@ public class TrackedContainer {
         itemStacks.clear();
         for (ItemStack stack : stacks) {
             if (stack != null && !stack.isEmpty()) {
-                String itemId = Registries.ITEM.getId(stack.getItem()).toString();
+                String itemId = BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
                 items.put(itemId, items.getOrDefault(itemId, 0) + stack.getCount());
                 itemStacks.add(stack.copy());
             }
@@ -43,7 +43,7 @@ public class TrackedContainer {
         return items.containsKey(itemId);
     }
     public boolean containsItem(Item item) {
-        String itemId = Registries.ITEM.getId(item).toString();
+        String itemId = BuiltInRegistries.ITEM.getKey(item).toString();
         return items.containsKey(itemId);
     }
     public int getItemCount(String itemId) {

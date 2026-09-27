@@ -5,9 +5,9 @@ import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.utils.player.InvUtils;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 public class ElytraSwap extends Module {
     private final SettingGroup sgGeneral = settings.getDefaultGroup();
     private final Setting<Integer> durabilityThreshold = sgGeneral.add(new IntSetting.Builder()
@@ -126,7 +126,7 @@ public class ElytraSwap extends Module {
     }
     @EventHandler
     private void onTick(TickEvent.Pre event) {
-        if (mc.player == null || mc.world == null) return;
+        if (mc.player == null || mc.level == null) return;
         if (swapOnHit.get()) {
             handleCombatProtection();
         }
@@ -134,25 +134,25 @@ public class ElytraSwap extends Module {
             cooldownTimer--;
             return;
         }
-        if (pauseInInventory.get() && mc.player.currentScreenHandler != mc.player.playerScreenHandler) {
+        if (pauseInInventory.get() && mc.player.containerMenu != mc.player.inventoryMenu) {
             resetSwapState();
             return;
         }
-        ItemStack chestItem = mc.player.getEquippedStack(EquipmentSlot.CHEST);
+        ItemStack chestItem = mc.player.getItemBySlot(EquipmentSlot.CHEST);
         if (protectionActive) {
             return;
         }
         if (!chestItem.getItem().equals(Items.ELYTRA)) {
             return;
         }
-        if (onlyWhileFlying.get() && !mc.player.isGliding()) {
+        if (onlyWhileFlying.get() && !mc.player.isFallFlying()) {
             return;
         }
         if (needsSwap) {
             processSwapStages();
             return;
         }
-        int currentDurability = chestItem.getMaxDamage() - chestItem.getDamage();
+        int currentDurability = chestItem.getMaxDamage() - chestItem.getDamageValue();
         if (currentDurability <= durabilityThreshold.get()) {
             initiateSwap();
         }
@@ -161,9 +161,9 @@ public class ElytraSwap extends Module {
         int bestSlot = -1;
         int bestDurability = durabilityThreshold.get();
         for (int i = 0; i < 36; i++) {
-            ItemStack stack = mc.player.getInventory().getStack(i);
+            ItemStack stack = mc.player.getInventory().getItem(i);
             if (stack.getItem().equals(Items.ELYTRA)) {
-                int durability = stack.getMaxDamage() - stack.getDamage();
+                int durability = stack.getMaxDamage() - stack.getDamageValue();
                 if (durability > bestDurability) {
                     bestDurability = durability;
                     bestSlot = i;
@@ -190,7 +190,7 @@ public class ElytraSwap extends Module {
                         hotbarSlot = hotbarSlotUsed;
                     } else {
                         for (int i = 0; i < 9; i++) {
-                            ItemStack stack = mc.player.getInventory().getStack(i);
+                            ItemStack stack = mc.player.getInventory().getItem(i);
                             if (stack.isEmpty() || !isEssentialItem(stack)) {
                                 hotbarSlot = i;
                                 break;
@@ -200,7 +200,7 @@ public class ElytraSwap extends Module {
                             hotbarSlot = 0;
                         }
                     }
-                    hotbarOriginalItem = mc.player.getInventory().getStack(hotbarSlot).copy();
+                    hotbarOriginalItem = mc.player.getInventory().getItem(hotbarSlot).copy();
                     hotbarSlotUsed = hotbarSlot;
                     InvUtils.move().from(targetSlot).toHotbar(hotbarSlot);
                     targetSlot = hotbarSlot;
@@ -214,7 +214,7 @@ public class ElytraSwap extends Module {
                 }
             }
             case 2 -> {
-                ItemStack toEquip = mc.player.getInventory().getStack(targetSlot);
+                ItemStack toEquip = mc.player.getInventory().getItem(targetSlot);
                 if (!toEquip.getItem().equals(Items.ELYTRA)) {
                     resetSwapState();
                     return;
@@ -229,7 +229,7 @@ public class ElytraSwap extends Module {
                     return;
                 }
                 InvUtils.swap(targetSlot, false);
-                mc.interactionManager.interactItem(mc.player, net.minecraft.util.Hand.MAIN_HAND);
+                mc.gameMode.useItem(mc.player, net.minecraft.world.InteractionHand.MAIN_HAND);
                 InvUtils.swapBack();
                 swapStage = 3;
                 stageTimer = 0;
@@ -244,9 +244,9 @@ public class ElytraSwap extends Module {
                     }
                 }
                 if (notifySwap.get()) {
-                    ItemStack newChest = mc.player.getEquippedStack(EquipmentSlot.CHEST);
+                    ItemStack newChest = mc.player.getItemBySlot(EquipmentSlot.CHEST);
                     if (newChest.getItem().equals(Items.ELYTRA)) {
-                        int newDurability = newChest.getMaxDamage() - newChest.getDamage();
+                        int newDurability = newChest.getMaxDamage() - newChest.getDamageValue();
                         info("Swapped to elytra with " + newDurability + " durability");
                     }
                 }
@@ -262,8 +262,8 @@ public class ElytraSwap extends Module {
                     return;
                 }
                 for (int i = 9; i < 36; i++) {
-                    ItemStack stack = mc.player.getInventory().getStack(i);
-                    if (ItemStack.areItemsEqual(stack, hotbarOriginalItem)) {
+                    ItemStack stack = mc.player.getInventory().getItem(i);
+                    if (ItemStack.isSameItem(stack, hotbarOriginalItem)) {
                         InvUtils.move().from(i).toHotbar(hotbarSlotUsed);
                         break;
                     }
@@ -287,7 +287,7 @@ public class ElytraSwap extends Module {
         if (mc.player == null) return;
         if (mc.player.hurtTime > 0 && mc.player.hurtTime > lastHurtTime) {
             lastHurtTime = mc.player.hurtTime;
-            ItemStack chestItem = mc.player.getEquippedStack(EquipmentSlot.CHEST);
+            ItemStack chestItem = mc.player.getItemBySlot(EquipmentSlot.CHEST);
             if (chestItem.getItem().equals(Items.ELYTRA) && !protectionActive) {
                 int bestChestplate = findBestChestplate();
                 if (bestChestplate != -1) {
@@ -316,7 +316,7 @@ public class ElytraSwap extends Module {
         if (protectionActive && !needsChestplateSwap) {
             protectionTimer--;
             if (protectionTimer <= 0 && autoSwapBack.get()) {
-                ItemStack chestItem = mc.player.getEquippedStack(EquipmentSlot.CHEST);
+                ItemStack chestItem = mc.player.getItemBySlot(EquipmentSlot.CHEST);
                 if (!chestItem.getItem().equals(Items.ELYTRA) && !storedElytra.isEmpty()) {
                     int elytraSlot = findStoredElytra();
                     if (elytraSlot != -1) {
@@ -346,7 +346,7 @@ public class ElytraSwap extends Module {
                 if (chestplateSlot >= 9) {
                     int hotbarSlot = 0;
                     for (int i = 0; i < 9; i++) {
-                        ItemStack stack = mc.player.getInventory().getStack(i);
+                        ItemStack stack = mc.player.getInventory().getItem(i);
                         if (stack.isEmpty() || !isEssentialItem(stack)) {
                             hotbarSlot = i;
                             break;
@@ -359,7 +359,7 @@ public class ElytraSwap extends Module {
                 stageTimer = 0;
             }
             case 2 -> {
-                ItemStack toEquip = mc.player.getInventory().getStack(chestplateSlot);
+                ItemStack toEquip = mc.player.getInventory().getItem(chestplateSlot);
                 if (!isChestplateItem(toEquip)) {
                     needsChestplateSwap = false;
                     chestplateSwapStage = 0;
@@ -376,7 +376,7 @@ public class ElytraSwap extends Module {
                     return;
                 }
                 InvUtils.swap(chestplateSlot, false);
-                mc.interactionManager.interactItem(mc.player, net.minecraft.util.Hand.MAIN_HAND);
+                mc.gameMode.useItem(mc.player, net.minecraft.world.InteractionHand.MAIN_HAND);
                 InvUtils.swapBack();
                 chestplateSwapStage = 3;
                 stageTimer = 0;
@@ -386,7 +386,7 @@ public class ElytraSwap extends Module {
                 chestplateSwapStage = 0;
                 stageTimer = 0;
                 chestplateSlot = -1;
-                ItemStack chestItem = mc.player.getEquippedStack(EquipmentSlot.CHEST);
+                ItemStack chestItem = mc.player.getItemBySlot(EquipmentSlot.CHEST);
                 if (chestItem.getItem().equals(Items.ELYTRA)) {
                     protectionActive = false;
                     storedElytra = ItemStack.EMPTY;
@@ -398,7 +398,7 @@ public class ElytraSwap extends Module {
         int bestSlot = -1;
         int bestValue = 0;
         for (int i = 0; i < 36; i++) {
-            ItemStack stack = mc.player.getInventory().getStack(i);
+            ItemStack stack = mc.player.getInventory().getItem(i);
             int value = getChestplateValue(stack);
             if (value > bestValue) {
                 bestValue = value;
@@ -411,19 +411,19 @@ public class ElytraSwap extends Module {
         if (stack.isEmpty()) return 0;
         if (stack.getItem().equals(Items.NETHERITE_CHESTPLATE)) {
             if (prioritizeNetherite.get()) {
-                return 1000 + (stack.getMaxDamage() - stack.getDamage());
+                return 1000 + (stack.getMaxDamage() - stack.getDamageValue());
             }
-            return 400 + (stack.getMaxDamage() - stack.getDamage());
+            return 400 + (stack.getMaxDamage() - stack.getDamageValue());
         } else if (stack.getItem().equals(Items.DIAMOND_CHESTPLATE)) {
-            return 300 + (stack.getMaxDamage() - stack.getDamage());
+            return 300 + (stack.getMaxDamage() - stack.getDamageValue());
         } else if (stack.getItem().equals(Items.IRON_CHESTPLATE)) {
-            return 200 + (stack.getMaxDamage() - stack.getDamage());
+            return 200 + (stack.getMaxDamage() - stack.getDamageValue());
         } else if (stack.getItem().equals(Items.GOLDEN_CHESTPLATE)) {
-            return 100 + (stack.getMaxDamage() - stack.getDamage());
+            return 100 + (stack.getMaxDamage() - stack.getDamageValue());
         } else if (stack.getItem().equals(Items.CHAINMAIL_CHESTPLATE)) {
-            return 150 + (stack.getMaxDamage() - stack.getDamage());
+            return 150 + (stack.getMaxDamage() - stack.getDamageValue());
         } else if (stack.getItem().equals(Items.LEATHER_CHESTPLATE)) {
-            return 50 + (stack.getMaxDamage() - stack.getDamage());
+            return 50 + (stack.getMaxDamage() - stack.getDamageValue());
         }
         return 0;
     }
@@ -439,15 +439,15 @@ public class ElytraSwap extends Module {
     }
     private int findStoredElytra() {
         for (int i = 0; i < 36; i++) {
-            ItemStack stack = mc.player.getInventory().getStack(i);
+            ItemStack stack = mc.player.getInventory().getItem(i);
             if (stack.getItem().equals(Items.ELYTRA)) {
-                if (Math.abs(stack.getDamage() - storedElytra.getDamage()) <= 5) {
+                if (Math.abs(stack.getDamageValue() - storedElytra.getDamageValue()) <= 5) {
                     return i;
                 }
             }
         }
         for (int i = 0; i < 36; i++) {
-            ItemStack stack = mc.player.getInventory().getStack(i);
+            ItemStack stack = mc.player.getInventory().getItem(i);
             if (stack.getItem().equals(Items.ELYTRA)) {
                 return i;
             }

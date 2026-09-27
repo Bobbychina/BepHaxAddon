@@ -1,24 +1,23 @@
 package bep.hax.util;
 import com.mojang.blaze3d.systems.RenderSystem;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.render.*;
-import net.minecraft.client.util.BufferAllocator;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.ColorHelper;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.math.BlockPos;
-import org.jetbrains.annotations.NotNull;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.renderer.*;
+import com.mojang.blaze3d.vertex.ByteBufferBuilder;
+import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.resources.Identifier;
+import net.minecraft.util.ARGB;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.core.BlockPos;
 import org.joml.Matrix4f;
-import net.minecraft.client.gl.ShaderProgram;
-import net.minecraft.client.render.GameRenderer;
+import com.mojang.blaze3d.opengl.GlProgram;
+import net.minecraft.client.renderer.GameRenderer;
 import meteordevelopment.meteorclient.renderer.ShapeMode;
 import meteordevelopment.meteorclient.utils.render.color.Color;
 import meteordevelopment.meteorclient.events.render.Render3DEvent;
 import meteordevelopment.meteorclient.systems.modules.render.blockesp.ESPBlockData;
 import static meteordevelopment.meteorclient.MeteorClient.mc;
 public class RenderUtils {
-    private static final VertexConsumerProvider.Immediate vertex = VertexConsumerProvider.immediate(new BufferAllocator(2048));
+    private static final VertexConsumerProvider.Immediate vertex = VertexConsumerProvider.immediate(new ByteBufferBuilder(2048));
     public static boolean shouldRenderBox(ESPBlockData esp) {
         return switch (esp.shapeMode) {
             case Both -> esp.lineColor.a > 0 || esp.sideColor.a > 0;
@@ -29,8 +28,8 @@ public class RenderUtils {
     public static boolean shouldRenderTracer(ESPBlockData esp) {
         return esp.tracer && esp.tracerColor.a > 0;
     }
-    public static void renderTracerTo(Render3DEvent event, @NotNull BlockPos pos, Color tracerColor) {
-        Vec3d tracerPos = pos.toCenterPos();
+    public static void renderTracerTo(Render3DEvent event, BlockPos pos, Color tracerColor) {
+        Vec3 tracerPos = pos.getCenter();
         event.renderer.line(
             meteordevelopment.meteorclient.utils.render.RenderUtils.center.x,
             meteordevelopment.meteorclient.utils.render.RenderUtils.center.y,
@@ -50,8 +49,8 @@ public class RenderUtils {
             pos.getX() + 1, pos.getY() + 1, pos.getZ() + 1, color, color, ShapeMode.Lines, 0
         );
     }
-    public static void text(String text, MatrixStack stack, float x, float y, int color) {
-        mc.textRenderer.draw(text, x, y, color, false, stack.peek().getPositionMatrix(), vertex, TextRenderer.TextLayerType.NORMAL, 0, 15728880);
+    public static void text(String text, PoseStack stack, float x, float y, int color) {
+        mc.font.draw(text, x, y, color, false, stack.last().getPositionMatrix(), vertex, Font.DisplayMode.NORMAL, 0, 15728880);
         vertex.draw();
     }
     public enum RenderMode {

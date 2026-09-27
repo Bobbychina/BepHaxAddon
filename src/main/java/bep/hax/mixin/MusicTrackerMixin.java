@@ -1,13 +1,13 @@
 package bep.hax.mixin;
 import bep.hax.modules.MusicTweaks;
 import org.spongepowered.asm.mixin.Mixin;
-import net.minecraft.client.sound.MusicTracker;
+import net.minecraft.client.sounds.MusicManager;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import bep.hax.mixin.accessor.MusicTrackerAccessor;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-@Mixin(MusicTracker.class)
+@Mixin(MusicManager.class)
 public class MusicTrackerMixin {
     @Inject(method = "tick", at = @At("TAIL"))
     private void mixinTick(CallbackInfo ci) {

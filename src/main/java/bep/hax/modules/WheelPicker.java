@@ -9,14 +9,14 @@ import meteordevelopment.meteorclient.utils.misc.Keybind;
 import meteordevelopment.meteorclient.utils.render.color.Color;
 import meteordevelopment.meteorclient.utils.render.color.SettingColor;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.option.KeyBinding;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.KeyMapping;
 import com.mojang.blaze3d.systems.RenderSystem;
 import org.lwjgl.glfw.GLFW;
-import net.minecraft.client.util.InputUtil;
-import net.minecraft.item.Item;
-import net.minecraft.item.Items;
-import net.minecraft.item.ItemStack;
+import com.mojang.blaze3d.platform.InputConstants;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.ItemStack;
 import java.util.concurrent.ThreadLocalRandom;
 public class WheelPicker extends Module {
     private final SettingGroup sgGeneral = settings.getDefaultGroup();
@@ -157,8 +157,8 @@ public class WheelPicker extends Module {
     }
     @EventHandler
     private void onTick(TickEvent.Pre event) {
-        if (mc.player == null || mc.world == null) return;
-        if (mc.currentScreen != null) {
+        if (mc.player == null || mc.level == null) return;
+        if (mc.screen != null) {
             wheelActive = false;
             return;
         }
@@ -166,35 +166,35 @@ public class WheelPicker extends Module {
         if (keyPressed && !wheelActive) {
             wheelActive = true;
             selectedSlot = -1;
-            wasGrabbed = mc.mouse.isCursorLocked();
+            wasGrabbed = mc.mouseHandler.isMouseGrabbed();
             if (wasGrabbed) {
-                mc.mouse.unlockCursor();
+                mc.mouseHandler.releaseMouse();
             }
-            GLFW.glfwSetCursorPos(mc.getWindow().getHandle(),
+            GLFW.glfwSetCursorPos(mc.getWindow().handle(),
                 mc.getWindow().getWidth() / 2.0,
                 mc.getWindow().getHeight() / 2.0);
             initialMouseX = mc.getWindow().getWidth() / 2.0;
             initialMouseY = mc.getWindow().getHeight() / 2.0;
-            KeyBinding.unpressAll();
+            KeyMapping.releaseAll();
         } else if (!keyPressed && wheelActive) {
             if (selectedSlot >= 0 && selectedSlot < 8) {
                 executeSlotAction(selectedSlot);
             }
             if (wasGrabbed) {
-                mc.mouse.lockCursor();
+                mc.mouseHandler.grabMouse();
             }
             wheelActive = false;
         }
         if (wheelActive) {
             updateSelectedSlot();
-            KeyBinding.unpressAll();
+            KeyMapping.releaseAll();
         }
     }
     private void updateSelectedSlot() {
-        int scaledWidth = mc.getWindow().getScaledWidth();
-        int scaledHeight = mc.getWindow().getScaledHeight();
-        double mouseX = mc.mouse.getX() * scaledWidth / (double)mc.getWindow().getWidth();
-        double mouseY = mc.mouse.getY() * scaledHeight / (double)mc.getWindow().getHeight();
+        int scaledWidth = mc.getWindow().getGuiScaledWidth();
+        int scaledHeight = mc.getWindow().getGuiScaledHeight();
+        double mouseX = mc.mouseHandler.xpos() * scaledWidth / (double)mc.getWindow().getWidth();
+        double mouseY = mc.mouseHandler.ypos() * scaledHeight / (double)mc.getWindow().getHeight();
         double centerX = scaledWidth / 2.0;
         double centerY = scaledHeight / 2.0;
         double deltaX = mouseX - centerX;
@@ -241,7 +241,7 @@ public class WheelPicker extends Module {
                     if (spamProtection.get()) {
                         command = applyRandomSubstitution(command);
                     }
-                    mc.player.networkHandler.sendChatCommand(command);
+                    mc.player.connection.sendCommand(command);
                 }
                 break;
         }
@@ -258,7 +258,7 @@ public class WheelPicker extends Module {
             String[] invisibleChars = {"\u200B", "\u200C", "\u200D"};
             message += invisibleChars[ThreadLocalRandom.current().nextInt(invisibleChars.length)];
         }
-        mc.player.networkHandler.sendChatMessage(message);
+        mc.player.connection.sendChat(message);
     }
     private String applyRandomSubstitution(String text) {
         ThreadLocalRandom random = ThreadLocalRandom.current();
@@ -298,15 +298,15 @@ public class WheelPicker extends Module {
     @EventHandler
     private void onRender2D(Render2DEvent event) {
         if (!wheelActive) return;
-        DrawContext context = event.drawContext;
-        int scaledWidth = mc.getWindow().getScaledWidth();
-        int scaledHeight = mc.getWindow().getScaledHeight();
+        GuiGraphicsExtractor context = event.drawContext;
+        int scaledWidth = mc.getWindow().getGuiScaledWidth();
+        int scaledHeight = mc.getWindow().getGuiScaledHeight();
         int centerX = scaledWidth / 2 + wheelX.get();
         int centerY = scaledHeight / 2 + wheelY.get();
         int radius = wheelRadius.get();
         renderWheel(context, centerX, centerY, radius);
     }
-    private void renderWheel(DrawContext context, int centerX, int centerY, int radius) {
+    private void renderWheel(GuiGraphicsExtractor context, int centerX, int centerY, int radius) {
         updateModuleCache();
         drawFilledCircleOptimized(context, centerX, centerY, radius, backgroundColor.get());
         if (selectedSlot >= 0 && selectedSlot < 8) {
@@ -316,7 +316,7 @@ public class WheelPicker extends Module {
             drawSectionLabel(context, centerX, centerY, radius, i);
         }
     }
-    private void drawFilledCircleOptimized(DrawContext context, int centerX, int centerY, int radius, Color color) {
+    private void drawFilledCircleOptimized(GuiGraphicsExtractor context, int centerX, int centerY, int radius, Color color) {
         int radiusSq = radius * radius;
         int packedColor = color.getPacked();
         for (int y = -radius; y <= radius; y++) {
@@ -327,7 +327,7 @@ public class WheelPicker extends Module {
             }
         }
     }
-    private void drawSectionDividers(DrawContext context, int centerX, int centerY, int radius) {
+    private void drawSectionDividers(GuiGraphicsExtractor context, int centerX, int centerY, int radius) {
         int borderColorPacked = borderColor.get().getPacked();
         for (int i = 0; i < 8; i++) {
             double angle = Math.toRadians(i * 45 - 90);
@@ -336,7 +336,7 @@ public class WheelPicker extends Module {
             drawLineOptimized(context, centerX, centerY, endX, endY, borderColorPacked);
         }
     }
-    private void drawCircleOutline(DrawContext context, int centerX, int centerY, int radius, Color color, int thickness) {
+    private void drawCircleOutline(GuiGraphicsExtractor context, int centerX, int centerY, int radius, Color color, int thickness) {
         for (int t = 0; t < thickness; t++) {
             int r = radius - t;
             if (r <= 0) continue;
@@ -362,10 +362,10 @@ public class WheelPicker extends Module {
             }
         }
     }
-    private void drawPixel(DrawContext context, int x, int y, int color) {
+    private void drawPixel(GuiGraphicsExtractor context, int x, int y, int color) {
         context.fill(x, y, x + 1, y + 1, color);
     }
-    private void drawWheelSectionOptimized(DrawContext context, int centerX, int centerY, int radius, int sectionIndex) {
+    private void drawWheelSectionOptimized(GuiGraphicsExtractor context, int centerX, int centerY, int radius, int sectionIndex) {
         double startAngle = Math.toRadians(sectionIndex * 45 - 90 - 22.5);
         double endAngle = startAngle + Math.toRadians(45);
         int packedColor = selectedColor.get().getPacked();
@@ -381,7 +381,7 @@ public class WheelPicker extends Module {
             fillTriangleOptimized(context, centerX, centerY, x1, y1, x2, y2, packedColor);
         }
     }
-    private void fillTriangleOptimized(DrawContext context, int x0, int y0, int x1, int y1, int x2, int y2, int color) {
+    private void fillTriangleOptimized(GuiGraphicsExtractor context, int x0, int y0, int x1, int y1, int x2, int y2, int color) {
         if (y1 < y0) { int t = x0; x0 = x1; x1 = t; t = y0; y0 = y1; y1 = t; }
         if (y2 < y0) { int t = x0; x0 = x2; x2 = t; t = y0; y0 = y2; y2 = t; }
         if (y2 < y1) { int t = x1; x1 = x2; x2 = t; t = y1; y1 = y2; y2 = t; }
@@ -407,7 +407,7 @@ public class WheelPicker extends Module {
             }
         }
     }
-    private void drawLineOptimized(DrawContext context, int x0, int y0, int x1, int y1, int color) {
+    private void drawLineOptimized(GuiGraphicsExtractor context, int x0, int y0, int x1, int y1, int color) {
         int dx = Math.abs(x1 - x0);
         int dy = Math.abs(y1 - y0);
         int sx = x0 < x1 ? 1 : -1;
@@ -427,7 +427,7 @@ public class WheelPicker extends Module {
             }
         }
     }
-    private void drawThickLine(DrawContext context, int x0, int y0, int x1, int y1, int color, int thickness) {
+    private void drawThickLine(GuiGraphicsExtractor context, int x0, int y0, int x1, int y1, int color, int thickness) {
         double angle = Math.atan2(y1 - y0, x1 - x0);
         double perpAngle = angle + Math.PI / 2;
         for (int t = -thickness/2; t <= thickness/2; t++) {
@@ -436,7 +436,7 @@ public class WheelPicker extends Module {
             drawLine(context, x0 + offsetX, y0 + offsetY, x1 + offsetX, y1 + offsetY, color);
         }
     }
-    private void drawLine(DrawContext context, int x0, int y0, int x1, int y1, int color) {
+    private void drawLine(GuiGraphicsExtractor context, int x0, int y0, int x1, int y1, int color) {
         int dx = Math.abs(x1 - x0);
         int dy = Math.abs(y1 - y0);
         int sx = x0 < x1 ? 1 : -1;
@@ -477,7 +477,7 @@ public class WheelPicker extends Module {
             }
         }
     }
-    private void drawSectionLabel(DrawContext context, int centerX, int centerY, int radius, int sectionIndex) {
+    private void drawSectionLabel(GuiGraphicsExtractor context, int centerX, int centerY, int radius, int sectionIndex) {
         SlotConfig slot = slots[sectionIndex];
         double midAngle = Math.toRadians(sectionIndex * 45 - 90);
         int labelRadius = radius * 2 / 3;
@@ -494,7 +494,7 @@ public class WheelPicker extends Module {
         int iconSize = (int)(16 * iconScaleValue);
         int spacing = 2;
         String label = getSlotLabel(slot, sectionIndex);
-        int textHeight = (int)(mc.textRenderer.fontHeight * textScaleValue);
+        int textHeight = (int)(mc.font.lineHeight * textScaleValue);
         int totalHeight = 0;
         if (hasIcon) totalHeight += iconSize;
         if (hasIcon && hasText) totalHeight += spacing;
@@ -512,11 +512,11 @@ public class WheelPicker extends Module {
         }
         if (hasText) {
             Color textColor = isModuleActive ? moduleActiveColor.get() : this.textColor.get();
-            int textWidth = mc.textRenderer.getWidth(label);
+            int textWidth = mc.font.width(label);
             context.getMatrices().pushMatrix();
             context.getMatrices().translate(labelX, currentY);
             context.getMatrices().scale(textScaleValue, textScaleValue);
-            context.drawText(mc.textRenderer, label,
+            context.drawText(mc.font, label,
                 -textWidth / 2,
                 0,
                 textColor.getPacked(), false);

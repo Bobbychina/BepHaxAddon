@@ -6,12 +6,12 @@ import meteordevelopment.meteorclient.systems.hud.HudElement;
 import meteordevelopment.meteorclient.systems.hud.HudElementInfo;
 import meteordevelopment.meteorclient.systems.hud.HudRenderer;
 import meteordevelopment.meteorclient.utils.render.color.SettingColor;
-import net.minecraft.block.ChestBlock;
-import net.minecraft.block.entity.*;
-import net.minecraft.block.enums.ChestType;
-import net.minecraft.util.DyeColor;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.chunk.WorldChunk;
+import net.minecraft.world.level.block.ChestBlock;
+import net.minecraft.world.level.block.entity.*;
+import net.minecraft.world.level.block.state.properties.ChestType;
+import net.minecraft.world.item.DyeColor;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.chunk.LevelChunk;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
@@ -196,7 +196,7 @@ public class DubCounterHud extends HudElement {
     }
     @Override
     public void render(HudRenderer renderer) {
-        if (MeteorClient.mc.world == null || MeteorClient.mc.player == null) {
+        if (MeteorClient.mc.level == null || MeteorClient.mc.player == null) {
             if (isInEditor()) {
                 renderPlaceholder(renderer);
             }
@@ -420,22 +420,22 @@ public class DubCounterHud extends HudElement {
     }
     private ContainerCounts countContainers() {
         ContainerCounts counts = new ContainerCounts();
-        if (MeteorClient.mc.world == null || MeteorClient.mc.player == null) return counts;
-        int renderDistance = MeteorClient.mc.options.getViewDistance().getValue();
-        int playerChunkX = MeteorClient.mc.player.getChunkPos().x;
-        int playerChunkZ = MeteorClient.mc.player.getChunkPos().z;
+        if (MeteorClient.mc.level == null || MeteorClient.mc.player == null) return counts;
+        int renderDistance = MeteorClient.mc.options.renderDistance().get();
+        int playerChunkX = MeteorClient.mc.player.chunkPosition().x();
+        int playerChunkZ = MeteorClient.mc.player.chunkPosition().z();
         for (int cx = playerChunkX - renderDistance; cx <= playerChunkX + renderDistance; cx++) {
             for (int cz = playerChunkZ - renderDistance; cz <= playerChunkZ + renderDistance; cz++) {
-                WorldChunk chunk = MeteorClient.mc.world.getChunk(cx, cz);
+                LevelChunk chunk = MeteorClient.mc.level.getChunk(cx, cz);
                 if (chunk == null) continue;
-                for (BlockPos pos : chunk.getBlockEntityPositions()) {
+                for (BlockPos pos : chunk.getBlockEntitiesPos()) {
                     BlockEntity blockEntity = chunk.getBlockEntity(pos);
                     if (blockEntity == null) continue;
                     if (countChests.get()) {
                         if (blockEntity instanceof ChestBlockEntity || blockEntity instanceof TrappedChestBlockEntity) {
-                            var blockState = blockEntity.getCachedState();
-                            if (blockState.getBlock() instanceof ChestBlock && blockState.contains(ChestBlock.CHEST_TYPE)) {
-                                ChestType type = blockState.get(ChestBlock.CHEST_TYPE);
+                            var blockState = blockEntity.getBlockState();
+                            if (blockState.getBlock() instanceof ChestBlock && blockState.contains(ChestBlock.TYPE)) {
+                                ChestType type = blockState.get(ChestBlock.TYPE);
                                 if (type == ChestType.SINGLE) {
                                     counts.singleChests++;
                                 } else if (type == ChestType.LEFT) {

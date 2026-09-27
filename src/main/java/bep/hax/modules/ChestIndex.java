@@ -15,20 +15,20 @@ import meteordevelopment.meteorclient.utils.render.RenderUtils;
 import meteordevelopment.meteorclient.utils.render.color.SettingColor;
 import meteordevelopment.meteorclient.utils.world.BlockIterator;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.block.*;
-import net.minecraft.block.enums.ChestType;
-import net.minecraft.client.gui.screen.ingame.GenericContainerScreen;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.screen.ScreenHandler;
-import net.minecraft.screen.slot.Slot;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
-import net.minecraft.util.collection.DefaultedList;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.level.block.*;
+import net.minecraft.world.level.block.state.properties.ChestType;
+import net.minecraft.client.gui.screens.inventory.ContainerScreen;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.core.NonNullList;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.world.phys.Vec3;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.Writer;
@@ -37,8 +37,8 @@ import java.util.*;
 import com.google.gson.JsonObject;
 import java.io.IOException;
 import com.google.gson.*;
-import net.minecraft.registry.Registries;
-import net.minecraft.util.Identifier;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.Identifier;
 import static meteordevelopment.meteorclient.utils.Utils.getItemsInContainerItem;
 import static meteordevelopment.meteorclient.utils.Utils.hasItems;
 public class ChestIndex extends Module
@@ -175,7 +175,7 @@ public class ChestIndex extends Module
                 JsonObject json = new JsonObject();
                 for (Map.Entry<String, Integer> entry : sortedBlocks) {
                     Identifier identifier = Identifier.tryParse(entry.getKey());
-                    Item item = Registries.ITEM.get(identifier);
+                    Item item = BuiltInRegistries.ITEM.get(identifier);
                     String displayName = item.getName().getString();
                     json.add(displayName, new JsonPrimitive(entry.getValue()));
                 }
@@ -192,9 +192,9 @@ public class ChestIndex extends Module
                 JsonObject json = new JsonObject();
                 for (Map.Entry<String, Integer> entry : sortedBlocks) {
                     Identifier identifier = Identifier.tryParse(entry.getKey());
-                    Item item = Registries.ITEM.get(identifier);
+                    Item item = BuiltInRegistries.ITEM.get(identifier);
                     String displayName = item.getName().getString();
-                    int stackSize = item.getMaxCount();
+                    int stackSize = item.getDefaultMaxStackSize();
                     double dubs = entry.getValue() / (stackSize * 27.0 * 54.0);
                     json.add(displayName, new JsonPrimitive(String.format("%.2f", dubs)));
                 }
@@ -212,9 +212,9 @@ public class ChestIndex extends Module
                 for (Map.Entry<String, Integer> entry : sortedBlocks) {
                     try {
                         Identifier identifier = Identifier.tryParse(entry.getKey());
-                        Item item = Registries.ITEM.get(identifier);
+                        Item item = BuiltInRegistries.ITEM.get(identifier);
                         String displayName =item.getName().getString();
-                        int stackSize = item.getMaxCount();
+                        int stackSize = item.getDefaultMaxStackSize();
                         double shulkers = entry.getValue() / (stackSize * 27.0);
                         json.add(displayName, new JsonPrimitive(String.format("%.2f", shulkers)));
                     } catch (Exception e) {
@@ -234,9 +234,9 @@ public class ChestIndex extends Module
         if (highlightSearched.get()){
             for (BlockPos blockPos : searched)
             {
-                double distance = Math.sqrt(mc.player.squaredDistanceTo(blockPos.getX() + 0.5, blockPos.getY() + 0.5, blockPos.getZ() + 0.5));
+                double distance = Math.sqrt(mc.player.distanceToSqr(blockPos.getX() + 0.5, blockPos.getY() + 0.5, blockPos.getZ() + 0.5));
                 if (distance <= renderRange.get()) {
-                    RenderUtils.renderTickingBlock(blockPos.toImmutable(), sideColor.get(), lineColor.get(), shapeMode.get(), 0, 8, true, false);
+                    RenderUtils.renderTickingBlock(blockPos.immutable(), sideColor.get(), lineColor.get(), shapeMode.get(), 0, 8, true, false);
                 }
             }
         }
@@ -251,7 +251,7 @@ public class ChestIndex extends Module
     @EventHandler
     private void onTick(TickEvent.Pre event)
     {
-        if (mc.currentScreen instanceof GenericContainerScreen) return;
+        if (mc.screen instanceof ContainerScreen) return;
         if (tickCounter < delay.get())
         {
             tickCounter++;
@@ -264,7 +264,7 @@ public class ChestIndex extends Module
         BlockIterator.register(searchRange.get(), searchRange.get(), (blockPos, blockState) ->
         {
             if (!awaiting &&
-                !searched.contains(blockPos.toImmutable()) &&
+                !searched.contains(blockPos.immutable()) &&
                 (blockState.getBlock() == Blocks.CHEST ||
                     blockState.getBlock() == Blocks.TRAPPED_CHEST ||
                     blockState.getBlock() == Blocks.BARREL ||
@@ -274,21 +274,21 @@ public class ChestIndex extends Module
                     blockState.getBlock() == Blocks.CRAFTER ||
                     blockState.getBlock() instanceof ShulkerBoxBlock))
             {
-                Vec3d vec = new Vec3d(blockPos.getX(), blockPos.getY(), blockPos.getZ());
+                Vec3 vec = new Vec3(blockPos.getX(), blockPos.getY(), blockPos.getZ());
                 BlockHitResult hitResult = new BlockHitResult(vec, Direction.UP, blockPos, false);
-                if (mc.interactionManager.interactBlock(mc.player, Hand.MAIN_HAND, hitResult) == ActionResult.SUCCESS)
+                if (mc.gameMode.useItemOn(mc.player, InteractionHand.MAIN_HAND, hitResult) == InteractionResult.SUCCESS)
                 {
                     awaiting = true;
-                    mc.player.swingHand(Hand.MAIN_HAND);
+                    mc.player.swing(InteractionHand.MAIN_HAND);
                     info("interacted");
-                    currPos[0] = blockPos.toImmutable();
+                    currPos[0] = blockPos.immutable();
                     if (blockState.getBlock() == Blocks.CHEST || blockState.getBlock() == Blocks.TRAPPED_CHEST)
                     {
-                        ChestType chestType = blockState.get(ChestBlock.CHEST_TYPE);
+                        ChestType chestType = blockState.get(ChestBlock.TYPE);
                         if (chestType == ChestType.LEFT || chestType == ChestType.RIGHT)
                         {
                             Direction facing = blockState.get(ChestBlock.FACING);
-                            BlockPos otherPartPos = blockPos.offset(chestType == ChestType.LEFT ? facing.rotateYClockwise() : facing.rotateYCounterclockwise());
+                            BlockPos otherPartPos = blockPos.offset(chestType == ChestType.LEFT ? facing.getClockWise() : facing.getCounterClockWise());
                             currPos[1] = otherPartPos;
                         }
                     }
@@ -298,16 +298,16 @@ public class ChestIndex extends Module
     }
     @EventHandler
     private void onInventory(InventoryEvent event) {
-        ScreenHandler handler = mc.player.currentScreenHandler;
+        AbstractContainerMenu handler = mc.player.containerMenu;
         awaiting = false;
         for (BlockPos blockPos : currPos)
         {
             if (blockPos != null) searched.add(blockPos);
         }
-        DefaultedList<Slot> slots = handler.slots;
+        NonNullList<Slot> slots = handler.slots;
         for (int i = 0; i < slots.size() - 36; i++)
         {
-            ItemStack stack = slots.get(i).getStack();
+            ItemStack stack = slots.get(i).getItem();
             if (!stack.isEmpty())
             {
                 if (hasItems(stack))
@@ -330,7 +330,7 @@ public class ChestIndex extends Module
                 }
             }
         }
-        mc.player.closeHandledScreen();
+        mc.player.closeContainer();
     }
     private enum DisplayType
     {

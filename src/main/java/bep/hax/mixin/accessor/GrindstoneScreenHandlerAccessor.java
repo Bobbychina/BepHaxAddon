@@ -1,9 +1,9 @@
 package bep.hax.mixin.accessor;
-import net.minecraft.item.ItemStack;
+import net.minecraft.world.item.ItemStack;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Invoker;
-import net.minecraft.screen.GrindstoneScreenHandler;
-@Mixin(GrindstoneScreenHandler.class)
+import net.minecraft.world.inventory.GrindstoneMenu;
+@Mixin(GrindstoneMenu.class)
 public interface GrindstoneScreenHandlerAccessor {
     @Invoker("grind")
     ItemStack invokeGrind(ItemStack item);

@@ -1,13 +1,13 @@
 package bep.hax.mixin;
-import net.minecraft.item.Item;
+import net.minecraft.world.item.Item;
 import bep.hax.modules.Honker;
-import net.minecraft.item.GoatHornItem;
+import net.minecraft.world.item.InstrumentItem;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-@Mixin(GoatHornItem.class)
+@Mixin(InstrumentItem.class)
 public class GoatHornItemMixin extends Item {
     public GoatHornItemMixin(Settings settings) {
         super(settings);

@@ -1,25 +1,25 @@
 package bep.hax.modules;
 import bep.hax.Bep;
 import java.util.Random;
-import net.minecraft.item.Item;
-import net.minecraft.text.Text;
-import net.minecraft.item.Items;
+import net.minecraft.world.item.Item;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.Items;
 import bep.hax.util.MsgUtil;
-import net.minecraft.item.DyeItem;
-import net.minecraft.util.DyeColor;
-import net.minecraft.item.ItemStack;
+import net.minecraft.world.item.DyeItem;
+import net.minecraft.world.item.DyeColor;
+import net.minecraft.world.item.ItemStack;
 import bep.hax.util.StardustUtil;
-import net.minecraft.sound.SoundEvents;
+import net.minecraft.sounds.SoundEvents;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.screen.PlayerScreenHandler;
+import net.minecraft.world.inventory.InventoryMenu;
 import meteordevelopment.meteorclient.settings.*;
-import net.minecraft.screen.CraftingScreenHandler;
-import net.minecraft.screen.AbstractRecipeScreenHandler;
+import net.minecraft.world.inventory.CraftingMenu;
+import net.minecraft.world.inventory.RecipeBookMenu;
 import meteordevelopment.meteorclient.utils.player.InvUtils;
 import meteordevelopment.meteorclient.events.world.TickEvent;
 import meteordevelopment.meteorclient.systems.modules.Module;
-import net.minecraft.client.gui.screen.ingame.CraftingScreen;
-import net.minecraft.client.gui.screen.ingame.InventoryScreen;
+import net.minecraft.client.gui.screens.inventory.CraftingScreen;
+import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 public class AutoDyeShulkers extends Module {
     private static final Random RANDOM = new Random();
     public AutoDyeShulkers() { super(Bep.STARDUST, "AutoDyeShulkers", "Automatically dye shulker boxes and/or bundles in crafting grids."); }
@@ -163,9 +163,9 @@ public class AutoDyeShulkers extends Module {
         } while (slot == occupied);
         return  slot;
     }
-    private <T extends AbstractRecipeScreenHandler> int getItemSlot(Item wanted, T cs, int invStart, int invEnd) {
+    private <T extends RecipeBookMenu> int getItemSlot(Item wanted, T cs, int invStart, int invEnd) {
         for (int n = invStart; n < invEnd; n++) {
-            ItemStack stack = cs.getSlot(n).getStack();
+            ItemStack stack = cs.getSlot(n).getItem();
             if (wanted == Items.SHULKER_BOX) {
                 if (isValidShulker(stack.getItem())) return n;
             } else if (wanted == Items.BUNDLE) {
@@ -174,8 +174,8 @@ public class AutoDyeShulkers extends Module {
         }
         return -1;
     }
-    private <T extends AbstractRecipeScreenHandler> void dyeShulker(T cs, int inputEnd, int invStart, int invEnd) {
-        ItemStack output = cs.getSlot(0).getStack();
+    private <T extends RecipeBookMenu> void dyeShulker(T cs, int inputEnd, int invStart, int invEnd) {
+        ItemStack output = cs.getSlot(0).getItem();
         switch (dyeMode.get()) {
             case Both -> {
                 if (isColoredShulker(output.getItem()) || isColoredBundle(output.getItem())) {
@@ -188,7 +188,7 @@ public class AutoDyeShulkers extends Module {
                     int occupiedSlotShulk = -1;
                     int occupiedSlotBundle = -1;
                     for (int n = 1; n < inputEnd; n++) {
-                        ItemStack stack = cs.getSlot(n).getStack();
+                        ItemStack stack = cs.getSlot(n).getItem();
                         if (stack.getItem() == DyeItem.byColor(dyeColor.get())) {
                             if (!hasDye) {
                                 hasDye = true;
@@ -243,8 +243,8 @@ public class AutoDyeShulkers extends Module {
                         if (!notified) {
                             notified = true;
                             if (disableOnDone.get()) toggle();
-                            if (closeOnDone.get() && cs instanceof CraftingScreenHandler) mc.player.closeHandledScreen();
-                            if (pingOnDone.get()) mc.player.playSound(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, pingVolume.get().floatValue(), 1f);
+                            if (closeOnDone.get() && cs instanceof CraftingMenu) mc.player.closeContainer();
+                            if (pingOnDone.get()) mc.player.playSound(SoundEvents.EXPERIENCE_ORB_PICKUP, pingVolume.get().floatValue(), 1f);
                             MsgUtil.sendModuleMsg("Finished dyeing items§a..!", this.name);
                         }
                     }
@@ -259,7 +259,7 @@ public class AutoDyeShulkers extends Module {
                     int occupiedSlotDye = -1;
                     int occupiedSlotShulk = -1;
                     for (int n = 1; n < inputEnd; n++) {
-                        ItemStack stack = cs.getSlot(n).getStack();
+                        ItemStack stack = cs.getSlot(n).getItem();
                         if (stack.getItem() == DyeItem.byColor(dyeColor.get())) {
                             if (!hasDye) {
                                 hasDye = true;
@@ -296,8 +296,8 @@ public class AutoDyeShulkers extends Module {
                         if (!notified) {
                             notified = true;
                             if (disableOnDone.get()) toggle();
-                            if (closeOnDone.get() && cs instanceof CraftingScreenHandler) mc.player.closeHandledScreen();
-                            if (pingOnDone.get()) mc.player.playSound(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, pingVolume.get().floatValue(), 1f);
+                            if (closeOnDone.get() && cs instanceof CraftingMenu) mc.player.closeContainer();
+                            if (pingOnDone.get()) mc.player.playSound(SoundEvents.EXPERIENCE_ORB_PICKUP, pingVolume.get().floatValue(), 1f);
                             MsgUtil.sendModuleMsg("Finished dyeing shulkers§a..!", this.name);
                         }
                     }
@@ -312,7 +312,7 @@ public class AutoDyeShulkers extends Module {
                     int occupiedSlotDye = -1;
                     int occupiedSlotBundle = -1;
                     for (int n = 1; n < inputEnd; n++) {
-                        ItemStack stack = cs.getSlot(n).getStack();
+                        ItemStack stack = cs.getSlot(n).getItem();
                         if (stack.getItem() == DyeItem.byColor(dyeColor.get())) {
                             if (!hasDye) {
                                 hasDye = true;
@@ -349,8 +349,8 @@ public class AutoDyeShulkers extends Module {
                         if (!notified) {
                             notified = true;
                             if (disableOnDone.get()) toggle();
-                            if (closeOnDone.get() && cs instanceof CraftingScreenHandler) mc.player.closeHandledScreen();
-                            if (pingOnDone.get()) mc.player.playSound(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, pingVolume.get().floatValue(), 1f);
+                            if (closeOnDone.get() && cs instanceof CraftingMenu) mc.player.closeContainer();
+                            if (pingOnDone.get()) mc.player.playSound(SoundEvents.EXPERIENCE_ORB_PICKUP, pingVolume.get().floatValue(), 1f);
                             MsgUtil.sendModuleMsg("Finished dyeing bundles§a..!", this.name);
                         }
                     }
@@ -366,24 +366,24 @@ public class AutoDyeShulkers extends Module {
     @EventHandler
     private void onTick(TickEvent.Post event) {
         if (mc.player == null) return;
-        if (mc.currentScreen == null) {
+        if (mc.screen == null) {
             onDeactivate();
             return;
         }
-        if (operatingMode.get().equals(OperatingMode.Table) && mc.player.currentScreenHandler instanceof PlayerScreenHandler) {
+        if (operatingMode.get().equals(OperatingMode.Table) && mc.player.containerMenu instanceof InventoryMenu) {
             onDeactivate();
             return;
-        } else if (operatingMode.get().equals(OperatingMode.Inventory) && mc.player.currentScreenHandler instanceof CraftingScreenHandler) {
+        } else if (operatingMode.get().equals(OperatingMode.Inventory) && mc.player.containerMenu instanceof CraftingMenu) {
             onDeactivate();
             return;
         }
-        if (mc.currentScreen instanceof CraftingScreen && mc.player.currentScreenHandler instanceof CraftingScreenHandler cs) {
+        if (mc.screen instanceof CraftingScreen && mc.player.containerMenu instanceof CraftingMenu cs) {
             ++timer;
             if (timer >= tickRate.get()) {
                 timer = 0;
                 dyeShulker(cs, 10, 10, 46);
             }
-        } else if (mc.currentScreen instanceof InventoryScreen && mc.player.currentScreenHandler instanceof PlayerScreenHandler ps) {
+        } else if (mc.screen instanceof InventoryScreen && mc.player.containerMenu instanceof InventoryMenu ps) {
             ++timer;
             if (timer >= tickRate.get()) {
                 timer = 0;

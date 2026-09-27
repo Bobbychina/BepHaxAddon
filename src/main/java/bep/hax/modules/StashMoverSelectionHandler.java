@@ -8,11 +8,11 @@ import meteordevelopment.meteorclient.systems.modules.Modules;
 import meteordevelopment.meteorclient.utils.render.color.SettingColor;
 import meteordevelopment.orbit.EventHandler;
 import meteordevelopment.orbit.EventPriority;
-import net.minecraft.util.Hand;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.hit.HitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.AABB;
 import static meteordevelopment.meteorclient.MeteorClient.mc;
 public class StashMoverSelectionHandler {
     private static StashMoverSelectionHandler INSTANCE;
@@ -33,7 +33,7 @@ public class StashMoverSelectionHandler {
         StashMover module = Modules.get().get(StashMover.class);
         if (module == null) return;
         if (!module.isSelecting()) return;
-        if (event.hand != Hand.MAIN_HAND) return;
+        if (event.hand != InteractionHand.MAIN_HAND) return;
         event.cancel();
         module.handleBlockSelectionPublic(event.result.getBlockPos());
     }
@@ -48,22 +48,22 @@ public class StashMoverSelectionHandler {
     private boolean wasSelecting = false;
     @EventHandler
     private void onTick(TickEvent.Pre event) {
-        if (mc.player == null || mc.world == null) return;
+        if (mc.player == null || mc.level == null) return;
         StashMover module = Modules.get().get(StashMover.class);
         if (module == null) return;
         if (module.isSelecting()) {
             if (!wasSelecting) {
                 wasSelecting = true;
             }
-            if (mc.options.attackKey.isPressed()) {
-                mc.options.attackKey.setPressed(false);
-                if (mc.crosshairTarget != null && mc.crosshairTarget.getType() == HitResult.Type.BLOCK) {
-                    BlockHitResult hit = (BlockHitResult) mc.crosshairTarget;
+            if (mc.options.keyAttack.isDown()) {
+                mc.options.keyAttack.setDown(false);
+                if (mc.hitResult != null && mc.hitResult.getType() == HitResult.Type.BLOCK) {
+                    BlockHitResult hit = (BlockHitResult) mc.hitResult;
                     BlockPos pos = hit.getBlockPos();
                     module.handleBlockSelectionPublic(pos);
                 }
             }
-            if (mc.options.inventoryKey.wasPressed()) {
+            if (mc.options.keyInventory.consumeClick()) {
                 module.cancelSelection();
                 meteordevelopment.meteorclient.utils.player.ChatUtils.info("§cSelection cancelled");
                 return;
@@ -79,9 +79,9 @@ public class StashMoverSelectionHandler {
         if (module.getSelectionMode() != StashMover.SelectionMode.NONE) {
             BlockPos selectionPos1 = module.getSelectionPos1();
             if (selectionPos1 != null) {
-                BlockPos currentPos = mc.crosshairTarget != null && mc.crosshairTarget.getType() == HitResult.Type.BLOCK ?
-                    ((BlockHitResult)mc.crosshairTarget).getBlockPos() : mc.player.getBlockPos();
-                Box selectionBox = new Box(
+                BlockPos currentPos = mc.hitResult != null && mc.hitResult.getType() == HitResult.Type.BLOCK ?
+                    ((BlockHitResult)mc.hitResult).getBlockPos() : mc.player.blockPosition();
+                AABB selectionBox = new AABB(
                     Math.min(selectionPos1.getX(), currentPos.getX()),
                     Math.min(selectionPos1.getY(), currentPos.getY()),
                     Math.min(selectionPos1.getZ(), currentPos.getZ()),
@@ -95,7 +95,7 @@ public class StashMoverSelectionHandler {
                     new SettingColor(0, 255, 0, 100) :
                     new SettingColor(0, 100, 255, 100);
                 event.renderer.box(selectionBox, color, color, ShapeMode.Both, 0);
-                Box corner1 = new Box(
+                AABB corner1 = new AABB(
                     selectionPos1.getX(), selectionPos1.getY(), selectionPos1.getZ(),
                     selectionPos1.getX() + 1, selectionPos1.getY() + 1, selectionPos1.getZ() + 1
                 );

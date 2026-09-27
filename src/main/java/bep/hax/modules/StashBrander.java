@@ -2,16 +2,16 @@ package bep.hax.modules;
 import bep.hax.mixin.accessor.PlayerInventoryAccessor;
 import java.util.List;
 import bep.hax.Bep;
-import net.minecraft.item.Item;
+import net.minecraft.world.item.Item;
 import bep.hax.util.MsgUtil;
-import net.minecraft.item.ItemStack;
-import net.minecraft.sound.SoundEvents;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.sounds.SoundEvents;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.screen.AnvilScreenHandler;
+import net.minecraft.world.inventory.AnvilMenu;
 import meteordevelopment.meteorclient.settings.*;
-import net.minecraft.component.DataComponentTypes;
+import net.minecraft.core.component.DataComponents;
 import bep.hax.mixin.accessor.AnvilScreenAccessor;
-import net.minecraft.client.gui.screen.ingame.AnvilScreen;
+import net.minecraft.client.gui.screens.inventory.AnvilScreen;
 import meteordevelopment.meteorclient.utils.player.InvUtils;
 import meteordevelopment.meteorclient.events.world.TickEvent;
 import meteordevelopment.meteorclient.systems.modules.Module;
@@ -32,7 +32,7 @@ public class StashBrander extends Module {
             .description("The name you want to give to qualifying items.")
             .defaultValue("")
             .onChanged(name -> {
-                if (name.length() > AnvilScreenHandler.MAX_NAME_LENGTH) {
+                if (name.length() > AnvilMenu.MAX_NAME_LENGTH) {
                     MsgUtil.sendModuleMsg("§4Custom name exceeds max accepted length§8..!", this.name);
                 }
             })
@@ -106,16 +106,16 @@ public class StashBrander extends Module {
     private boolean notified = false;
     private static final int ANVIL_OFFSET = 3;
     public boolean shouldMute() { return muteAnvils.get(); }
-    private boolean hasValidItems(AnvilScreenHandler handler) {
+    private boolean hasValidItems(AnvilMenu handler) {
         if (mc.player == null) return false;
         for (int n = 0; n < ((PlayerInventoryAccessor) mc.player.getInventory()).getMain().size() + ANVIL_OFFSET; n++) {
             if (n == 2) continue;
-            ItemStack stack = handler.getSlot(n).getStack();
+            ItemStack stack = handler.getSlot(n).getItem();
             if ((blacklistMode.get() && !itemList.get().contains(stack.getItem()))
                 || (!blacklistMode.get() && itemList.get().contains(stack.getItem())))
             {
-                if (itemName.get().isBlank() && stack.contains(DataComponentTypes.CUSTOM_NAME)) return true;
-                else if (!stack.getName().getString().equals(itemName.get())) return true;
+                if (itemName.get().isBlank() && stack.has(DataComponents.CUSTOM_NAME)) return true;
+                else if (!stack.getHoverName().getString().equals(itemName.get())) return true;
             }
         }
         return false;
@@ -124,10 +124,10 @@ public class StashBrander extends Module {
         if (mc.player == null) return;
         if (!notified) {
             MsgUtil.sendModuleMsg("Not enough experience§c..!", this.name);
-            if (pingOnDone.get()) mc.player.playSound(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, pingVolume.get().floatValue(), 1.0f);
+            if (pingOnDone.get()) mc.player.playSound(SoundEvents.EXPERIENCE_ORB_PICKUP, pingVolume.get().floatValue(), 1.0f);
         }
         notified = true;
-        if (closeOnDone.get()) mc.player.closeHandledScreen();
+        if (closeOnDone.get()) mc.player.closeContainer();
         if (disableOnDone.get()) this.toggle();
         if (enableExpThrower.get() && !Modules.get().isActive(EXPThrower.class)) Modules.get().get(EXPThrower.class).toggle();
     }
@@ -135,10 +135,10 @@ public class StashBrander extends Module {
         if (mc.player == null) return;
         if (!notified) {
             MsgUtil.sendModuleMsg("No more items to rename§a..!", this.name);
-            if (pingOnDone.get()) mc.player.playSound(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, pingVolume.get().floatValue(), 1.0f);
+            if (pingOnDone.get()) mc.player.playSound(SoundEvents.EXPERIENCE_ORB_PICKUP, pingVolume.get().floatValue(), 1.0f);
         }
         notified = true;
-        if (closeOnDone.get()) mc.player.closeHandledScreen();
+        if (closeOnDone.get()) mc.player.closeContainer();
         if (disableOnDone.get()) this.toggle();
     }
     @Override
@@ -149,39 +149,39 @@ public class StashBrander extends Module {
     @EventHandler
     private void onTick(TickEvent.Post event) {
         if (mc.player == null) return;
-        if (mc.currentScreen == null) {
+        if (mc.screen == null) {
             notified = false;
             return;
         }
-        if (!(mc.currentScreen instanceof AnvilScreen anvilScreen)) return;
-        if (!(mc.player.currentScreenHandler instanceof AnvilScreenHandler anvil)) return;
+        if (!(mc.screen instanceof AnvilScreen anvilScreen)) return;
+        if (!(mc.player.containerMenu instanceof AnvilMenu anvil)) return;
         if (timer < tickRate.get()) {
             timer++;
             return;
         } else {
             timer = 0;
         }
-        ItemStack input1 = anvil.getSlot(AnvilScreenHandler.INPUT_1_ID).getStack();
-        ItemStack input2 = anvil.getSlot(AnvilScreenHandler.INPUT_2_ID).getStack();
-        ItemStack output = anvil.getSlot(AnvilScreenHandler.OUTPUT_ID).getStack();
+        ItemStack input1 = anvil.getSlot(AnvilMenu.INPUT_SLOT).getItem();
+        ItemStack input2 = anvil.getSlot(AnvilMenu.ADDITIONAL_SLOT).getItem();
+        ItemStack output = anvil.getSlot(AnvilMenu.RESULT_SLOT).getItem();
         if (!hasValidItems(anvil)) finished();
         else if (input1.isEmpty() && input2.isEmpty()) {
             for (int n = ANVIL_OFFSET; n < ((PlayerInventoryAccessor) mc.player.getInventory()).getMain().size() + ANVIL_OFFSET; n++) {
-                ItemStack stack = anvil.getSlot(n).getStack();
-                if (stack.contains(DataComponentTypes.CUSTOM_NAME) && !renameNamed.get()) continue;
-                else if (stack.getName().getString().equals(itemName.get())) continue;
-                else if (itemName.get().isBlank() && !stack.contains(DataComponentTypes.CUSTOM_NAME)) continue;
+                ItemStack stack = anvil.getSlot(n).getItem();
+                if (stack.has(DataComponents.CUSTOM_NAME) && !renameNamed.get()) continue;
+                else if (stack.getHoverName().getString().equals(itemName.get())) continue;
+                else if (itemName.get().isBlank() && !stack.has(DataComponents.CUSTOM_NAME)) continue;
                 if ((blacklistMode.get() && !itemList.get().contains(stack.getItem()))
                     || (!blacklistMode.get() && itemList.get().contains(stack.getItem())))
                 {
                     InvUtils.shiftClick().slotId(n);
-                    ((AnvilScreenAccessor) anvilScreen).getNameField().setText(itemName.get());
-                    ItemStack check = anvil.getSlot(AnvilScreenHandler.OUTPUT_ID).getStack();
+                    ((AnvilScreenAccessor) anvilScreen).getNameField().setValue(itemName.get());
+                    ItemStack check = anvil.getSlot(AnvilMenu.RESULT_SLOT).getItem();
                     if (itemList.get().contains(check.getItem())) {
-                        if (check.getName().getString().equals(itemName.get()) || (itemName.get().isBlank() && stack.contains(DataComponentTypes.CUSTOM_NAME))) {
+                        if (check.getHoverName().getString().equals(itemName.get()) || (itemName.get().isBlank() && stack.has(DataComponents.CUSTOM_NAME))) {
                             int cost = ((AnvilScreenHandlerAccessor) anvil).getLevelCost().get();
                             if (mc.player.experienceLevel >= cost) {
-                                InvUtils.shiftClick().slotId(AnvilScreenHandler.OUTPUT_ID);
+                                InvUtils.shiftClick().slotId(AnvilMenu.RESULT_SLOT);
                             } else noXP();
                             return;
                         }
@@ -190,16 +190,16 @@ public class StashBrander extends Module {
             }
             finished();
         } else if (!output.isEmpty() && itemList.get().contains(output.getItem())) {
-            if (output.getName().getString().equals(itemName.get()) || (itemName.get().isBlank() && input1.contains(DataComponentTypes.CUSTOM_NAME))) {
+            if (output.getHoverName().getString().equals(itemName.get()) || (itemName.get().isBlank() && input1.has(DataComponents.CUSTOM_NAME))) {
                 int cost = ((AnvilScreenHandlerAccessor) anvil).getLevelCost().get();
                 if (mc.player.experienceLevel >= cost) {
-                    InvUtils.shiftClick().slotId(AnvilScreenHandler.OUTPUT_ID);
+                    InvUtils.shiftClick().slotId(AnvilMenu.RESULT_SLOT);
                 } else noXP();
             }
         } else if (!input2.isEmpty()) {
-            InvUtils.shiftClick().slotId(AnvilScreenHandler.INPUT_2_ID);
+            InvUtils.shiftClick().slotId(AnvilMenu.ADDITIONAL_SLOT);
         } else if (output.isEmpty()) {
-            InvUtils.shiftClick().slotId(AnvilScreenHandler.INPUT_1_ID);
+            InvUtils.shiftClick().slotId(AnvilMenu.INPUT_SLOT);
         }
     }
 }

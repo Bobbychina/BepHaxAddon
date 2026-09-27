@@ -1,16 +1,16 @@
 package bep.hax.mixin.accessor;
-import net.minecraft.client.network.PendingUpdateManager;
-import net.minecraft.client.world.ClientWorld;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvent;
+import net.minecraft.client.multiplayer.prediction.BlockStatePredictionHandler;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.sounds.SoundEvent;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Invoker;
-@Mixin(ClientWorld.class)
+@Mixin(ClientLevel.class)
 public interface AccessorClientWorld {
     @Invoker("playSound")
     void hookPlaySound(double x, double y, double z, SoundEvent event,
-                       SoundCategory category, float volume, float pitch,
+                       SoundSource category, float volume, float pitch,
                        boolean useDistance, long seed);
     @Invoker("getPendingUpdateManager")
-    PendingUpdateManager hookGetPendingUpdateManager();
+    BlockStatePredictionHandler hookGetPendingUpdateManager();
 }

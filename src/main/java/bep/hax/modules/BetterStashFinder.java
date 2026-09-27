@@ -7,10 +7,10 @@ import meteordevelopment.meteorclient.events.entity.player.PlayerMoveEvent;
 import meteordevelopment.meteorclient.events.game.OpenScreenEvent;
 import meteordevelopment.orbit.EventPriority;
 import net.lenni0451.lambdaevents.EventHandler;
-import net.minecraft.block.Block;
-import net.minecraft.block.Blocks;
-import net.minecraft.client.gui.screen.DeathScreen;
-import net.minecraft.item.Item;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.client.gui.screens.DeathScreen;
+import net.minecraft.world.item.Item;
 import xaero.common.minimap.waypoints.Waypoint;
 import meteordevelopment.meteorclient.MeteorClient;
 import meteordevelopment.meteorclient.gui.GuiTheme;
@@ -25,12 +25,12 @@ import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.utils.Utils;
 import meteordevelopment.meteorclient.utils.render.MeteorToast;
-import net.minecraft.block.entity.*;
-import net.minecraft.item.Items;
-import net.minecraft.registry.RegistryKey;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.ChunkPos;
-import net.minecraft.world.World;
+import net.minecraft.world.level.block.entity.*;
+import net.minecraft.world.item.Items;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.Level;
 import xaero.hud.minimap.BuiltInHudModules;
 import xaero.hud.minimap.module.MinimapSession;
 import xaero.hud.minimap.waypoint.set.WaypointSet;
@@ -170,29 +170,29 @@ public class BetterStashFinder extends Module
     @net.lenni0451.lambdaevents.EventHandler(priority = -1)
     public void onChunkData(ChunkDataEvent event) {
         if (event.seenChunk()) return;
-        double chunkXAbs = Math.abs(event.chunk().getPos().x * 16);
-        double chunkZAbs = Math.abs(event.chunk().getPos().z * 16);
+        double chunkXAbs = Math.abs(event.chunk().getPos().x() * 16);
+        double chunkZAbs = Math.abs(event.chunk().getPos().z() * 16);
         if (Math.sqrt(chunkXAbs * chunkXAbs + chunkZAbs * chunkZAbs) < minimumDistance.get()) return;
         Chunk chunk = new Chunk(event.chunk().getPos());
-        RegistryKey<World> currentDimension = mc.world.getRegistryKey();
+        ResourceKey<Level> currentDimension = mc.level.dimension();
         ChunkPos chunkPos = chunk.chunkPos;
         PaletteNewChunks paletteNewChunks = ModuleManager.getModule(PaletteNewChunks.class);
         boolean is119NewChunk = paletteNewChunks
             .isNewChunk(
-                chunkPos.x,
-                chunkPos.z,
+                chunkPos.x(),
+                chunkPos.z(),
                 currentDimension
             );
         boolean is112OldChunk = ModuleManager.getModule(OldChunks.class)
             .isOldChunk(
-                chunkPos.x,
-                chunkPos.z,
+                chunkPos.x(),
+                chunkPos.z(),
                 currentDimension
             );
         if (onlyOldchunks.get() && (is119NewChunk && !is112OldChunk)) return;
         for (BlockEntity blockEntity : event.chunk().getBlockEntities().values()) {
             if (!storageBlocks.get().contains(blockEntity.getType())) continue;
-            Block blockUnder = mc.world.getBlockState(blockEntity.getPos().down()).getBlock();
+            Block blockUnder = mc.level.getBlockState(blockEntity.getBlockPos().below()).getBlock();
             if (ignoreTrialChambers.get() && blockUnder.equals(Blocks.WAXED_OXIDIZED_CUT_COPPER) ||
                 blockUnder.equals(Blocks.TUFF_BRICKS) || blockUnder.equals(Blocks.WAXED_COPPER_BLOCK) ||
                 blockUnder.equals(Blocks.WAXED_OXIDIZED_COPPER))
@@ -221,13 +221,13 @@ public class BetterStashFinder extends Module
                     switch (notificationMode.get())
                     {
                         case Chat -> info("Found stash at (highlight)%s(default), (highlight)%s(default).", chunk.x, chunk.z);
-                        case Toast -> mc.getToastManager().add(new MeteorToast.Builder(title)
+                        case Toast -> mc.getToastManager().addToast(new MeteorToast.Builder(title)
                             .text("Found Stash!")
                             .icon(Items.CHEST)
                             .build());
                         case Both -> {
                             info("Found stash at (highlight)%s(default), (highlight)%s(default).", chunk.x, chunk.z);
-                            mc.getToastManager().add(new MeteorToast.Builder(title)
+                            mc.getToastManager().addToast(new MeteorToast.Builder(title)
                                 .text("Found Stash!")
                                 .icon(Items.CHEST)
                                 .build());
@@ -521,8 +521,8 @@ public class BetterStashFinder extends Module
             calculatePos();
         }
         public void calculatePos() {
-            x = chunkPos.x * 16 + 8;
-            z = chunkPos.z * 16 + 8;
+            x = chunkPos.x() * 16 + 8;
+            z = chunkPos.z() * 16 + 8;
         }
         public int getTotal() {
             return chests + barrels + shulkers + enderChests + furnaces + dispensersDroppers + hoppers + crafters;
@@ -596,6 +596,6 @@ public class BetterStashFinder extends Module
     }
     @meteordevelopment.orbit.EventHandler(priority = EventPriority.HIGH)
     private void onPlayerMove(PlayerMoveEvent event) {
-        if (disableOnTeleport.get() && event.movement.horizontalLengthSquared() > 32 * 32) this.toggle();
+        if (disableOnTeleport.get() && event.movement.horizontalDistanceSqr() > 32 * 32) this.toggle();
     }
 }

@@ -1,5 +1,5 @@
 package bep.hax.util;
-import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.world.entity.player.Player;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -16,31 +16,31 @@ public class EnemyManager {
     public boolean add(String name) {
         if (name == null || name.isEmpty()) return false;
         enemyNames.add(name);
-        if (mc.world != null) {
-            for (PlayerEntity p : mc.world.getPlayers())
-                if (p.getName().getString().equalsIgnoreCase(name)) enemies.add(p.getUuid());
+        if (mc.level != null) {
+            for (Player p : mc.level.players())
+                if (p.getName().getString().equalsIgnoreCase(name)) enemies.add(p.getUUID());
         }
         return true;
     }
-    public boolean add(PlayerEntity player) {
+    public boolean add(Player player) {
         if (player == null) return false;
         enemyNames.add(player.getName().getString());
-        enemies.add(player.getUuid());
+        enemies.add(player.getUUID());
         return true;
     }
     public boolean remove(String name) {
         if (name == null || name.isEmpty()) return false;
         boolean removed = enemyNames.remove(name);
-        if (mc.world != null)
-            for (PlayerEntity p : mc.world.getPlayers())
+        if (mc.level != null)
+            for (Player p : mc.level.players())
                 if (p.getName().getString().equalsIgnoreCase(name))
-                    enemies.remove(p.getUuid());
+                    enemies.remove(p.getUUID());
         return removed;
     }
-    public boolean remove(PlayerEntity player) {
+    public boolean remove(Player player) {
         if (player == null) return false;
         enemyNames.remove(player.getName().getString());
-        enemies.remove(player.getUuid());
+        enemies.remove(player.getUUID());
         return true;
     }
     public boolean isEnemy(String name) {
@@ -49,20 +49,20 @@ public class EnemyManager {
         return false;
     }
     public boolean isEnemy(UUID uuid) { return enemies.contains(uuid); }
-    public boolean isEnemy(PlayerEntity player) {
-        return player != null && (isEnemy(player.getUuid()) || isEnemy(player.getName().getString()));
+    public boolean isEnemy(Player player) {
+        return player != null && (isEnemy(player.getUUID()) || isEnemy(player.getName().getString()));
     }
     public Set<String> getEnemyNames() { return Set.copyOf(enemyNames); }
     public Set<UUID> getEnemyUUIDs() { return Set.copyOf(enemies); }
     public void clear() { enemies.clear(); enemyNames.clear(); }
     public int count() { return enemyNames.size(); }
     public void updateUUIDs() {
-        if (mc.world == null) return;
+        if (mc.level == null) return;
         enemies.clear();
         for (String name : enemyNames)
-            for (PlayerEntity p : mc.world.getPlayers())
+            for (Player p : mc.level.players())
                 if (p.getName().getString().equalsIgnoreCase(name)) {
-                    enemies.add(p.getUuid());
+                    enemies.add(p.getUUID());
                     break;
                 }
     }

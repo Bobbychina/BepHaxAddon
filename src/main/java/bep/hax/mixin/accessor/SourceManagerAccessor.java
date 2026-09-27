@@ -1,12 +1,10 @@
 package bep.hax.mixin.accessor;
-import org.jetbrains.annotations.Nullable;
-import net.minecraft.client.sound.Source;
+import net.minecraft.client.sounds.ChannelAccess;
 import org.spongepowered.asm.mixin.Mixin;
-import net.minecraft.client.sound.Channel;
+import net.minecraft.client.sounds.ChannelAccess;
 import org.spongepowered.asm.mixin.gen.Accessor;
-@Mixin(Channel.SourceManager.class)
+@Mixin(ChannelAccess.ChannelHandle.class)
 public interface SourceManagerAccessor {
     @Accessor("source")
-    @Nullable
-    Source getSource();
+    ChannelAccess getSource();
 }

@@ -5,14 +5,14 @@ import bep.hax.modules.livemessage.util.LiveSkinUtil;
 import bep.hax.modules.livemessage.util.LivemessageUtil;
 import com.mojang.authlib.GameProfile;
 import meteordevelopment.meteorclient.systems.friends.Friends;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.client.network.PlayerListEntry;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.multiplayer.PlayerInfo;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
+import net.minecraft.util.Mth;
 import org.lwjgl.glfw.GLFW;
 import java.util.*;
 import static bep.hax.modules.livemessage.gui.GuiUtil.*;
@@ -25,7 +25,7 @@ public class ManeWindow extends LiveWindow {
     int scrollBarHeight = 50;
     static int listScrollPosition = 0;
     boolean scrolling = false;
-    public static TextFieldWidget searchField;
+    public static EditBox searchField;
     public static List<BuddyListEntry> buddyListEntries = new ArrayList<>();
     final int buddyListX = 5;
     final int buddyListY = titlebarHeight + 44;
@@ -34,17 +34,17 @@ public class ManeWindow extends LiveWindow {
     ManeWindow() {
         liveProfile = new LiveProfile();
         liveProfile.username = mc.player.getName().getString();
-        liveProfile.uuid = mc.player.getUuid();
+        liveProfile.uuid = mc.player.getUUID();
         liveSkinUtil = LiveSkinUtil.get(liveProfile.uuid);
         closeButton = false;
         loadMainWindowColor();
-        this.searchField = new TextFieldWidget(mc.textRenderer, 9, this.h - 16, this.w - 18, 12, Text.literal(""));
+        this.searchField = new EditBox(mc.font, 9, this.h - 16, this.w - 18, 12, Component.literal(""));
         this.searchField.setMaxLength(16);
-        this.searchField.setDrawsBackground(false);
+        this.searchField.setBordered(false);
         this.searchField.setFocused(true);
-        this.searchField.setText("");
-        this.searchField.setEditableColor(0xFFFFFFFF);
-        this.searchField.setUneditableColor(0xFF808080);
+        this.searchField.setValue("");
+        this.searchField.setTextColor(0xFFFFFFFF);
+        this.searchField.setTextColorUneditable(0xFF808080);
         initButtons();
     }
     private void loadMainWindowColor() {
@@ -55,7 +55,7 @@ public class ManeWindow extends LiveWindow {
                 com.google.gson.JsonObject json = gson.fromJson(new java.io.FileReader(settingsFile), com.google.gson.JsonObject.class);
                 if (json.has("customColor")) {
                     mainWindowColor = json.get("customColor").getAsInt();
-                    primaryColor = mainWindowColor > 0 ? mainWindowColor : GuiUtil.getWindowColor(mc.player.getUuid());
+                    primaryColor = mainWindowColor > 0 ? mainWindowColor : GuiUtil.getWindowColor(mc.player.getUUID());
                 }
             }
         } catch (Exception e) {
@@ -97,7 +97,7 @@ public class ManeWindow extends LiveWindow {
         }
         currentIndex = (currentIndex + 1) % PRESET_COLORS.length;
         mainWindowColor = PRESET_COLORS[currentIndex];
-        primaryColor = mainWindowColor > 0 ? mainWindowColor : GuiUtil.getWindowColor(mc.player.getUuid());
+        primaryColor = mainWindowColor > 0 ? mainWindowColor : GuiUtil.getWindowColor(mc.player.getUUID());
         saveMainWindowColor();
         updateButtonStates();
     }
@@ -123,15 +123,15 @@ public class ManeWindow extends LiveWindow {
         float progress = fullSkinAnim.animate(removeHat && clicked && !dragging && !resizing && !scrolling ? 1F : 0F);
         return (int) (progress * 128f);
     }
-    private void drawProfilePic(DrawContext context, int x, int y, java.util.UUID uuid) {
+    private void drawProfilePic(GuiGraphicsExtractor context, int x, int y, java.util.UUID uuid) {
         boolean removeHat = (lastMouseX > this.x + x && lastMouseX < this.x + x + 32 && lastMouseY > this.y + y && lastMouseY < this.y + y + 32);
         float progress = fullSkinAnim.animate(removeHat && clicked && !dragging && !resizing && !scrolling ? 1F : 0F);
         int displaySize = Math.round(32 + (progress * 224));
         int displayX = Math.round(x - (progress * 32));
         int displayY = Math.round(y - (progress * 32));
-        net.minecraft.client.network.PlayerListEntry entry = mc.getNetworkHandler().getPlayerListEntry(uuid);
+        net.minecraft.client.multiplayer.PlayerInfo entry = mc.getConnection().getPlayerInfo(uuid);
         if (entry != null) {
-            net.minecraft.client.gui.PlayerSkinDrawer.draw(context, entry.getSkinTextures(), displayX, displayY, displaySize);
+            net.minecraft.client.gui.components.PlayerFaceRenderer.draw(context, entry.getSkin(), displayX, displayY, displaySize);
         }
     }
     @Override
@@ -161,7 +161,7 @@ public class ManeWindow extends LiveWindow {
     public void mouseWheel(int mWheelState) {
         int maxVisibleLines = (h - (buddyListY + footer + 15)) / 12;
         int maxScroll = Math.max(0, buddyListEntries.size() - maxVisibleLines);
-        boolean shift = GLFW.glfwGetKey(mc.getWindow().getHandle(), GLFW.GLFW_KEY_LEFT_SHIFT) == GLFW.GLFW_PRESS;
+        boolean shift = GLFW.glfwGetKey(mc.getWindow().handle(), GLFW.GLFW_KEY_LEFT_SHIFT) == GLFW.GLFW_PRESS;
         int scrollAmount = (shift ? 5 : 1);
         if (mWheelState < 0) {
             listScrollPosition = Math.min(maxScroll, listScrollPosition + scrollAmount);
@@ -177,7 +177,7 @@ public class ManeWindow extends LiveWindow {
             int maxScroll = Math.max(0, buddyListEntries.size() - maxVisibleLines);
             int availableScrollArea = h - (buddyListY + 10 + footer) - scrollBarHeight;
             int relativeMouseY = (int)mouseY - (dragY + buddyListY + this.y);
-            listScrollPosition = (int) MathHelper.clamp((relativeMouseY * maxScroll) / (float) availableScrollArea, 0, maxScroll);
+            listScrollPosition = (int) Mth.clamp((relativeMouseY * maxScroll) / (float) availableScrollArea, 0, maxScroll);
         } else {
             super.handleMouseDrag(mouseX, mouseY);
         }
@@ -188,7 +188,7 @@ public class ManeWindow extends LiveWindow {
             int maxScroll = Math.max(0, buddyListEntries.size() - maxVisibleLines);
             int availableScrollArea = h - (buddyListY + 10 + footer) - scrollBarHeight;
             int relativeMouseY = mouseY - (dragY + buddyListY + this.y);
-            listScrollPosition = (int) MathHelper.clamp((relativeMouseY * maxScroll) / (float) availableScrollArea, 0, maxScroll);
+            listScrollPosition = (int) Mth.clamp((relativeMouseY * maxScroll) / (float) availableScrollArea, 0, maxScroll);
         }
         super.mouseClickMove(mouseX, mouseY, clickedMouseButton, timeSinceLastClick);
     }
@@ -273,7 +273,7 @@ public class ManeWindow extends LiveWindow {
     }
     private static boolean searchFilter(String username) {
         try {
-            String searchText = searchField.getText().trim().toLowerCase(Locale.ROOT);
+            String searchText = searchField.getValue().trim().toLowerCase(Locale.ROOT);
             if (searchText.isEmpty()) {
                 return false;
             }
@@ -288,20 +288,20 @@ public class ManeWindow extends LiveWindow {
         Friends friends = Friends.get();
         bep.hax.util.EnemyManager enemyManager = bep.hax.util.EnemyManager.getInstance();
         Map<UUID, String> onlinePlayers = new HashMap<>();
-        if (MinecraftClient.getInstance().getNetworkHandler() != null) {
-            for (PlayerListEntry entry : MinecraftClient.getInstance().getNetworkHandler().getPlayerList()) {
+        if (Minecraft.getInstance().getConnection() != null) {
+            for (PlayerInfo entry : Minecraft.getInstance().getConnection().getOnlinePlayers()) {
                 GameProfile gameProfile = entry.getProfile();
                 UUID uuid = gameProfile.id();
-                if (!uuid.equals(MinecraftClient.getInstance().player.getUuid())) {
+                if (!uuid.equals(Minecraft.getInstance().player.getUUID())) {
                     onlinePlayers.put(uuid, gameProfile.name());
                 }
             }
         }
         Set<UUID> nearbyPlayerUUIDs = new HashSet<>();
-        if (MinecraftClient.getInstance().world != null) {
-            for (PlayerEntity player : MinecraftClient.getInstance().world.getPlayers()) {
-                if (player != MinecraftClient.getInstance().player) {
-                    nearbyPlayerUUIDs.add(player.getUuid());
+        if (Minecraft.getInstance().level != null) {
+            for (Player player : Minecraft.getInstance().level.players()) {
+                if (player != Minecraft.getInstance().player) {
+                    nearbyPlayerUUIDs.add(player.getUUID());
                 }
             }
         }
@@ -397,23 +397,23 @@ public class ManeWindow extends LiveWindow {
         }
         lastBuddyListSize = buddyListEntries.size();
     }
-    public void drawBuddylist(DrawContext context, int availableWidth) {
+    public void drawBuddylist(GuiGraphicsExtractor context, int availableWidth) {
         int lineHeight = 0;
         Friends friends = Friends.get();
         bep.hax.util.EnemyManager enemyManager = bep.hax.util.EnemyManager.getInstance();
         int maxVisibleLines = (h - (buddyListY + footer + 15)) / 12;
         int maxScroll = Math.max(0, buddyListEntries.size() - maxVisibleLines);
-        listScrollPosition = MathHelper.clamp(listScrollPosition, 0, maxScroll);
+        listScrollPosition = Mth.clamp(listScrollPosition, 0, maxScroll);
         for (int i = listScrollPosition; i < buddyListEntries.size(); ++i) {
             if (lineHeight >= maxVisibleLines)
                 break;
             BuddyListEntry buddyListEntry = buddyListEntries.get(i);
             int yPos = buddyListY + 5 + 12 * lineHeight;
             if (buddyListEntry.uuid != null) {
-                PlayerListEntry tabEntry = mc.getNetworkHandler() != null ?
-                    mc.getNetworkHandler().getPlayerListEntry(buddyListEntry.uuid) : null;
+                PlayerInfo tabEntry = mc.getConnection() != null ?
+                    mc.getConnection().getPlayerInfo(buddyListEntry.uuid) : null;
                 if (tabEntry != null) {
-                    net.minecraft.client.gui.PlayerSkinDrawer.draw(context, tabEntry.getSkinTextures(),
+                    net.minecraft.client.gui.components.PlayerFaceRenderer.draw(context, tabEntry.getSkin(),
                         buddyListX + 5, yPos - 1, 10);
                 }
             }
@@ -439,8 +439,8 @@ public class ManeWindow extends LiveWindow {
                 int unreads = LivemessageGui.unreadMessages.getOrDefault(buddyListEntry.uuid, 0);
                 if (unreads > 0) {
                     String unreadString = "(" + unreads + ")";
-                    int unreadX = buddyListX + 5 + fontRenderer.getWidth(clippedText + " ");
-                    if (unreadX + fontRenderer.getWidth(unreadString) < buddyListX + availableWidth - 5) {
+                    int unreadX = buddyListX + 5 + fontRenderer.width(clippedText + " ");
+                    if (unreadX + fontRenderer.width(unreadString) < buddyListX + availableWidth - 5) {
                         context.drawText(fontRenderer, unreadString, unreadX, yPos, getRGB(255, 255, 0), false);
                     }
                 }
@@ -449,7 +449,7 @@ public class ManeWindow extends LiveWindow {
         }
     }
     @Override
-    public void drawWindow(DrawContext context, int bgColor, int fgColor) {
+    public void drawWindow(GuiGraphicsExtractor context, int bgColor, int fgColor) {
         w = 150;
         title = "Livemessage";
         super.drawWindow(context, bgColor, fgColor);
@@ -493,14 +493,14 @@ public class ManeWindow extends LiveWindow {
         drawProfilePic(context, 5, titlebarHeight + 5, liveProfile.uuid);
         drawRect(context, 5 - 1, this.h - footer - 5 - 1, this.w - 10 + 2, footer + 2, getSingleRGB(64));
         drawRect(context, 5, this.h - footer - 5, this.w - 10, footer, getSingleRGB(24));
-        if (this.searchField.getText().trim().length() == 0)
+        if (this.searchField.getValue().trim().length() == 0)
             context.drawText(fontRenderer, "Search...", 8, this.h - footer - 2, getSingleRGB(64), false);
         liveButtons.forEach(btn -> btn.drawTooltips(context));
     }
     @Override
-    public void drawTextFields(DrawContext context) {
+    public void drawTextFields(GuiGraphicsExtractor context) {
         context.getMatrices().translate((float)x, (float)y);
-        this.searchField.setEditableColor(active ? 0xFFFFFFFF : 0xFF808080);
+        this.searchField.setTextColor(active ? 0xFFFFFFFF : 0xFF808080);
         this.searchField.setX(8);
         this.searchField.setY(this.h - footer - 2);
         this.searchField.setWidth(this.w - 18);

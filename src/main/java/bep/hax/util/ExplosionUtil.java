@@ -1,28 +1,28 @@
 package bep.hax.util;
-import net.minecraft.block.AnvilBlock;
-import net.minecraft.block.BedBlock;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.CobwebBlock;
-import net.minecraft.component.type.ItemEnchantmentsComponent;
-import net.minecraft.enchantment.Enchantment;
-import net.minecraft.enchantment.EnchantmentHelper;
-import net.minecraft.entity.DamageUtil;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.attribute.DefaultAttributeContainer;
-import net.minecraft.entity.attribute.DefaultAttributeRegistry;
-import net.minecraft.entity.attribute.EntityAttributes;
-import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.entity.effect.StatusEffects;
-import net.minecraft.item.ItemStack;
-import net.minecraft.registry.entry.RegistryEntry;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.BlockView;
+import net.minecraft.world.level.block.AnvilBlock;
+import net.minecraft.world.level.block.BedBlock;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.WebBlock;
+import net.minecraft.world.item.enchantment.ItemEnchantments;
+import net.minecraft.world.item.enchantment.Enchantment;
+import net.minecraft.world.item.enchantment.EnchantmentHelper;
+import net.minecraft.world.damagesource.CombatRules;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
+import net.minecraft.world.entity.ai.attributes.DefaultAttributes;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.core.Holder;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.level.BlockGetter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -37,25 +37,25 @@ public class ExplosionUtil {
         put("fire_protection", 1);
     }};
     public static double getDamageTo(final Entity entity,
-                                     final Vec3d explosion,
+                                     final Vec3 explosion,
                                      boolean assumeBestArmor) {
         return getDamageTo(entity, explosion, false, assumeBestArmor);
     }
     public static double getDamageTo(final Entity entity,
-                                     final Vec3d explosion,
+                                     final Vec3 explosion,
                                      final boolean ignoreTerrain,
                                      boolean assumeBestArmor) {
         return getDamageTo(entity, explosion, ignoreTerrain, 12.0f, 0, assumeBestArmor);
     }
     public static double getDamageTo(final Entity entity,
-                                     final Vec3d explosion,
+                                     final Vec3 explosion,
                                      final boolean ignoreTerrain,
                                      int extrapolationTicks,
                                      boolean assumeBestArmor) {
         return getDamageTo(entity, explosion, ignoreTerrain, 12.0f, extrapolationTicks, assumeBestArmor);
     }
     public static double getDamageTo(final Entity entity,
-                                     final Vec3d explosion,
+                                     final Vec3 explosion,
                                      final boolean ignoreTerrain,
                                      final Set<BlockPos> ignoreBlocks,
                                      int extrapolationTicks,
@@ -63,7 +63,7 @@ public class ExplosionUtil {
         return getDamageTo(entity, explosion, ignoreTerrain, 12.0f, ignoreBlocks, extrapolationTicks, assumeBestArmor);
     }
     public static double getDamageTo(final Entity entity,
-                                     final Vec3d explosion,
+                                     final Vec3 explosion,
                                      final boolean ignoreTerrain,
                                      float power,
                                      final Set<BlockPos> ignoreBlocks,
@@ -72,27 +72,27 @@ public class ExplosionUtil {
         double x = entity.getX();
         double y = entity.getY();
         double z = entity.getZ();
-        Vec3d vec3d2 = Vec3d.ZERO;
+        Vec3 vec3d2 = Vec3.ZERO;
         if (extrapolationTicks != 0) {
-            double ox = (x - entity.lastX) * extrapolationTicks;
-            double oy = (y - entity.lastY) * extrapolationTicks * 0.3;
-            double oz = (z - entity.lastZ) * extrapolationTicks;
+            double ox = (x - entity.xo) * extrapolationTicks;
+            double oy = (y - entity.yo) * extrapolationTicks * 0.3;
+            double oz = (z - entity.zo) * extrapolationTicks;
             x += ox;
             y += oy;
             z += oz;
-            vec3d2 = new Vec3d(ox, oy, oz);
+            vec3d2 = new Vec3(ox, oy, oz);
         }
-        Vec3d vec3d = new Vec3d(x, y, z);
-        double d = Math.sqrt(vec3d.squaredDistanceTo(explosion));
-        double ab = getExposure(explosion, entity.getBoundingBox().offset(vec3d2), ignoreTerrain ? IgnoreTerrain.BLAST : IgnoreTerrain.NONE, ignoreBlocks);
+        Vec3 vec3d = new Vec3(x, y, z);
+        double d = Math.sqrt(vec3d.distanceToSqr(explosion));
+        double ab = getExposure(explosion, entity.getBoundingBox().move(vec3d2), ignoreTerrain ? IgnoreTerrain.BLAST : IgnoreTerrain.NONE, ignoreBlocks);
         double w = d / power;
         double ac = (1.0 - w) * ab;
         double dmg = (float) ((int) ((ac * ac + ac) / 2.0 * 7.0 * 12.0 + 1.0));
-        dmg = getReduction(entity, mc.world.getDamageSources().explosion(null), dmg, assumeBestArmor);
+        dmg = getReduction(entity, mc.level.damageSources().explosion(null), dmg, assumeBestArmor);
         return Math.max(0.0, dmg);
     }
     public static double getDamageTo(final Entity entity,
-                                     final Vec3d explosion,
+                                     final Vec3 explosion,
                                      final boolean ignoreTerrain,
                                      float power,
                                      int extrapolationTicks,
@@ -100,28 +100,28 @@ public class ExplosionUtil {
         double x = entity.getX();
         double y = entity.getY();
         double z = entity.getZ();
-        Vec3d vec3d2 = Vec3d.ZERO;
+        Vec3 vec3d2 = Vec3.ZERO;
         if (extrapolationTicks != 0) {
-            double ox = (x - entity.lastX) * extrapolationTicks;
-            double oy = (y - entity.lastY) * extrapolationTicks * 0.3;
-            double oz = (z - entity.lastZ) * extrapolationTicks;
+            double ox = (x - entity.xo) * extrapolationTicks;
+            double oy = (y - entity.yo) * extrapolationTicks * 0.3;
+            double oz = (z - entity.zo) * extrapolationTicks;
             x += ox;
             y += oy;
             z += oz;
-            vec3d2 = new Vec3d(ox, oy, oz);
+            vec3d2 = new Vec3(ox, oy, oz);
         }
-        Vec3d vec3d = new Vec3d(x, y, z);
-        double d = Math.sqrt(vec3d.squaredDistanceTo(explosion));
-        double ab = getExposure(explosion, entity.getBoundingBox().offset(vec3d2), ignoreTerrain ? IgnoreTerrain.BLAST : IgnoreTerrain.NONE);
+        Vec3 vec3d = new Vec3(x, y, z);
+        double d = Math.sqrt(vec3d.distanceToSqr(explosion));
+        double ab = getExposure(explosion, entity.getBoundingBox().move(vec3d2), ignoreTerrain ? IgnoreTerrain.BLAST : IgnoreTerrain.NONE);
         double w = d / power;
         double ac = (1.0 - w) * ab;
         double dmg = (float) ((int) ((ac * ac + ac) / 2.0 * 7.0 * 12.0 + 1.0));
-        dmg = getReduction(entity, mc.world.getDamageSources().explosion(null), dmg, assumeBestArmor);
+        dmg = getReduction(entity, mc.level.damageSources().explosion(null), dmg, assumeBestArmor);
         return Math.max(0.0, dmg) / 4;
     }
     private static double getReduction(Entity entity, DamageSource damageSource, double damage, boolean assumeBestArmor) {
-        if (damageSource.isScaledWithDifficulty()) {
-            switch (mc.world.getDifficulty()) {
+        if (damageSource.scalesWithDifficulty()) {
+            switch (mc.level.getDifficulty()) {
                 case PEACEFUL -> {
                     return 0.0;
                 }
@@ -130,25 +130,25 @@ public class ExplosionUtil {
             }
         }
         if (entity instanceof LivingEntity livingEntity) {
-            damage = DamageUtil.getDamageLeft(livingEntity, (float) damage, damageSource, getArmor(livingEntity), (float) livingEntity.getAttributeValue(EntityAttributes.ARMOR_TOUGHNESS));
+            damage = CombatRules.getDamageAfterAbsorb(livingEntity, (float) damage, damageSource, getArmor(livingEntity), (float) livingEntity.getAttributeValue(Attributes.ARMOR_TOUGHNESS));
             damage = getResistanceReduction(livingEntity, damage);
             damage = getProtectionReduction(livingEntity, damage, damageSource, assumeBestArmor);
         }
         return Math.max(damage, 0);
     }
     private static float getArmor(LivingEntity entity) {
-        return (float) Math.floor(entity.getAttributeValue(EntityAttributes.ARMOR));
+        return (float) Math.floor(entity.getAttributeValue(Attributes.ARMOR));
     }
     private static float getProtectionReduction(Entity player, double damage, DamageSource source, boolean assumeBestArmor) {
         if (player instanceof LivingEntity livingEntity) {
-            java.util.List<net.minecraft.item.ItemStack> armorItems = java.util.Arrays.asList(
-                livingEntity.getEquippedStack(net.minecraft.entity.EquipmentSlot.FEET),
-                livingEntity.getEquippedStack(net.minecraft.entity.EquipmentSlot.LEGS),
-                livingEntity.getEquippedStack(net.minecraft.entity.EquipmentSlot.CHEST),
-                livingEntity.getEquippedStack(net.minecraft.entity.EquipmentSlot.HEAD)
+            java.util.List<net.minecraft.world.item.ItemStack> armorItems = java.util.Arrays.asList(
+                livingEntity.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.FEET),
+                livingEntity.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.LEGS),
+                livingEntity.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.CHEST),
+                livingEntity.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.HEAD)
             );
             float protLevel = getProtectionAmount(armorItems, assumeBestArmor);
-            return DamageUtil.getInflictedDamage((float) damage, protLevel);
+            return CombatRules.getDamageAfterMagicAbsorb((float) damage, protLevel);
         }
         return 0.0f;
     }
@@ -157,9 +157,9 @@ public class ExplosionUtil {
     }
     public static int getProtectionAmount(ItemStack armor) {
         int x = 0;
-        ItemEnchantmentsComponent enchantments = EnchantmentHelper.getEnchantments(armor);
-        for (RegistryEntry<Enchantment> enchantment : enchantments.getEnchantments()) {
-            String id = enchantment.getIdAsString().replace("minecraft:", "");
+        ItemEnchantments enchantments = EnchantmentHelper.getEnchantmentsForCrafting(armor);
+        for (Holder<Enchantment> enchantment : enchantments.keySet()) {
+            String id = enchantment.getRegisteredName().replace("minecraft:", "");
             if (PROTECTION_MAP.containsKey(id)) {
                 x += enchantments.getLevel(enchantment) * PROTECTION_MAP.get(id);
                 break;
@@ -168,7 +168,7 @@ public class ExplosionUtil {
         return x;
     }
     private static double getResistanceReduction(LivingEntity player, double damage) {
-        StatusEffectInstance resistance = player.getStatusEffect(StatusEffects.RESISTANCE);
+        MobEffectInstance resistance = player.getEffect(MobEffects.RESISTANCE);
         if (resistance != null) {
             int lvl = resistance.getAmplifier() + 1;
             damage *= (1.0f - (lvl * 0.2f));
@@ -176,24 +176,24 @@ public class ExplosionUtil {
         return Math.max(damage, 0.0f);
     }
     @SuppressWarnings("unchecked")
-    private static <T extends LivingEntity> DefaultAttributeContainer getDefaultForEntity(T entity) {
-        return DefaultAttributeRegistry.get((EntityType<? extends LivingEntity>) entity.getType());
+    private static <T extends LivingEntity> AttributeSupplier getDefaultForEntity(T entity) {
+        return DefaultAttributes.getSupplier((EntityType<? extends LivingEntity>) entity.getType());
     }
-    private static float getExposure(final Vec3d source,
-                                     final Box box,
+    private static float getExposure(final Vec3 source,
+                                     final AABB box,
                                      final IgnoreTerrain ignoreTerrain,
                                      final Set<BlockPos> ignoreBlocks) {
         RaycastFactory raycastFactory = getRaycastFactory(ignoreTerrain, ignoreBlocks);
         return getExposure(source, box, raycastFactory);
     }
-    private static float getExposure(final Vec3d source,
-                                     final Box box,
+    private static float getExposure(final Vec3 source,
+                                     final AABB box,
                                      final IgnoreTerrain ignoreTerrain) {
         RaycastFactory raycastFactory = getRaycastFactory(ignoreTerrain);
         return getExposure(source, box, raycastFactory);
     }
-    private static float getExposure(final Vec3d source,
-                                     final Box box,
+    private static float getExposure(final Vec3 source,
+                                     final AABB box,
                                      final RaycastFactory raycastFactory) {
         double xDiff = box.maxX - box.minX;
         double yDiff = box.maxY - box.minY;
@@ -218,7 +218,7 @@ public class ExplosionUtil {
             for (double x = startX; x <= endX; x += xStep) {
                 for (double y = startY; y <= endY; y += yStep) {
                     for (double z = startZ; z <= endZ; z += zStep) {
-                        Vec3d position = new Vec3d(x, y, z);
+                        Vec3 position = new Vec3(x, y, z);
                         if (raycast(new ExposureRaycastContext(position, source), raycastFactory) == null) misses++;
                         hits++;
                     }
@@ -235,9 +235,9 @@ public class ExplosionUtil {
                 if (ignoreBlocks.contains(blockPos)) {
                     return null;
                 }
-                BlockState blockState = mc.world.getBlockState(blockPos);
-                if (blockState.getBlock().getBlastResistance() < 600) return null;
-                return blockState.getCollisionShape(mc.world, blockPos).raycast(context.start(), context.end(), blockPos);
+                BlockState blockState = mc.level.getBlockState(blockPos);
+                if (blockState.getBlock().getExplosionResistance() < 600) return null;
+                return blockState.getCollisionShape(mc.level, blockPos).clip(context.start(), context.end(), blockPos);
             };
         } else if (ignoreTerrain == IgnoreTerrain.ALL) {
             return (context, blockPos) -> null;
@@ -247,8 +247,8 @@ public class ExplosionUtil {
                 if (ignoreBlocks.contains(blockPos)) {
                     return null;
                 }
-                BlockState blockState = mc.world.getBlockState(blockPos);
-                return blockState.getCollisionShape(mc.world, blockPos).raycast(context.start(), context.end(), blockPos);
+                BlockState blockState = mc.level.getBlockState(blockPos);
+                return blockState.getCollisionShape(mc.level, blockPos).clip(context.start(), context.end(), blockPos);
             };
         }
     }
@@ -256,22 +256,22 @@ public class ExplosionUtil {
         if (ignoreTerrain == IgnoreTerrain.BLAST) {
             return (context, blockPos) ->
             {
-                BlockState blockState = mc.world.getBlockState(blockPos);
-                if (blockState.getBlock().getBlastResistance() < 600) return null;
-                return blockState.getCollisionShape(mc.world, blockPos).raycast(context.start(), context.end(), blockPos);
+                BlockState blockState = mc.level.getBlockState(blockPos);
+                if (blockState.getBlock().getExplosionResistance() < 600) return null;
+                return blockState.getCollisionShape(mc.level, blockPos).clip(context.start(), context.end(), blockPos);
             };
         } else if (ignoreTerrain == IgnoreTerrain.ALL) {
             return (context, blockPos) -> null;
         } else {
             return (context, blockPos) ->
             {
-                BlockState blockState = mc.world.getBlockState(blockPos);
-                return blockState.getCollisionShape(mc.world, blockPos).raycast(context.start(), context.end(), blockPos);
+                BlockState blockState = mc.level.getBlockState(blockPos);
+                return blockState.getCollisionShape(mc.level, blockPos).clip(context.start(), context.end(), blockPos);
             };
         }
     }
     private static BlockHitResult raycast(ExposureRaycastContext context, RaycastFactory raycastFactory) {
-        return BlockView.raycast(context.start, context.end, context, raycastFactory, ctx -> null);
+        return BlockGetter.raycast(context.start, context.end, context, raycastFactory, ctx -> null);
     }
     public enum IgnoreTerrain {
         ALL,
@@ -280,5 +280,5 @@ public class ExplosionUtil {
     }
     @FunctionalInterface
     public interface RaycastFactory extends BiFunction<ExposureRaycastContext, BlockPos, BlockHitResult> { }
-    public record ExposureRaycastContext(Vec3d start, Vec3d end) { }
+    public record ExposureRaycastContext(Vec3 start, Vec3 end) { }
 }

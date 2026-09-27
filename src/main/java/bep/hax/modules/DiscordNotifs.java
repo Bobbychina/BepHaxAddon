@@ -8,11 +8,11 @@ import meteordevelopment.meteorclient.events.world.TickEvent;
 import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.network.packet.s2c.play.SubtitleS2CPacket;
-import net.minecraft.text.Text;
-import net.minecraft.text.TextColor;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.network.protocol.game.ClientboundSetSubtitleTextPacket;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TextColor;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -127,14 +127,14 @@ public class DiscordNotifs extends Module
             sendWebhookMessage(messageQueue.poll());
         }
         Set<UUID> uuidsCurrentlyInRange = new HashSet<>();
-        if (playerRange.get() && mc.world != null)
+        if (playerRange.get() && mc.level != null)
         {
-            for (Entity entity : mc.world.getEntities())
+            for (Entity entity : mc.level.entitiesForRendering())
             {
-                if (entity.getUuid().equals(mc.player.getUuid())) continue;
-                if (entity instanceof PlayerEntity playerEntity)
+                if (entity.getUUID().equals(mc.player.getUUID())) continue;
+                if (entity instanceof Player playerEntity)
                 {
-                    uuidsCurrentlyInRange.add(playerEntity.getUuid());
+                    uuidsCurrentlyInRange.add(playerEntity.getUUID());
                     if (!playersInRange.contains(playerEntity.getGameProfile()))
                     {
                         playersInRange.add(playerEntity.getGameProfile());
@@ -154,8 +154,8 @@ public class DiscordNotifs extends Module
     }
     @EventHandler(priority = 999)
     private void onReceivePacket(PacketEvent.Receive event) {
-        if (event.packet instanceof SubtitleS2CPacket) {
-            SubtitleS2CPacket packet = (SubtitleS2CPacket) event.packet;
+        if (event.packet instanceof ClientboundSetSubtitleTextPacket) {
+            ClientboundSetSubtitleTextPacket packet = (ClientboundSetSubtitleTextPacket) event.packet;
             String message = packet.text().getString();
             int queueIndex = message.indexOf("Position in queue: ");
             if (queueIndex != -1)
@@ -172,11 +172,11 @@ public class DiscordNotifs extends Module
     @EventHandler(priority = 999)
     private void onMessageReceive(ReceiveMessageEvent event)
     {
-        Text message = event.getMessage();
-        for (Text sibling : message.getSiblings())
+        Component message = event.getMessage();
+        for (Component sibling : message.getSiblings())
         {
             TextColor color = sibling.getStyle().getColor();
-            if (color != null && color.getRgb() == 43690)
+            if (color != null && color.getValue() == 43690)
             {
                 handleMessage(message.getString(), MessageType.DEATH);
                 return;

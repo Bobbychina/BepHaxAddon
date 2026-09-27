@@ -8,13 +8,13 @@ import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.meteorclient.settings.StringSetting;
 import meteordevelopment.meteorclient.systems.modules.Categories;
 import meteordevelopment.meteorclient.systems.modules.Module;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.item.BlockItem;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.block.ShulkerBoxBlock;
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.ShulkerBoxBlock;
+import net.minecraft.network.chat.Component;
 import bep.hax.util.ShulkerDataParser;
 import java.util.Map;
 import java.util.WeakHashMap;
@@ -52,7 +52,7 @@ public class ShulkerOverviewModule extends Module {
     );
     public final Setting<String> multipleText = sgGeneral.add(new StringSetting.Builder()
         .name("multiple-indicator")
-        .description("Text to show when shulker contains multiple item types.")
+        .description("Component to show when shulker contains multiple item types.")
         .defaultValue("+")
         .build()
     );
@@ -75,7 +75,7 @@ public class ShulkerOverviewModule extends Module {
     public ShulkerOverviewModule() {
         super(Bep.CATEGORY, "shulker-overview", "Overlays most common item icon on shulker boxes in inventory.");
     }
-    public void renderShulkerOverlay(DrawContext context, int x, int y, ItemStack stack) {
+    public void renderShulkerOverlay(GuiGraphicsExtractor context, int x, int y, ItemStack stack) {
         if (stack.isEmpty()) return;
         if (!(stack.getItem() instanceof BlockItem blockItem)) return;
         if (!(blockItem.getBlock() instanceof ShulkerBoxBlock)) return;
@@ -90,13 +90,13 @@ public class ShulkerOverviewModule extends Module {
         Item item = cached.mostCommonItem;
         boolean hasMultiple = cached.hasMultiple;
         if (debugMode.get()) {
-            MinecraftClient mc = MinecraftClient.getInstance();
+            Minecraft mc = Minecraft.getInstance();
             int count = cached.itemCounts.getOrDefault(item, 0);
             String debug = String.format("Items: %d, Most: %s x%d",
                 cached.itemCounts.size(),
                 item.getName().getString(),
                 count);
-            context.drawText(mc.textRenderer, debug, x, y - 10, 0xFFFFFF, true);
+            context.drawText(mc.font, debug, x, y - 10, 0xFFFFFF, true);
         }
         int iconSize = this.iconSize.get();
         int iconX, iconY;
@@ -136,12 +136,12 @@ public class ShulkerOverviewModule extends Module {
             renderMultipleIndicator(context, x, y, multipleText.get(), multipleSize.get());
         }
     }
-    private void renderMultipleIndicator(DrawContext context, int slotX, int slotY, String text, int size) {
-        MinecraftClient mc = MinecraftClient.getInstance();
-        int textWidth = mc.textRenderer.getWidth(text);
+    private void renderMultipleIndicator(GuiGraphicsExtractor context, int slotX, int slotY, String text, int size) {
+        Minecraft mc = Minecraft.getInstance();
+        int textWidth = mc.font.width(text);
         int textX = slotX + 16 - textWidth - 1;
         int textY = slotY + 1;
-        context.drawText(mc.textRenderer, text, textX, textY, 0xFFFFFF00, true);
+        context.drawText(mc.font, text, textX, textY, 0xFFFFFF00, true);
     }
     public enum IconPosition {
         BottomRight,

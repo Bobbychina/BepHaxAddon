@@ -1,18 +1,18 @@
 package bep.hax.mixin;
 import bep.hax.modules.RocketMan;
-import net.minecraft.sound.SoundEvent;
+import net.minecraft.sounds.SoundEvent;
 import org.spongepowered.asm.mixin.Mixin;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.util.math.random.Random;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.RandomSource;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import net.minecraft.client.sound.ElytraSoundInstance;
-import net.minecraft.client.sound.MovingSoundInstance;
+import net.minecraft.client.resources.sounds.ElytraOnPlayerSoundInstance;
+import net.minecraft.client.resources.sounds.AbstractTickableSoundInstance;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-@Mixin(ElytraSoundInstance.class)
-public abstract class ElytraSoundInstanceMixin extends MovingSoundInstance {
-    protected ElytraSoundInstanceMixin(SoundEvent soundEvent, SoundCategory soundCategory, Random random) {
+@Mixin(ElytraOnPlayerSoundInstance.class)
+public abstract class ElytraSoundInstanceMixin extends AbstractTickableSoundInstance {
+    protected ElytraSoundInstanceMixin(SoundEvent soundEvent, SoundSource soundCategory, RandomSource random) {
         super(soundEvent, soundCategory, random);
     }
     @Inject(method = "tick", at = @At("HEAD"))

@@ -7,9 +7,9 @@ import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.meteorclient.utils.render.color.Color;
 import meteordevelopment.meteorclient.utils.render.color.SettingColor;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.network.packet.s2c.play.BlockBreakingProgressS2CPacket;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
+import net.minecraft.network.protocol.game.ClientboundBlockDestructionPacket;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.AABB;
 import java.util.ArrayList;
 import java.util.List;
 public class MineESP extends meteordevelopment.meteorclient.systems.modules.Module {
@@ -56,7 +56,7 @@ public class MineESP extends meteordevelopment.meteorclient.systems.modules.Modu
     Render render = null;
     @EventHandler
     private void onRender(Render3DEvent event) {
-        if (mc.player == null || mc.world == null) return;
+        if (mc.player == null || mc.level == null) return;
         if (render != null && contains()) render = null;
         if (render != null) {
             renders.add(render);
@@ -69,8 +69,8 @@ public class MineESP extends meteordevelopment.meteorclient.systems.modules.Modu
     }
     @EventHandler
     private void onReceive(PacketEvent.Receive event) {
-        if (event.packet instanceof BlockBreakingProgressS2CPacket packet) {
-            render = new Render(packet.getPos(), packet.getEntityId(), System.currentTimeMillis());
+        if (event.packet instanceof ClientboundBlockDestructionPacket packet) {
+            render = new Render(packet.getPos(), packet.getId(), System.currentTimeMillis());
         }
     }
     private boolean contains() {
@@ -85,8 +85,8 @@ public class MineESP extends meteordevelopment.meteorclient.systems.modules.Modu
     private double getProgress(double delta) {
         return 1 - Math.pow(1 - (delta), 5);
     }
-    private Box getBox(BlockPos pos, double progress) {
-        return new Box(pos.getX() + 0.5 - progress / 2, pos.getY() + 0.5 - progress / 2,pos.getZ() + 0.5 - progress / 2, pos.getX() + 0.5 + progress / 2, pos.getY() + 0.5 + progress / 2, pos.getZ() + 0.5 + progress / 2);
+    private AABB getBox(BlockPos pos, double progress) {
+        return new AABB(pos.getX() + 0.5 - progress / 2, pos.getY() + 0.5 - progress / 2,pos.getZ() + 0.5 - progress / 2, pos.getX() + 0.5 + progress / 2, pos.getY() + 0.5 + progress / 2, pos.getZ() + 0.5 + progress / 2);
     }
     private record Render(BlockPos pos, int id, long time) {}
 }

@@ -1,21 +1,20 @@
 package bep.hax.mixin;
 import java.util.Map;
-import net.minecraft.text.Text;
-import org.jetbrains.annotations.Nullable;
-import net.minecraft.client.sound.*;
+import net.minecraft.network.chat.Component;
+import net.minecraft.client.resources.sounds.*;
 import org.spongepowered.asm.mixin.*;
 import bep.hax.modules.MusicTweaks;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.Mth;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import bep.hax.mixin.accessor.SourceManagerAccessor;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-@Mixin(SoundSystem.class)
+@Mixin(Library.class)
 public class SoundSystemMixin {
     @Shadow
     @Final
-    private Map<SoundInstance, Channel.SourceManager> sources;
+    private Map<SoundInstance, ChannelAccess.ChannelHandle> sources;
     @Unique
     @Mutable
     private int totalTicksPlaying;
@@ -29,35 +28,35 @@ public class SoundSystemMixin {
         if (modules == null ) return;
         MusicTweaks tweaks = modules.get(MusicTweaks.class);
         boolean playing = false;
-        @Nullable String songID = null;
+        String songID = null;
         for (SoundInstance instance : sources.keySet()) {
             Sound sound = instance.getSound();
             if (sound == null) continue;
-            String location = sound.getLocation().toString();
+            String location = sound.getIdentifier().toString();
             if (!location.startsWith("minecraft:sounds/music/") && !sound.toString().contains("minecraft:records/")) continue;
-            Channel.SourceManager sourceManager = this.sources.get(instance);
+            ChannelAccess.ChannelHandle sourceManager = this.sources.get(instance);
             songID = location.substring(location.lastIndexOf('/') + 1);
             if (sourceManager == null) continue;
-            Source source = ((SourceManagerAccessor) sourceManager).getSource();
+            ChannelAccess source = ((SourceManagerAccessor) sourceManager).getSource();
             if (source == null) continue;
             playing = true;
             tweaks.setCurrentSong(sound.toString());
             if (tweaks.isActive() && !tweaks.randomPitch()) {
                 this.dirtyPitch = true;
-                source.setPitch(1.0f + tweaks.getPitchAdjustment());
+                source.setXRot(1.0f + tweaks.getPitchAdjustment());
             } else if (tweaks.isActive() && tweaks.randomPitch() && tweaks.trippyPitch()) {
                 this.dirtyPitch = true;
-                source.setPitch(tweaks.getNextPitchStep(instance.getPitch()));
+                source.setXRot(tweaks.getNextPitchStep(instance.getXRot()));
             } else if (!tweaks.isActive() && this.dirtyPitch) {
-                source.setPitch(1f);
+                source.setXRot(1f);
                 this.dirtyPitch = false;
             }
             if (tweaks.isActive()) {
                 this.dirtyVolume = true;
-                source.setVolume(MathHelper.clamp(tweaks.getClient().options.getSoundVolume(instance.getCategory()) + tweaks.getVolumeAdjustment(), 0.0f, 4.0f));
+                source.setVolume(Mth.clamp(tweaks.getClient().options.getFinalSoundSourceVolume(instance.getSource()) + tweaks.getVolumeAdjustment(), 0.0f, 4.0f));
             } else if (this.dirtyVolume) {
                 this.dirtyVolume = false;
-                source.setVolume(tweaks.getClient().options.getSoundVolume(instance.getCategory()));
+                source.setVolume(tweaks.getClient().options.getFinalSoundSourceVolume(instance.getSource()));
             }
         }
         if (playing) {
@@ -70,7 +69,7 @@ public class SoundSystemMixin {
                 String songName = tweaks.getSongName(songID);
                 switch (tweaks.getDisplayMode()) {
                     case Chat -> tweaks.sendNowPlayingMessage(songName);
-                    case Record -> tweaks.getClient().inGameHud.setRecordPlayingOverlay(Text.of(songName));
+                    case Record -> tweaks.getClient().gui.setNowPlaying(Component.literal(songName));
                 }
             }
         }

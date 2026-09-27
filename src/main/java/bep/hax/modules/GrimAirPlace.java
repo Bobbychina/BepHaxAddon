@@ -7,14 +7,14 @@ import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.utils.render.color.SettingColor;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.item.BlockItem;
-import net.minecraft.item.SpawnEggItem;
-import net.minecraft.network.packet.c2s.play.*;
-import net.minecraft.util.Hand;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.hit.HitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.SpawnEggItem;
+import net.minecraft.network.protocol.game.*;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 public class GrimAirPlace extends Module {
     private final SettingGroup sgGeneral = settings.getDefaultGroup();
     private final SettingGroup sgRange = settings.createGroup("range");
@@ -81,22 +81,22 @@ public class GrimAirPlace extends Module {
         if (delay < placeDelay.get()) {
             delay++;
         }
-        double r = customRange.get() ? range.get() : mc.player.getBlockInteractionRange();
-        hitResult = mc.getCameraEntity().raycast(r, 0, false);
-        if (!(hitResult instanceof BlockHitResult blockHitResult) || !(mc.player.getMainHandStack().getItem() instanceof BlockItem) && !(mc.player.getMainHandStack().getItem() instanceof SpawnEggItem)) {
+        double r = customRange.get() ? range.get() : mc.player.blockInteractionRange();
+        hitResult = mc.getCameraEntity().pick(r, 0, false);
+        if (!(hitResult instanceof BlockHitResult blockHitResult) || !(mc.player.getMainHandItem().getItem() instanceof BlockItem) && !(mc.player.getMainHandItem().getItem() instanceof SpawnEggItem)) {
             wasPressed = false;
             return;
         }
-        boolean isPressed = mc.options.useKey.isPressed();
-        if (mc.currentScreen != null) {
+        boolean isPressed = mc.options.keyUse.isDown();
+        if (mc.screen != null) {
             wasPressed = isPressed;
             return;
         }
         if (isPressed && !wasPressed && delay >= placeDelay.get()) {
-            mc.player.networkHandler.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.SWAP_ITEM_WITH_OFFHAND, new BlockPos(0,0,0), Direction.DOWN));
-            mc.player.networkHandler.sendPacket(new PlayerInteractBlockC2SPacket(Hand.OFF_HAND, blockHitResult, mc.player.currentScreenHandler.getRevision() + 2));
-            mc.player.networkHandler.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.SWAP_ITEM_WITH_OFFHAND, new BlockPos(0,0,0), Direction.DOWN));
-            mc.player.swingHand(Hand.MAIN_HAND);
+            mc.player.connection.send(new ServerboundPlayerActionPacket(ServerboundPlayerActionPacket.Action.SWAP_ITEM_WITH_OFFHAND, new BlockPos(0,0,0), Direction.DOWN));
+            mc.player.connection.send(new ServerboundUseItemOnPacket(InteractionHand.OFF_HAND, blockHitResult, mc.player.containerMenu.getStateId() + 2));
+            mc.player.connection.send(new ServerboundPlayerActionPacket(ServerboundPlayerActionPacket.Action.SWAP_ITEM_WITH_OFFHAND, new BlockPos(0,0,0), Direction.DOWN));
+            mc.player.swing(InteractionHand.MAIN_HAND);
             delay = 0;
         }
         wasPressed = isPressed;
@@ -104,8 +104,8 @@ public class GrimAirPlace extends Module {
     @EventHandler
     private void onRender(Render3DEvent event) {
         if (!(hitResult instanceof BlockHitResult blockHitResult)
-            || !mc.world.getBlockState(blockHitResult.getBlockPos()).isReplaceable()
-            || !(mc.player.getMainHandStack().getItem() instanceof BlockItem) && !(mc.player.getMainHandStack().getItem() instanceof SpawnEggItem)
+            || !mc.level.getBlockState(blockHitResult.getBlockPos()).canBeReplaced()
+            || !(mc.player.getMainHandItem().getItem() instanceof BlockItem) && !(mc.player.getMainHandItem().getItem() instanceof SpawnEggItem)
             || !render.get()) return;
         event.renderer.box(blockHitResult.getBlockPos(), sideColor.get(), lineColor.get(), shapeMode.get(), 0);
     }

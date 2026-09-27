@@ -4,16 +4,16 @@ import bep.hax.modules.livemessage.util.LiveProfileCache;
 import bep.hax.modules.livemessage.util.LivemessageUtil;
 import com.google.gson.Gson;
 import meteordevelopment.meteorclient.systems.friends.Friends;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.Click;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.input.CharInput;
-import net.minecraft.client.input.KeyInput;
-import net.minecraft.client.toast.SystemToast;
-import net.minecraft.client.toast.ToastManager;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.gui.components.toasts.SystemToast;
+import net.minecraft.client.gui.components.toasts.ToastManager;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.network.chat.Component;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -22,7 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 public class LivemessageGui extends Screen {
     public LivemessageGui() {
-        super(Text.literal("Livemessage"));
+        super(Component.literal("Livemessage"));
         if (client != null) {
             setScl();
         }
@@ -125,7 +125,7 @@ public class LivemessageGui extends Screen {
         return super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
     }
     @Override
-    public boolean mouseDragged(Click click, double deltaX, double deltaY) {
+    public boolean mouseDragged(MouseButtonEvent click, double deltaX, double deltaY) {
         if (activeWindow != null) {
             int virtualX = (int) (click.x() / LiveMessage.INSTANCE.guiScale.get());
             int virtualY = (int) (click.y() / LiveMessage.INSTANCE.guiScale.get());
@@ -143,7 +143,7 @@ public class LivemessageGui extends Screen {
         super.mouseMoved(mouseX, mouseY);
     }
     @Override
-    public boolean mouseClicked(Click click, boolean doubled) {
+    public boolean mouseClicked(MouseButtonEvent click, boolean doubled) {
         if (!liveWindows.isEmpty()) {
             int guiScale = LiveMessage.INSTANCE.guiScale.get();
             int virtualX = (int) (click.x() / guiScale);
@@ -171,7 +171,7 @@ public class LivemessageGui extends Screen {
         return super.mouseClicked(click, doubled);
     }
     @Override
-    public boolean mouseReleased(Click click) {
+    public boolean mouseReleased(MouseButtonEvent click) {
         if (activeWindow != null) {
             int virtualX = (int) (click.x() / LiveMessage.INSTANCE.guiScale.get());
             int virtualY = (int) (click.y() / LiveMessage.INSTANCE.guiScale.get());
@@ -181,7 +181,7 @@ public class LivemessageGui extends Screen {
         return super.mouseReleased(click);
     }
     @Override
-    public boolean keyPressed(KeyInput input) {
+    public boolean keyPressed(KeyEvent input) {
         if (!liveWindows.isEmpty()) {
             LiveWindow activeWindow = liveWindows.get(liveWindows.size() - 1);
             activeWindow.handleKeyInput(input);
@@ -190,7 +190,7 @@ public class LivemessageGui extends Screen {
         return super.keyPressed(input);
     }
     @Override
-    public boolean charTyped(CharInput input) {
+    public boolean charTyped(CharacterEvent input) {
         if (!liveWindows.isEmpty()) {
             LiveWindow activeWindow = liveWindows.get(liveWindows.size() - 1);
             activeWindow.handleCharInput(input);
@@ -208,7 +208,7 @@ public class LivemessageGui extends Screen {
                 Gson gson = new Gson();
                 FileWriter fw = new FileWriter(LivemessageUtil.MESSAGES_FOLDER.resolve(uuid.toString() + ".jsonl").toFile(), true);
                 BufferedWriter bw = new BufferedWriter(fw);
-                bw.write(gson.toJson(new ChatWindow.ChatMessage(message, sentByMe, System.currentTimeMillis(), MinecraftClient.getInstance().player.getUuid())));
+                bw.write(gson.toJson(new ChatWindow.ChatMessage(message, sentByMe, System.currentTimeMillis(), Minecraft.getInstance().player.getUUID())));
                 bw.newLine();
                 bw.close();
             } catch (Exception e) {
@@ -226,16 +226,16 @@ public class LivemessageGui extends Screen {
             if (!sentByMe) {
                 unreadMessages.put(uuid, unreadMessages.getOrDefault(uuid, 0) + 1);
                 if (LiveMessage.INSTANCE.toastsEnabled.get()) {
-                    MinecraftClient mc = MinecraftClient.getInstance();
+                    Minecraft mc = Minecraft.getInstance();
                     ToastManager toastManager = mc.getToastManager();
-                    toastManager.add(new SystemToast(
-                        SystemToast.Type.NARRATOR_TOGGLE,
-                        Text.literal("DM from " + username),
-                        Text.literal(message)
+                    toastManager.addToast(new SystemToast(
+                        SystemToast.SystemToastId.NARRATOR_TOGGLE,
+                        Component.literal("DM from " + username),
+                        Component.literal(message)
                     ));
                 }
                 if (LiveMessage.INSTANCE.soundsEnabled.get()) {
-                    MinecraftClient.getInstance().player.playSound(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
+                    Minecraft.getInstance().player.playSound(SoundEvents.EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
                 }
             } else {
                 if (LiveMessage.INSTANCE.readOnReply.get())
@@ -256,13 +256,13 @@ public class LivemessageGui extends Screen {
         return doHide;
     }
     @Override
-    public void renderBackground(DrawContext context, int mouseX, int mouseY, float delta) {
+    public void renderBackground(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
         if (LiveMessage.INSTANCE != null && LiveMessage.INSTANCE.enableBlur.get()) {
             super.renderBackground(context, mouseX, mouseY, delta);
         }
     }
     @Override
-    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
         super.render(context, mouseX, mouseY, delta);
         float reverseGuiScale = (float) (1f / scl);
         if (LiveMessage.INSTANCE != null && LiveMessage.INSTANCE.enableBlur.get()) {

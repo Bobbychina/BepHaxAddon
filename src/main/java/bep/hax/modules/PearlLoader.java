@@ -12,17 +12,17 @@ import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.utils.misc.ISerializable;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.block.TrapdoorBlock;
-import net.minecraft.block.BlockState;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtList;
-import net.minecraft.nbt.NbtElement;
-import net.minecraft.util.Hand;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.world.level.block.TrapDoorBlock;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.util.Mth;
 import java.util.List;
 import java.util.ArrayList;
 import baritone.api.BaritoneAPI;
@@ -97,8 +97,8 @@ public class PearlLoader extends Module {
             this.standTime = standTime;
         }
         @Override
-        public NbtCompound toTag() {
-            NbtCompound tag = new NbtCompound();
+        public CompoundTag toTag() {
+            CompoundTag tag = new CompoundTag();
             tag.putString("keyword", triggerKeyword);
             tag.putString("mode", mode.name());
             tag.putInt("x", position.getX());
@@ -109,7 +109,7 @@ public class PearlLoader extends Module {
             return tag;
         }
         @Override
-        public LoadLocation fromTag(NbtCompound tag) {
+        public LoadLocation fromTag(CompoundTag tag) {
             triggerKeyword = tag.getString("keyword").orElse("");
             mode = LoadMode.valueOf(tag.getString("mode").orElse("TRAPDOOR"));
             position = new BlockPos(tag.getInt("x").orElse(0), tag.getInt("y").orElse(0), tag.getInt("z").orElse(0));
@@ -159,9 +159,9 @@ public class PearlLoader extends Module {
         super(Bep.CATEGORY, "PearlLoader", "Anti-AFK loop with pearl loading capability");
     }
     @Override
-    public NbtCompound toTag() {
-        NbtCompound tag = super.toTag();
-        NbtList locationsList = new NbtList();
+    public CompoundTag toTag() {
+        CompoundTag tag = super.toTag();
+        ListTag locationsList = new ListTag();
         for (LoadLocation location : loadLocations) {
             locationsList.add(location.toTag());
         }
@@ -169,15 +169,15 @@ public class PearlLoader extends Module {
         return tag;
     }
     @Override
-    public Module fromTag(NbtCompound tag) {
+    public Module fromTag(CompoundTag tag) {
         super.fromTag(tag);
         loadLocations.clear();
         if (tag.contains("loadLocations")) {
-            java.util.Optional<NbtList> locationsListOpt = tag.getList("loadLocations");
+            java.util.Optional<ListTag> locationsListOpt = tag.getList("loadLocations");
             if (locationsListOpt.isPresent()) {
-                NbtList locationsList = locationsListOpt.get();
+                ListTag locationsList = locationsListOpt.get();
                 for (int i = 0; i < locationsList.size(); i++) {
-                    java.util.Optional<NbtCompound> compoundOpt = locationsList.getCompound(i);
+                    java.util.Optional<CompoundTag> compoundOpt = locationsList.getCompound(i);
                     if (compoundOpt.isPresent()) {
                         LoadLocation location = new LoadLocation();
                         location.fromTag(compoundOpt.get());
@@ -230,7 +230,7 @@ public class PearlLoader extends Module {
     }
     @EventHandler
     private void onTick(TickEvent.Pre event) {
-        if (!isActive || mc.player == null || mc.world == null) return;
+        if (!isActive || mc.player == null || mc.level == null) return;
         if (pearlLoadTriggered) {
             handlePearlLoadingSequence();
             return;
@@ -329,13 +329,13 @@ public class PearlLoader extends Module {
     }
     private void handleRotatingToTrapdoor() {
         if (rotateToBlock(currentLoadLocation.position)) {
-            BlockState state = mc.world.getBlockState(currentLoadLocation.position);
-            if (!(state.getBlock() instanceof TrapdoorBlock)) {
+            BlockState state = mc.level.getBlockState(currentLoadLocation.position);
+            if (!(state.getBlock() instanceof TrapDoorBlock)) {
                 error("No trapdoor found at specified position!");
                 resetToLoop();
                 return;
             }
-            boolean isOpen = state.get(TrapdoorBlock.OPEN);
+            boolean isOpen = state.getValue(TrapDoorBlock.OPEN);
             if (debugMode.get()) info("Rotation complete, trapdoor is currently " + (isOpen ? "OPEN" : "CLOSED") + ", proceeding to interact");
             currentState = State.CLOSING_TRAPDOOR;
             stateStartTime = System.currentTimeMillis();
@@ -350,8 +350,8 @@ public class PearlLoader extends Module {
             startPathing(approachPos);
             return;
         }
-        BlockState state = mc.world.getBlockState(currentLoadLocation.position);
-        boolean isOpen = state.get(TrapdoorBlock.OPEN);
+        BlockState state = mc.level.getBlockState(currentLoadLocation.position);
+        boolean isOpen = state.getValue(TrapDoorBlock.OPEN);
         if (isOpen) {
             interactWithTrapdoor();
             trapdoorWasClosed = true;
@@ -367,8 +367,8 @@ public class PearlLoader extends Module {
         long elapsed = System.currentTimeMillis() - stateStartTime;
         long waitTime = (long)(currentLoadLocation.trapdoorCloseTime * 1000);
         if (elapsed > 500) {
-            BlockState state = mc.world.getBlockState(currentLoadLocation.position);
-            boolean isOpen = state.get(TrapdoorBlock.OPEN);
+            BlockState state = mc.level.getBlockState(currentLoadLocation.position);
+            boolean isOpen = state.getValue(TrapDoorBlock.OPEN);
             if (isOpen) {
                 if (debugMode.get()) info("Trapdoor not closed properly, retrying close");
                 currentState = State.CLOSING_TRAPDOOR;
@@ -395,8 +395,8 @@ public class PearlLoader extends Module {
             startPathing(approachPos);
             return;
         }
-        BlockState state = mc.world.getBlockState(currentLoadLocation.position);
-        boolean isOpen = state.get(TrapdoorBlock.OPEN);
+        BlockState state = mc.level.getBlockState(currentLoadLocation.position);
+        boolean isOpen = state.getValue(TrapDoorBlock.OPEN);
         if (!isOpen) {
             interactWithTrapdoor();
             if (debugMode.get()) info("Opened trapdoor");
@@ -448,27 +448,27 @@ public class PearlLoader extends Module {
         stateStartTime = System.currentTimeMillis();
     }
     private boolean rotateToBlock(BlockPos pos) {
-        Vec3d target = Vec3d.ofCenter(pos);
-        Vec3d playerEyes = mc.player.getEyePos();
-        Vec3d lookVec = target.subtract(playerEyes);
+        Vec3 target = Vec3.atCenterOf(pos);
+        Vec3 playerEyes = mc.player.getEyePosition();
+        Vec3 lookVec = target.subtract(playerEyes);
         double dx = lookVec.x;
         double dy = lookVec.y;
         double dz = lookVec.z;
         double distance = Math.sqrt(dx * dx + dz * dz);
         targetYaw = (float) Math.toDegrees(Math.atan2(-dx, dz));
         targetPitch = (float) Math.toDegrees(Math.atan2(-dy, distance));
-        targetPitch = MathHelper.clamp(targetPitch, -90.0f, 90.0f);
+        targetPitch = Mth.clamp(targetPitch, -90.0f, 90.0f);
         rotationTicks++;
-        float yawDiff = wrapDegrees(targetYaw - mc.player.getYaw());
-        float pitchDiff = targetPitch - mc.player.getPitch();
+        float yawDiff = wrapDegrees(targetYaw - mc.player.getYRot());
+        float pitchDiff = targetPitch - mc.player.getXRot();
         float rotSpeed = 0.1f;
-        mc.player.setYaw(mc.player.getYaw() + yawDiff * rotSpeed);
-        mc.player.setPitch(mc.player.getPitch() + pitchDiff * rotSpeed);
+        mc.player.setYRot(mc.player.getYRot() + yawDiff * rotSpeed);
+        mc.player.setXRot(mc.player.getXRot() + pitchDiff * rotSpeed);
         return Math.abs(yawDiff) < 2.0f && Math.abs(pitchDiff) < 2.0f || rotationTicks > 50;
     }
     private void interactWithTrapdoor() {
         if (System.currentTimeMillis() - lastInteractionTime < 500) return;
-        Vec3d hitVec = Vec3d.ofCenter(currentLoadLocation.position);
+        Vec3 hitVec = Vec3.atCenterOf(currentLoadLocation.position);
         Direction hitSide = getClosestSide(currentLoadLocation.position);
         BlockHitResult hitResult = new BlockHitResult(
             hitVec,
@@ -476,8 +476,8 @@ public class PearlLoader extends Module {
             currentLoadLocation.position,
             false
         );
-        mc.interactionManager.interactBlock(mc.player, Hand.MAIN_HAND, hitResult);
-        mc.player.swingHand(Hand.MAIN_HAND);
+        mc.gameMode.useItemOn(mc.player, InteractionHand.MAIN_HAND, hitResult);
+        mc.player.swing(InteractionHand.MAIN_HAND);
         lastInteractionTime = System.currentTimeMillis();
     }
     private BlockPos getTrapdoorApproachPosition() {
@@ -486,11 +486,11 @@ public class PearlLoader extends Module {
         BlockPos bestPos = null;
         double minDist = Double.MAX_VALUE;
         for (Direction dir : dirs) {
-            BlockPos checkPos = trapPos.offset(dir);
-            BlockState state = mc.world.getBlockState(checkPos);
-            BlockState below = mc.world.getBlockState(checkPos.down());
-            if (state.isAir() && below.isSolidBlock(mc.world, checkPos.down())) {
-                double dist = mc.player.getEntityPos().distanceTo(Vec3d.ofCenter(checkPos));
+            BlockPos checkPos = trapPos.relative(dir);
+            BlockState state = mc.level.getBlockState(checkPos);
+            BlockState below = mc.level.getBlockState(checkPos.below());
+            if (state.isAir() && below.isRedstoneConductor(mc.level, checkPos.below())) {
+                double dist = mc.player.position().distanceTo(Vec3.atCenterOf(checkPos));
                 if (dist < minDist) {
                     minDist = dist;
                     bestPos = checkPos;
@@ -500,9 +500,9 @@ public class PearlLoader extends Module {
         return bestPos != null ? bestPos : trapPos.north();
     }
     private Direction getClosestSide(BlockPos pos) {
-        Vec3d playerPos = mc.player.getEntityPos();
-        Vec3d blockCenter = Vec3d.ofCenter(pos);
-        Vec3d diff = playerPos.subtract(blockCenter);
+        Vec3 playerPos = mc.player.position();
+        Vec3 blockCenter = Vec3.atCenterOf(pos);
+        Vec3 diff = playerPos.subtract(blockCenter);
         if (Math.abs(diff.x) > Math.abs(diff.z)) {
             return diff.x > 0 ? Direction.EAST : Direction.WEST;
         } else {
@@ -511,7 +511,7 @@ public class PearlLoader extends Module {
     }
     private double getDistanceToTarget(BlockPos target) {
         if (mc.player == null || target == null) return Double.MAX_VALUE;
-        return mc.player.getEntityPos().distanceTo(Vec3d.ofCenter(target));
+        return mc.player.position().distanceTo(Vec3.atCenterOf(target));
     }
     private void startPathing(BlockPos target) {
         if (target == null) return;
@@ -621,7 +621,7 @@ public class PearlLoader extends Module {
             WButton setPosButton = posButtons.add(theme.button("Set to Player Pos")).widget();
             setPosButton.action = () -> {
                 if (mc.player != null) {
-                    location.position = mc.player.getBlockPos();
+                    location.position = mc.player.blockPosition();
                 }
             };
             mainList.add(theme.label("Mode: " + location.mode.toString()));

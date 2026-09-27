@@ -2,19 +2,19 @@ package bep.hax.mixin;
 import meteordevelopment.meteorclient.MeteorClient;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import bep.hax.modules.RespawnPointBlocker;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.hit.HitResult;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
+import net.minecraft.core.BlockPos;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-@Mixin(MinecraftClient.class)
+@Mixin(Minecraft.class)
 public class RespawnPointBlockerSpamMixin {
     private long lastSpamTime = 0;
     private static final long SPAM_COOLDOWN = 750;
@@ -22,13 +22,13 @@ public class RespawnPointBlockerSpamMixin {
     private void onTick(CallbackInfo ci) {
         RespawnPointBlocker module = Modules.get().get(RespawnPointBlocker.class);
         if (!module.isActive()) return;
-        ClientPlayerEntity player = MeteorClient.mc.player;
-        if (player == null || MeteorClient.mc.world == null) return;
-        HitResult hitResult = MeteorClient.mc.crosshairTarget;
+        LocalPlayer player = MeteorClient.mc.player;
+        if (player == null || MeteorClient.mc.level == null) return;
+        HitResult hitResult = MeteorClient.mc.hitResult;
         if (hitResult instanceof BlockHitResult) {
             BlockHitResult blockHitResult = (BlockHitResult) hitResult;
             BlockPos blockPos = blockHitResult.getBlockPos();
-            BlockState blockState = MeteorClient.mc.world.getBlockState(blockPos);
+            BlockState blockState = MeteorClient.mc.level.getBlockState(blockPos);
             Block block = blockState.getBlock();
             if (isRespawnPointBlock(block)) {
                 boolean shouldBlock = false;
@@ -38,7 +38,7 @@ public class RespawnPointBlockerSpamMixin {
                     shouldBlock = true;
                 }
                 if (shouldBlock && System.currentTimeMillis() - lastSpamTime >= SPAM_COOLDOWN) {
-                    MeteorClient.mc.crosshairTarget = null;
+                    MeteorClient.mc.hitResult = null;
                     lastSpamTime = System.currentTimeMillis();
                 }
             }

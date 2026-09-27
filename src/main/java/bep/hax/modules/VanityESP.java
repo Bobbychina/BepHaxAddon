@@ -14,25 +14,26 @@ import meteordevelopment.meteorclient.utils.render.color.Color;
 import meteordevelopment.meteorclient.utils.render.color.SettingColor;
 import meteordevelopment.orbit.EventHandler;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
-import net.minecraft.block.*;
-import net.minecraft.block.entity.BannerBlockEntity;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.block.entity.ChestBlockEntity;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.decoration.ItemFrameEntity;
-import net.minecraft.entity.decoration.GlowItemFrameEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.registry.Registries;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.state.property.Property;
-import net.minecraft.util.hit.HitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.ChunkPos;
-import net.minecraft.util.math.ChunkSectionPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.world.chunk.WorldChunk;
+import net.minecraft.world.level.block.*;
+import net.minecraft.world.level.block.entity.BannerBlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.ChestBlockEntity;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.decoration.ItemFrame;
+import net.minecraft.world.entity.decoration.GlowItemFrame;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.world.level.block.state.properties.Property;
+import net.minecraft.world.phys.HitResult;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.core.SectionPos;
+import net.minecraft.core.Direction;
+import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.world.level.block.state.BlockState;
 import java.util.*;
 public class VanityESP extends Module {
     private final SettingGroup sgFeatures = settings.getDefaultGroup();
@@ -314,14 +315,14 @@ public class VanityESP extends Module {
     public VanityESP() {
         super(Bep.STASH, "VanityESP", "Unified ESP for decorative items and special blocks.");
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
-            if (mc.world == null || mc.player == null) return;
+            if (mc.level == null || mc.player == null) return;
             initialScanQueue.clear();
-            int chunkRadius = mc.options.getViewDistance().getValue();
+            int chunkRadius = mc.options.renderDistance().get();
             int totalChunks = (2 * chunkRadius + 1) * (2 * chunkRadius + 1);
             int durationTicks = 70;
             initialScanChunksPerTick = Math.max(1, (int) Math.ceil(totalChunks / (double) durationTicks));
-            for (int cx = mc.player.getChunkPos().x - chunkRadius; cx <= mc.player.getChunkPos().x + chunkRadius; cx++) {
-                for (int cz = mc.player.getChunkPos().z - chunkRadius; cz <= mc.player.getChunkPos().z + chunkRadius; cz++) {
+            for (int cx = mc.player.chunkPosition().x() - chunkRadius; cx <= mc.player.chunkPosition().x() + chunkRadius; cx++) {
+                for (int cz = mc.player.chunkPosition().z() - chunkRadius; cz <= mc.player.chunkPosition().z() + chunkRadius; cz++) {
                     initialScanQueue.addLast(new ChunkPos(cx, cz));
                 }
             }
@@ -330,18 +331,18 @@ public class VanityESP extends Module {
     }
     @Override
     public void onActivate() {
-        if (mc.player == null || mc.world == null) return;
+        if (mc.player == null || mc.level == null) return;
         if (!highlightTreasure.get()) return;
-        BlockPos pos = mc.player.getBlockPos();
-        int viewDistance = mc.options.getViewDistance().getValue();
+        BlockPos pos = mc.player.blockPosition();
+        int viewDistance = mc.options.renderDistance().get();
         int startChunkX = (pos.getX() - (viewDistance * 16)) >> 4;
         int endChunkX = (pos.getX() + (viewDistance * 16)) >> 4;
         int startChunkZ = (pos.getZ() - (viewDistance * 16)) >> 4;
         int endChunkZ = (pos.getZ() + (viewDistance * 16)) >> 4;
         for (int x = startChunkX; x < endChunkX; x++) {
             for (int z = startChunkZ; z < endChunkZ; z++) {
-                if (mc.world.isChunkLoaded(x, z)) {
-                    WorldChunk chunk = mc.world.getChunk(x, z);
+                if (mc.level.isChunkLoaded(x, z)) {
+                    LevelChunk chunk = mc.level.getChunk(x, z);
                     scanChunkForTreasure(chunk);
                 }
             }
@@ -353,16 +354,16 @@ public class VanityESP extends Module {
     }
     @EventHandler
     private void onTick(meteordevelopment.meteorclient.events.world.TickEvent.Pre event) {
-        if (mc.world == null || mc.player == null) return;
+        if (mc.level == null || mc.player == null) return;
         if (!highlightOminousVaults.get()) return;
         if (initialScanActive) {
             int processed = 0;
-            int minY0 = mc.world.getBottomY();
-            int maxY0 = mc.world.getHeight();
+            int minY0 = mc.level.getMinY();
+            int maxY0 = mc.level.getHeight();
             while (processed < initialScanChunksPerTick && !initialScanQueue.isEmpty()) {
                 ChunkPos cp = initialScanQueue.pollFirst();
-                var chunk = mc.world.getChunk(cp.x, cp.z);
-                if (chunk instanceof WorldChunk) {
+                var chunk = mc.level.getChunk(cp.x(), cp.z());
+                if (chunk instanceof LevelChunk) {
                     scanChunkForVaults(cp, minY0, maxY0);
                 }
                 processed++;
@@ -370,10 +371,10 @@ public class VanityESP extends Module {
             if (initialScanQueue.isEmpty()) initialScanActive = false;
         }
         Set<ChunkPos> currentChunks = new HashSet<>();
-        BlockPos playerPos = mc.player.getBlockPos();
-        int chunkRadius = mc.options.getViewDistance().getValue();
-        int minY = mc.world.getBottomY();
-        int maxY = mc.world.getHeight();
+        BlockPos playerPos = mc.player.blockPosition();
+        int chunkRadius = mc.options.renderDistance().get();
+        int minY = mc.level.getMinY();
+        int maxY = mc.level.getHeight();
         for (int cx = (playerPos.getX() >> 4) - chunkRadius; cx <= (playerPos.getX() >> 4) + chunkRadius; cx++) {
             for (int cz = (playerPos.getZ() >> 4) - chunkRadius; cz <= (playerPos.getZ() >> 4) + chunkRadius; cz++) {
                 currentChunks.add(new ChunkPos(cx, cz));
@@ -406,7 +407,7 @@ public class VanityESP extends Module {
             lastRecheckTime = now;
             Set<BlockPos> toRemoveVaults = new HashSet<>();
             for (BlockPos vaultPos : ominousVaults) {
-                BlockState state = mc.world.getBlockState(vaultPos);
+                BlockState state = mc.level.getBlockState(vaultPos);
                 Property<?> ominousProperty = null;
                 for (Property<?> prop : state.getProperties()) {
                     if (prop.getName().equals("ominous")) {
@@ -414,7 +415,7 @@ public class VanityESP extends Module {
                         break;
                     }
                 }
-                if (ominousProperty == null || !Boolean.TRUE.equals(state.get(ominousProperty))) {
+                if (ominousProperty == null || !Boolean.TRUE.equals(state.getValue(ominousProperty))) {
                     toRemoveVaults.add(vaultPos);
                 }
             }
@@ -432,15 +433,15 @@ public class VanityESP extends Module {
     @EventHandler
     private void onChunkData(ChunkDataEvent event) {
         if (!highlightTreasure.get()) return;
-        if (mc.world == null || mc.player == null) return;
+        if (mc.level == null || mc.player == null) return;
         scanChunkForTreasure(event.chunk());
     }
     @EventHandler
     private void onInteractBlock(InteractBlockEvent event) {
         if (!highlightTreasure.get()) return;
-        if (mc.player == null || mc.world == null) return;
+        if (mc.player == null || mc.level == null) return;
         if (notifiedTreasure.contains(event.result.getBlockPos())) {
-            if (event.result.getType() == HitResult.Type.BLOCK && mc.world.getBlockState(event.result.getBlockPos()).getBlock() instanceof ChestBlock) {
+            if (event.result.getType() == HitResult.Type.BLOCK && mc.level.getBlockState(event.result.getBlockPos()).getBlock() instanceof ChestBlock) {
                 lootedTreasure.add(event.result.getBlockPos());
                 if (StardustUtil.XAERO_AVAILABLE && treasureWaypoints.get()) {
                     BlockPos wpPos = event.result.getBlockPos();
@@ -455,18 +456,18 @@ public class VanityESP extends Module {
     }
     @EventHandler
     private void onRender(Render3DEvent event) {
-        if (mc.world == null || mc.player == null) return;
+        if (mc.level == null || mc.player == null) return;
         if (highlightMapFrames.get()) {
             ShapeMode mapMode = getShapeMode(mapRenderFill.get(), mapRenderOutline.get());
             if (mapMode != null) {
-                for (ItemFrameEntity frame : mc.world.getEntitiesByClass(ItemFrameEntity.class, mc.player.getBoundingBox().expand(64),
-                    e -> e.getHeldItemStack().getItem().getTranslationKey().equals("item.minecraft.filled_map"))) {
-                    Box box;
-                    float pitch = frame.getPitch();
+                for (ItemFrame frame : mc.level.getEntitiesOfClass(ItemFrame.class, mc.player.getBoundingBox().inflate(64),
+                    e -> e.getItem().getItem().getDescriptionId().equals("item.minecraft.filled_map"))) {
+                    AABB box;
+                    float pitch = frame.getXRot();
                     if (pitch == 90 || pitch == -90) {
-                        box = frame.getBoundingBox().expand(0.12, 0.01, 0.12);
+                        box = frame.getBoundingBox().inflate(0.12, 0.01, 0.12);
                     } else {
-                        box = frame.getBoundingBox().expand(0.12, 0.12, 0.01);
+                        box = frame.getBoundingBox().inflate(0.12, 0.12, 0.01);
                     }
                     Color fill = new Color(mapFillColor.get());
                     Color outline = new Color(mapOutlineColor.get());
@@ -507,20 +508,20 @@ public class VanityESP extends Module {
     }
     private void renderBanners(Render3DEvent event, ShapeMode shapeMode) {
         int radius = 8;
-        BlockPos playerPos = mc.player.getBlockPos();
+        BlockPos playerPos = mc.player.blockPosition();
         Color fill = new Color(bannerFillColor.get());
         Color outline = new Color(bannerOutlineColor.get());
         for (int dx = -radius; dx <= radius; dx++) {
             for (int dz = -radius; dz <= radius; dz++) {
-                WorldChunk chunk = mc.world.getChunk(playerPos.getX() / 16 + dx, playerPos.getZ() / 16 + dz);
+                LevelChunk chunk = mc.level.getChunk(playerPos.getX() / 16 + dx, playerPos.getZ() / 16 + dz);
                 if (chunk == null) continue;
                 for (BlockEntity be : chunk.getBlockEntities().values()) {
                     if (!(be instanceof BannerBlockEntity banner)) continue;
-                    BlockPos pos = banner.getPos();
-                    BlockState state = mc.world.getBlockState(pos);
-                    Box box;
+                    BlockPos pos = banner.getBlockPos();
+                    BlockState state = mc.level.getBlockState(pos);
+                    AABB box;
                     if (state.contains(WallBannerBlock.FACING)) {
-                        Direction facing = state.get(WallBannerBlock.FACING);
+                        Direction facing = state.getValue(WallBannerBlock.FACING);
                         double centerX = pos.getX() + 0.5;
                         double centerZ = pos.getZ() + 0.5;
                         double offset = 0.1;
@@ -530,23 +531,23 @@ public class VanityESP extends Module {
                         double y2 = pos.getY() + 0.85;
                         switch (facing) {
                             case NORTH:
-                                box = new Box(centerX - width, y1, pos.getZ() + 1 - offset - depth, centerX + width, y2, pos.getZ() + 1 - offset);
+                                box = new AABB(centerX - width, y1, pos.getZ() + 1 - offset - depth, centerX + width, y2, pos.getZ() + 1 - offset);
                                 break;
                             case SOUTH:
-                                box = new Box(centerX - width, y1, pos.getZ() + offset, centerX + width, y2, pos.getZ() + offset + depth);
+                                box = new AABB(centerX - width, y1, pos.getZ() + offset, centerX + width, y2, pos.getZ() + offset + depth);
                                 break;
                             case WEST:
-                                box = new Box(pos.getX() + 1 - offset - depth, y1, centerZ - width, pos.getX() + 1 - offset, y2, centerZ + width);
+                                box = new AABB(pos.getX() + 1 - offset - depth, y1, centerZ - width, pos.getX() + 1 - offset, y2, centerZ + width);
                                 break;
                             case EAST:
-                                box = new Box(pos.getX() + offset, y1, centerZ - width, pos.getX() + offset + depth, y2, centerZ + width);
+                                box = new AABB(pos.getX() + offset, y1, centerZ - width, pos.getX() + offset + depth, y2, centerZ + width);
                                 break;
                             default:
                                 continue;
                         }
                         event.renderer.box(box, fill, outline, shapeMode, 0);
                     } else if (state.contains(BannerBlock.ROTATION)) {
-                        int rotation = state.get(BannerBlock.ROTATION);
+                        int rotation = state.getValue(BannerBlock.ROTATION);
                         double centerX = pos.getX() + 0.5;
                         double centerZ = pos.getZ() + 0.5;
                         double y1 = pos.getY();
@@ -554,14 +555,14 @@ public class VanityESP extends Module {
                         if (rotation == 0 || rotation == 8) {
                             double width = 0.45;
                             double depth = 0.03;
-                            box = new Box(centerX - width, y1, centerZ - depth, centerX + width, y2, centerZ + depth);
+                            box = new AABB(centerX - width, y1, centerZ - depth, centerX + width, y2, centerZ + depth);
                         } else if (rotation == 4 || rotation == 12) {
                             double width = 0.03;
                             double depth = 0.45;
-                            box = new Box(centerX - width, y1, centerZ - depth, centerX + width, y2, centerZ + depth);
+                            box = new AABB(centerX - width, y1, centerZ - depth, centerX + width, y2, centerZ + depth);
                         } else {
                             double size = 0.3;
-                            box = new Box(centerX - size, y1, centerZ - size, centerX + size, y2, centerZ + size);
+                            box = new AABB(centerX - size, y1, centerZ - size, centerX + size, y2, centerZ + size);
                         }
                         event.renderer.box(box, fill, outline, shapeMode, 0);
                     }
@@ -573,7 +574,7 @@ public class VanityESP extends Module {
         List<Entity> frames = getShulkerFrames();
         if (frames.isEmpty()) return;
         for (Entity frame : frames) {
-            Box box = frame.getBoundingBox();
+            AABB box = frame.getBoundingBox();
             event.renderer.box(
                 box,
                 shulkerFillColor.get(),
@@ -606,7 +607,7 @@ public class VanityESP extends Module {
                     RenderUtils.center.x,
                     RenderUtils.center.y,
                     RenderUtils.center.z,
-                    pos.toCenterPos().x, pos.toCenterPos().y, pos.toCenterPos().z,
+                    pos.getCenter().x, pos.getCenter().y, pos.getCenter().z,
                     vaultTracerColor.get()
                 );
             }
@@ -615,7 +616,7 @@ public class VanityESP extends Module {
     private void renderTreasure(Render3DEvent event, ShapeMode shapeMode) {
         List<BlockPos> inRange = notifiedTreasure
             .stream()
-            .filter(pos -> pos.isWithinDistance(mc.player.getBlockPos(), mc.options.getViewDistance().getValue() * 16 + 32))
+            .filter(pos -> pos.closerThan(mc.player.blockPosition(), mc.options.renderDistance().get() * 16 + 32))
             .toList();
         for (BlockPos pos : inRange) {
             if (lootedTreasure.contains(pos)) continue;
@@ -639,10 +640,10 @@ public class VanityESP extends Module {
     }
     private List<Entity> getShulkerFrames() {
         List<Entity> result = new ArrayList<>();
-        if (mc.world == null) return result;
-        for (Entity entity : mc.world.getEntities()) {
-            if (entity instanceof ItemFrameEntity || entity instanceof GlowItemFrameEntity) {
-                ItemStack stack = ((ItemFrameEntity) entity).getHeldItemStack();
+        if (mc.level == null) return result;
+        for (Entity entity : mc.level.entitiesForRendering()) {
+            if (entity instanceof ItemFrame || entity instanceof GlowItemFrame) {
+                ItemStack stack = ((ItemFrame) entity).getItem();
                 if (isShulkerBox(stack)) result.add(entity);
             }
         }
@@ -669,19 +670,19 @@ public class VanityESP extends Module {
             || stack.getItem() == Items.BLACK_SHULKER_BOX;
     }
     private boolean scanChunkForVaults(ChunkPos chunkPos, int minY, int maxY) {
-        net.minecraft.world.chunk.Chunk chunk;
+        net.minecraft.world.level.chunk.ChunkAccess chunk;
         try {
-            chunk = mc.world.getChunk(chunkPos.x, chunkPos.z);
+            chunk = mc.level.getChunk(chunkPos.x(), chunkPos.z());
         } catch (Exception e) {
             return false;
         }
-        if (chunk instanceof WorldChunk) {
+        if (chunk instanceof LevelChunk) {
             Set<BlockPos> foundVaults = new HashSet<>();
-            for (BlockEntity blockEntity : ((WorldChunk) chunk).getBlockEntities().values()) {
-                if (Registries.BLOCK_ENTITY_TYPE.getId(blockEntity.getType()) != null
-                    && Registries.BLOCK_ENTITY_TYPE.getId(blockEntity.getType()).getPath().equals("vault")) {
-                    BlockPos pos = blockEntity.getPos();
-                    BlockState state = mc.world.getBlockState(pos);
+            for (BlockEntity blockEntity : ((LevelChunk) chunk).getBlockEntities().values()) {
+                if (BuiltInRegistries.BLOCK_ENTITY_TYPE.getId(blockEntity.getType()) != null
+                    && BuiltInRegistries.BLOCK_ENTITY_TYPE.getId(blockEntity.getType()).getPath().equals("vault")) {
+                    BlockPos pos = blockEntity.getBlockPos();
+                    BlockState state = mc.level.getBlockState(pos);
                     Property<?> ominousProperty = null;
                     for (Property<?> prop : state.getProperties()) {
                         if (prop.getName().equals("ominous")) {
@@ -689,7 +690,7 @@ public class VanityESP extends Module {
                             break;
                         }
                     }
-                    if (ominousProperty != null && Boolean.TRUE.equals(state.get(ominousProperty))) {
+                    if (ominousProperty != null && Boolean.TRUE.equals(state.getValue(ominousProperty))) {
                         foundVaults.add(pos);
                     }
                 }
@@ -702,13 +703,13 @@ public class VanityESP extends Module {
         }
         return false;
     }
-    private void scanChunkForTreasure(WorldChunk chunk) {
+    private void scanChunkForTreasure(LevelChunk chunk) {
         Map<BlockPos, BlockEntity> blockEntities = chunk.getBlockEntities();
         for (BlockPos pos : blockEntities.keySet()) {
             if (notifiedTreasure.contains(pos)) continue;
             if (blockEntities.get(pos) instanceof ChestBlockEntity) {
-                int localX = ChunkSectionPos.getLocalCoord(pos.getX());
-                int localZ = ChunkSectionPos.getLocalCoord(pos.getZ());
+                int localX = SectionPos.sectionRelative(pos.getX());
+                int localZ = SectionPos.sectionRelative(pos.getZ());
                 if (localX == 9 && localZ == 9 && isBuriedNaturally(pos)) {
                     if (StardustUtil.XAERO_AVAILABLE && treasureWaypoints.get()) {
                         MapUtil.addWaypoint(
@@ -717,7 +718,7 @@ public class VanityESP extends Module {
                         );
                     }
                     if (treasureSound.get()) {
-                        mc.player.playSound(SoundEvents.BLOCK_AMETHYST_BLOCK_RESONATE, treasureVolume.get().floatValue(), 1f);
+                        mc.player.playSound(SoundEvents.AMETHYST_BLOCK_RESONATE, treasureVolume.get().floatValue(), 1f);
                     }
                     if (treasureChat.get()) {
                         String notification;
@@ -735,8 +736,8 @@ public class VanityESP extends Module {
         }
     }
     private boolean isBuriedNaturally(BlockPos pos) {
-        if (mc.world == null) return false;
-        Block block = mc.world.getBlockState(pos.up()).getBlock();
+        if (mc.level == null) return false;
+        Block block = mc.level.getBlockState(pos.above()).getBlock();
         return block == Blocks.SAND || block == Blocks.DIRT || block == Blocks.GRAVEL
             || block == Blocks.STONE || block == Blocks.DIORITE || block == Blocks.GRANITE
             || block == Blocks.ANDESITE || block == Blocks.SANDSTONE || block == Blocks.COAL_ORE;

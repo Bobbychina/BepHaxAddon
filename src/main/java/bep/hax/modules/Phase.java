@@ -10,24 +10,26 @@ import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.utils.player.FindItemResult;
 import meteordevelopment.orbit.EventHandler;
 import meteordevelopment.orbit.EventPriority;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.ScaffoldingBlock;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.decoration.ItemFrameEntity;
-import net.minecraft.item.Items;
-import net.minecraft.network.packet.c2s.play.*;
-import net.minecraft.network.packet.s2c.play.EntityVelocityUpdateS2CPacket;
-import net.minecraft.screen.slot.SlotActionType;
-import net.minecraft.util.Hand;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.math.*;
-import net.minecraft.util.shape.VoxelShape;
-import net.minecraft.util.shape.VoxelShapes;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.ScaffoldingBlock;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.decoration.ItemFrame;
+import net.minecraft.world.item.Items;
+import net.minecraft.network.protocol.game.*;
+import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
+import net.minecraft.world.inventory.ContainerInput;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.core.*;
+import net.minecraft.world.phys.shapes.VoxelShape;
+import net.minecraft.world.phys.shapes.Shapes;
 import bep.hax.util.PushOutOfBlocksEvent;
 import bep.hax.util.RotationUtils;
 import bep.hax.util.PlacementUtils;
 import bep.hax.util.RotationUtils;
 import bep.hax.util.InventoryManager;
+import meteordevelopment.meteorclient.utils.render.Box;
+import net.minecraft.world.phys.Vec3;
 public class Phase extends Module {
     private final SettingGroup sgGeneral = settings.getDefaultGroup();
     private final SettingGroup sgPearl = settings.createGroup("Pearl");
@@ -108,7 +110,7 @@ public class Phase extends Module {
     }
     @Override
     public void onActivate() {
-        if (mc.player == null || mc.world == null) {
+        if (mc.player == null || mc.level == null) {
             toggle();
             return;
         }
@@ -131,21 +133,21 @@ public class Phase extends Module {
     @Override
     public void onDeactivate() {
         if (mc.player != null) {
-            mc.player.noClip = false;
+            mc.player.noPhysics = false;
         }
     }
     @EventHandler(priority = EventPriority.HIGH)
     private void onTick(TickEvent.Pre event) {
-        if (mc.player == null || mc.world == null) return;
+        if (mc.player == null || mc.level == null) return;
         tickCounter++;
-        if (mode.get() == PhaseMode.Clip && mc.player.isOnGround() && !mc.player.hasVehicle()) {
+        if (mode.get() == PhaseMode.Clip && mc.player.onGround() && !mc.player.isPassenger()) {
             performClipTick();
             toggle();
         }
     }
     @EventHandler
     private void onPlayerMove(PlayerMoveEvent event) {
-        if (mc.player == null || mc.world == null) return;
+        if (mc.player == null || mc.level == null) return;
         switch (mode.get()) {
             case Normal -> handleNormalMovement(event);
             case Sand -> handleSandMovement(event);
@@ -154,10 +156,10 @@ public class Phase extends Module {
     }
     @EventHandler
     private void onPacketReceive(PacketEvent.Receive event) {
-        if (event.packet instanceof EntityVelocityUpdateS2CPacket packet) {
+        if (event.packet instanceof ClientboundSetEntityMotionPacket packet) {
             bep.hax.mixin.accessor.EntityVelocityUpdateS2CPacketAccessor accessor = (bep.hax.mixin.accessor.EntityVelocityUpdateS2CPacketAccessor) packet;
             if (accessor.getEntityId() == mc.player.getId() && isActive()) {
-                Vec3d velocity = accessor.getVelocity();
+                Vec3 velocity = accessor.getVelocity();
                 if (velocity.lengthSquared() < 0.1) {
                     event.cancel();
                 }
@@ -166,27 +168,27 @@ public class Phase extends Module {
     }
     @EventHandler
     private void onCollisionShape(CollisionShapeEvent event) {
-        if (mc.player == null || mc.world == null) return;
+        if (mc.player == null || mc.level == null) return;
         switch (mode.get()) {
             case Normal -> {
-                if (event.shape != VoxelShapes.empty() &&
-                    event.shape.getBoundingBox().maxY > mc.player.getBoundingBox().minY &&
-                    mc.player.isSneaking()) {
+                if (event.shape != Shapes.empty() &&
+                    event.shape.bounds().maxY > mc.player.getBoundingBox().minY &&
+                    mc.player.isShiftKeyDown()) {
                     event.cancel();
-                    event.shape = VoxelShapes.empty();
+                    event.shape = Shapes.empty();
                 }
             }
             case Sand -> {
                 event.cancel();
-                event.shape = VoxelShapes.empty();
-                mc.player.noClip = true;
+                event.shape = Shapes.empty();
+                mc.player.noPhysics = true;
             }
             case Climb -> {
                 if (mc.player.horizontalCollision) {
                     event.cancel();
-                    event.shape = VoxelShapes.empty();
+                    event.shape = Shapes.empty();
                 }
-                if (mc.options.sneakKey.isPressed() || (mc.options.jumpKey.isPressed() && event.pos.getY() > mc.player.getY())) {
+                if (mc.options.keyShift.isDown() || (mc.options.keyJump.isDown() && event.pos.getY() > mc.player.getY())) {
                     event.cancel();
                 }
             }
@@ -200,11 +202,11 @@ public class Phase extends Module {
     }
     private void performPearlPhase() {
         int pearlSlot = PlacementUtils.getEnderPearlSlot();
-        if (pearlSlot == -1 || mc.player.getItemCooldownManager().isCoolingDown(Items.ENDER_PEARL.getDefaultStack())) {
+        if (pearlSlot == -1 || mc.player.getCooldowns().isOnCooldown(Items.ENDER_PEARL.getDefaultInstance())) {
             return;
         }
-        final Vec3d pearlTargetVec = new Vec3d(Math.floor(mc.player.getX()) + 0.5, 0.0, Math.floor(mc.player.getZ()) + 0.5);
-        float[] rotations = RotationUtils.getRotationsTo(mc.player.getEyePos(), pearlTargetVec);
+        final Vec3 pearlTargetVec = new Vec3(Math.floor(mc.player.getX()) + 0.5, 0.0, Math.floor(mc.player.getZ()) + 0.5);
+        float[] rotations = RotationUtils.getRotationsTo(mc.player.getEyePosition(), pearlTargetVec);
         float yaw = rotations[0] + 180.0f;
         if (attack.get()) {
             handlePearlAttacks(yaw);
@@ -224,11 +226,11 @@ public class Phase extends Module {
         }
         inventoryManager.setSlot(targetSlot, InventoryManager.Priority.PEARL_PHASE);
         rotationManager.setRotationSilent(yaw, pitch.get());
-        mc.getNetworkHandler().sendPacket(new PlayerInteractItemC2SPacket(Hand.MAIN_HAND, 0, yaw, pitch.get()));
+        mc.getConnection().send(new ServerboundUseItemPacket(InteractionHand.MAIN_HAND, 0, yaw, pitch.get()));
         if (swing.get()) {
-            mc.player.swingHand(Hand.MAIN_HAND);
+            mc.player.swing(InteractionHand.MAIN_HAND);
         } else {
-            mc.getNetworkHandler().sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
+            mc.getConnection().send(new ServerboundSwingPacket(InteractionHand.MAIN_HAND));
         }
         if (swapAlternative.get()) {
             performInventorySwapPVP(pearlSlot);
@@ -237,19 +239,19 @@ public class Phase extends Module {
         rotationManager.setRotationSilentSync();
     }
     private void handlePearlAttacks(float yaw) {
-        BlockHitResult hitResult = (BlockHitResult) mc.player.raycast(3.0, 0, false);
-        Box searchBox = Box.from(Vec3d.ofCenter(hitResult.getBlockPos())).expand(0.2);
-        for (Entity entity : mc.world.getOtherEntities(null, searchBox)) {
-            if (entity instanceof ItemFrameEntity itemFrame) {
-                mc.getNetworkHandler().sendPacket(PlayerInteractEntityC2SPacket.attack(entity, mc.player.isSneaking()));
-                mc.getNetworkHandler().sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
+        BlockHitResult hitResult = (BlockHitResult) mc.player.pick(3.0, 0, false);
+        Box searchBox = Box.from(Vec3.atCenterOf(hitResult.getBlockPos())).inflate(0.2);
+        for (Entity entity : mc.level.getEntities(null, searchBox)) {
+            if (entity instanceof ItemFrame itemFrame) {
+                mc.getConnection().send(PlayerInteractEntityC2SPacket.attack(entity, mc.player.isShiftKeyDown()));
+                mc.getConnection().send(new ServerboundSwingPacket(InteractionHand.MAIN_HAND));
             }
         }
-        BlockState state = mc.world.getBlockState(mc.player.getBlockPos());
+        BlockState state = mc.level.getBlockState(mc.player.blockPosition());
         if (state.getBlock() instanceof ScaffoldingBlock) {
-            BlockPos pos = mc.player.getBlockPos();
-            mc.getNetworkHandler().sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.START_DESTROY_BLOCK, pos, Direction.UP));
-            mc.getNetworkHandler().sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, pos, Direction.UP));
+            BlockPos pos = mc.player.blockPosition();
+            mc.getConnection().send(new ServerboundPlayerActionPacket(ServerboundPlayerActionPacket.Action.START_DESTROY_BLOCK, pos, Direction.UP));
+            mc.getConnection().send(new ServerboundPlayerActionPacket(ServerboundPlayerActionPacket.Action.STOP_DESTROY_BLOCK, pos, Direction.UP));
         }
     }
     private void handleSelfFill(float yaw) {
@@ -257,7 +259,7 @@ public class Phase extends Module {
         if (yaw1 < 0.0f) {
             yaw1 += 360.0f;
         }
-        BlockPos blockPos = mc.player.getBlockPos();
+        BlockPos blockPos = mc.player.blockPosition();
         if (yaw1 >= 22.5 && yaw1 < 67.5) {
             blockPos = blockPos.south().west();
         } else if (yaw1 >= 67.5 && yaw1 < 112.5) {
@@ -276,26 +278,26 @@ public class Phase extends Module {
             blockPos = blockPos.south();
         }
         FindItemResult resistantBlock = PlacementUtils.findResistantBlock();
-        if (resistantBlock.found() && blockPos != null && !mc.world.getBlockState(blockPos.down()).isReplaceable()) {
+        if (resistantBlock.found() && blockPos != null && !mc.level.getBlockState(blockPos.below()).canBeReplaced()) {
             RotationUtils rotationManager = RotationUtils.getInstance();
             PlacementUtils.placeBlock(blockPos, true, true, true);
         }
     }
     private void performInventorySwapPVP(int pearlSlot) {
-        mc.interactionManager.clickSlot(0, pearlSlot < 9 ? pearlSlot + 36 : pearlSlot, 0, SlotActionType.PICKUP, mc.player);
-        mc.interactionManager.clickSlot(0, ((PlayerInventoryAccessor) mc.player.getInventory()).getSelectedSlot() + 36, 0, SlotActionType.PICKUP, mc.player);
-        mc.interactionManager.clickSlot(0, pearlSlot < 9 ? pearlSlot + 36 : pearlSlot, 0, SlotActionType.PICKUP, mc.player);
+        mc.gameMode.handleContainerInput(0, pearlSlot < 9 ? pearlSlot + 36 : pearlSlot, 0, ContainerInput.PICKUP, mc.player);
+        mc.gameMode.handleContainerInput(0, ((PlayerInventoryAccessor) mc.player.getInventory()).getSelectedSlot() + 36, 0, ContainerInput.PICKUP, mc.player);
+        mc.gameMode.handleContainerInput(0, pearlSlot < 9 ? pearlSlot + 36 : pearlSlot, 0, ContainerInput.PICKUP, mc.player);
     }
     private void performAutoClip() {
-        if (mc.player == null || mc.world == null) return;
-        double cos = Math.cos(Math.toRadians(mc.player.getYaw() + 90.0f));
-        double sin = Math.sin(Math.toRadians(mc.player.getYaw() + 90.0f));
+        if (mc.player == null || mc.level == null) return;
+        double cos = Math.cos(Math.toRadians(mc.player.getYRot() + 90.0f));
+        double sin = Math.sin(Math.toRadians(mc.player.getYRot() + 90.0f));
         double newX = mc.player.getX() + (blocks.get() * cos);
         double newZ = mc.player.getZ() + (blocks.get() * sin);
         mc.player.setPosition(newX, mc.player.getY(), newZ);
     }
     private void performClipTick() {
-        Vec3d center = mc.player.getBlockPos().toCenterPos();
+        Vec3 center = mc.player.blockPosition().getCenter();
         boolean flagX = (center.x - mc.player.getX()) > 0;
         boolean flagZ = (center.z - mc.player.getZ()) > 0;
         double x = center.x + 0.2 * (flagX ? -1 : 1);
@@ -306,32 +308,32 @@ public class Phase extends Module {
         performClipTick();
     }
     private void handleNormalMovement(PlayerMoveEvent event) {
-        if (!mc.player.isSneaking() || !PlacementUtils.isPhasing()) return;
-        float yaw = mc.player.getYaw();
+        if (!mc.player.isShiftKeyDown() || !PlacementUtils.isPhasing()) return;
+        float yaw = mc.player.getYRot();
         double offsetX = distance.get() * Math.cos(Math.toRadians(yaw + 90.0f));
         double offsetZ = distance.get() * Math.sin(Math.toRadians(yaw + 90.0f));
-        Box newBB = mc.player.getBoundingBox().offset(offsetX, 0.0, offsetZ);
+        Box newBB = mc.player.getBoundingBox().move(offsetX, 0.0, offsetZ);
         mc.player.setBoundingBox(newBB);
     }
     private void handleSandMovement(PlayerMoveEvent event) {
-        mc.player.noClip = true;
+        mc.player.noPhysics = true;
         double yMotion = 0.0;
-        if (mc.options.jumpKey.isPressed()) {
+        if (mc.options.keyJump.isDown()) {
             yMotion = 0.3;
-        } else if (mc.options.sneakKey.isPressed()) {
+        } else if (mc.options.keyShift.isDown()) {
             yMotion = -0.3;
         }
-        event.movement = new Vec3d(event.movement.x, yMotion, event.movement.z);
+        event.movement = new Vec3(event.movement.x, yMotion, event.movement.z);
     }
     private void handleClimbMovement(PlayerMoveEvent event) {
         if (mc.player.horizontalCollision) {
             double yMotion = event.movement.y;
-            if (mc.options.jumpKey.isPressed()) {
+            if (mc.options.keyJump.isDown()) {
                 yMotion = 0.3;
-            } else if (mc.options.sneakKey.isPressed()) {
+            } else if (mc.options.keyShift.isDown()) {
                 yMotion = -0.3;
             }
-            event.movement = new Vec3d(event.movement.x, yMotion, event.movement.z);
+            event.movement = new Vec3(event.movement.x, yMotion, event.movement.z);
         }
     }
     @Override

@@ -24,9 +24,9 @@ public class UnfocusedFpsLimiter extends Module {
     @Override
     public void onActivate() {
         if (mc.options != null) {
-            originalFps = mc.options.getMaxFps().getValue();
+            originalFps = mc.options.framerateLimit().get();
             hasStoredOriginal = true;
-            wasFocused = mc.isWindowFocused();
+            wasFocused = mc.isWindowActive();
             if (!wasFocused) {
                 setFpsLimit(unfocusedFps.get());
             }
@@ -42,13 +42,13 @@ public class UnfocusedFpsLimiter extends Module {
     @EventHandler
     private void onTick(TickEvent.Post event) {
         if (mc.options == null || !hasStoredOriginal) return;
-        boolean focused = mc.isWindowFocused();
+        boolean focused = mc.isWindowActive();
         if (focused != wasFocused) {
             if (focused) {
                 setFpsLimit(originalFps);
             } else {
                 if (wasFocused) {
-                    originalFps = mc.options.getMaxFps().getValue();
+                    originalFps = mc.options.framerateLimit().get();
                 }
                 setFpsLimit(unfocusedFps.get());
             }
@@ -63,7 +63,7 @@ public class UnfocusedFpsLimiter extends Module {
             validFps = Math.round(validFps / 10.0f) * 10;
         }
         try {
-            mc.options.getMaxFps().setValue(validFps);
+            mc.options.framerateLimit().set(validFps);
         } catch (Exception e) {
         }
     }

@@ -1,7 +1,6 @@
 package bep.hax.mixin.meteor;
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
 import bep.hax.util.LogUtil;
-import org.jetbrains.annotations.Nullable;
 import bep.hax.util.StardustUtil;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -23,12 +22,12 @@ import meteordevelopment.meteorclient.events.packets.PacketEvent;
 import meteordevelopment.meteorclient.events.world.TickEvent;
 import meteordevelopment.meteorclient.systems.modules.combat.AutoLog;
 import meteordevelopment.meteorclient.utils.world.TickRate;
-import net.minecraft.item.Items;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.network.packet.s2c.common.DisconnectS2CPacket;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.network.protocol.common.ClientboundDisconnectPacket;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(value = AutoLog.class, remap = false)
 public abstract class AutoLogMixin extends Module {
@@ -49,55 +48,38 @@ public abstract class AutoLogMixin extends Module {
     @Unique
     private long requestedDcAt = 0L;
     @Unique
-    @Nullable
-    private Text disconnectReason = null;
+    private Component disconnectReason = null;
     @Unique
-    @Nullable
     private Setting<Boolean> forceKick = null;
     @Unique
-    @Nullable
     private SettingGroup bephaxGroup = null;
     @Unique
-    @Nullable
     private Setting<Boolean> logOnY = null;
     @Unique
-    @Nullable
     private Setting<Double> yLevel = null;
     @Unique
-    @Nullable
     private Setting<Boolean> logArmor = null;
     @Unique
-    @Nullable
     private Setting<Boolean> ignoreElytra = null;
     @Unique
-    @Nullable
     private Setting<Double> armorPercent = null;
     @Unique
-    @Nullable
     private Setting<Boolean> logPortal = null;
     @Unique
-    @Nullable
     private Setting<Integer> portalTicks = null;
     @Unique
-    @Nullable
     private Setting<Boolean> logPosition = null;
     @Unique
-    @Nullable
     private Setting<BlockPos> position = null;
     @Unique
-    @Nullable
     private Setting<Double> distance = null;
     @Unique
-    @Nullable
     private Setting<Boolean> serverNotResponding = null;
     @Unique
-    @Nullable
     private Setting<Double> serverNotRespondingSecs = null;
     @Unique
-    @Nullable
     private Setting<Boolean> reconnectAfterNotResponding = null;
     @Unique
-    @Nullable
     private Setting<Double> secondsToReconnect = null;
     @Unique
     private int currPortalTicks = 0;
@@ -250,7 +232,7 @@ public abstract class AutoLogMixin extends Module {
         if (!Utils.canUpdate() || !isActive()) ci.cancel();
         if (didLog && System.currentTimeMillis() - requestedDcAt >= 1337) {
             LogUtil.warn("Detected illegal disconnect failure, falling back on regular disconnect (try adjusting your illegal disconnect method config setting).");
-            if (mc.getNetworkHandler() != null) mc.getNetworkHandler().onDisconnect(new DisconnectS2CPacket(disconnectReason));
+            if (mc.getConnection() != null) mc.getConnection().onDisconnect(new ClientboundDisconnectPacket(disconnectReason));
             disconnectReason = null;
             didLog = false;
             requestedDcAt = 0L;
@@ -259,7 +241,7 @@ public abstract class AutoLogMixin extends Module {
     @SuppressWarnings("unchecked")
     @EventHandler
     private void onTickBephaxExtended(TickEvent.Post event) {
-        if (mc.player == null || mc.player.getAbilities().allowFlying) return;
+        if (mc.player == null || mc.player.getAbilities().mayfly) return;
         if (serverNotResponding != null && serverNotResponding.get() && !waitingForReconnection) {
             if (TickRate.INSTANCE.getTimeSinceLastTick() > serverNotRespondingSecs.get()) {
                 if (reconnectAfterNotResponding != null && reconnectAfterNotResponding.get()) {
@@ -281,8 +263,8 @@ public abstract class AutoLogMixin extends Module {
                 return;
             }
         }
-        if (logPortal != null && logPortal.get() && mc.player.portalManager != null) {
-            if (mc.player.portalManager.isInPortal()) {
+        if (logPortal != null && logPortal.get() && mc.player.portalProcess != null) {
+            if (mc.player.portalProcess.isInsidePortalThisTick()) {
                 currPortalTicks++;
                 if (portalTicks != null && currPortalTicks > portalTicks.get()) {
                     bephaxDisconnect("Player was in a portal for " + currPortalTicks + " ticks.", true);
@@ -303,11 +285,11 @@ public abstract class AutoLogMixin extends Module {
                 EquipmentSlot.CHEST,
                 EquipmentSlot.HEAD
             }) {
-                ItemStack armorPiece = mc.player.getEquippedStack(slot);
+                ItemStack armorPiece = mc.player.getItemBySlot(slot);
                 if (ignoreElytra != null && ignoreElytra.get() && armorPiece.getItem() == Items.ELYTRA) continue;
-                if (armorPiece.isDamageable()) {
+                if (armorPiece.isDamageableItem()) {
                     int max = armorPiece.getMaxDamage();
-                    int current = armorPiece.getDamage();
+                    int current = armorPiece.getDamageValue();
                     double percentUndamaged = 100 - ((double) current / max) * 100;
                     if (percentUndamaged < armorPercent.get()) {
                         bephaxDisconnect("You had low armor", true);
@@ -317,8 +299,8 @@ public abstract class AutoLogMixin extends Module {
             }
         }
         if (logPosition != null && logPosition.get() && position != null && distance != null) {
-            Vec3d playerPos = new Vec3d(mc.player.getX(), 0, mc.player.getZ());
-            Vec3d targetPos = new Vec3d(position.get().getX(), 0, position.get().getZ());
+            Vec3 playerPos = new Vec3(mc.player.getX(), 0, mc.player.getZ());
+            Vec3 targetPos = new Vec3(position.get().getX(), 0, position.get().getZ());
             double distanceToTarget = playerPos.distanceTo(targetPos);
             if (distanceToTarget < distance.get()) {
                 bephaxDisconnect("Player was within " + distanceToTarget + " blocks of the target position.", true);
@@ -338,26 +320,26 @@ public abstract class AutoLogMixin extends Module {
         if (forceKick != null && forceKick.get()) {
             didLog = true;
             requestedDcAt = System.currentTimeMillis();
-            disconnectReason = Text.literal("§8[§a§oAutoLog§8] §f" + reason);
+            disconnectReason = Component.literal("§8[§a§oAutoLog§8] §f" + reason);
             StardustUtil.illegalDisconnect(true, StardustConfig.illegalDisconnectMethodSetting.get());
         } else {
-            mc.player.networkHandler.onDisconnect(new DisconnectS2CPacket(Text.literal("[AutoLog] " + reason)));
+            mc.player.connection.onDisconnect(new ClientboundDisconnectPacket(Component.literal("[AutoLog] " + reason)));
         }
     }
-    @Inject(method = "disconnect(Lnet/minecraft/text/Text;)V", at = @At("HEAD"), cancellable = true, remap = true)
-    private void maybeIllegalDisconnect(Text reason, CallbackInfo ci) {
+    @Inject(method = "disconnect(Lnet/minecraft/network/chat/Component;)V", at = @At("HEAD"), cancellable = true, remap = true)
+    private void maybeIllegalDisconnect(Component reason, CallbackInfo ci) {
         if (forceKick != null && forceKick.get()) {
             ci.cancel();
             didLog = true;
             requestedDcAt = System.currentTimeMillis();
-            disconnectReason = Text.literal("§8[§a§oAutoLog§8] §f" + reason.getString());
+            disconnectReason = Component.literal("§8[§a§oAutoLog§8] §f" + reason.getString());
             StardustUtil.illegalDisconnect(true, StardustConfig.illegalDisconnectMethodSetting.get());
         }
     }
     @Unique
     @EventHandler
     private void onPacketReceive(PacketEvent.Receive event) {
-        if (disconnectReason == null || !(event.packet instanceof DisconnectS2CPacket packet))  return;
+        if (disconnectReason == null || !(event.packet instanceof ClientboundDisconnectPacket packet))  return;
         if (didLog) {
             ((DisconnectS2CPacketAccessor)(Object) packet).setReason(disconnectReason);
             if (!isActive()) MeteorClient.EVENT_BUS.unsubscribe(this);

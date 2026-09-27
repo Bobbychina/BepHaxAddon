@@ -5,14 +5,14 @@ import bep.hax.util.InventoryManager;
 import bep.hax.util.InventoryManager.IPlayerInteractEntityC2SPacket;
 import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.effect.StatusEffects;
-import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
-import net.minecraft.network.packet.c2s.play.HandSwingC2SPacket;
-import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket;
-import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
-import net.minecraft.util.Hand;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket;
+import net.minecraft.network.protocol.game.ServerboundSwingPacket;
+import net.minecraft.network.protocol.game.ServerboundInteractPacket;
+import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
+import net.minecraft.world.InteractionHand;
 import bep.hax.modules.PVPModule;
 import bep.hax.util.CacheTimer;
 import bep.hax.util.EntityUtil;
@@ -67,15 +67,15 @@ public class Criticals extends PVPModule {
     }
     @EventHandler
     private void onSendPacket(PacketEvent.Send event) {
-        if (mc.player == null || mc.world == null) return;
+        if (mc.player == null || mc.level == null) return;
         if (isOtherCombatActive()) return;
-        if (event.packet instanceof PlayerInteractEntityC2SPacket packet) {
+        if (event.packet instanceof ServerboundInteractPacket packet) {
             IPlayerInteractEntityC2SPacket accessor = (IPlayerInteractEntityC2SPacket) packet;
             if (!accessor.isAttackPacket()) return;
             Entity target = null;
-            if (mc.world != null) {
+            if (mc.level != null) {
                 int entityId = accessor.getTargetEntityId();
-                for (Entity entity : mc.world.getEntities()) {
+                for (Entity entity : mc.level.entitiesForRendering()) {
                     if (entity.getId() == entityId) {
                         target = entity;
                         break;
@@ -89,7 +89,7 @@ public class Criticals extends PVPModule {
             }
             postUpdateSprint = mc.player.isSprinting();
             if (postUpdateSprint) {
-                mc.getNetworkHandler().sendPacket(new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.STOP_SPRINTING));
+                mc.getConnection().send(new ServerboundPlayerCommandPacket(mc.player, ServerboundPlayerCommandPacket.Action.STOP_SPRINTING));
             }
             performCriticalAttack(target);
         }
@@ -97,15 +97,15 @@ public class Criticals extends PVPModule {
     @EventHandler
     private void onSentPacket(PacketEvent.Sent event) {
         if (mc.player == null) return;
-        if (event.packet instanceof PlayerInteractEntityC2SPacket) {
+        if (event.packet instanceof ServerboundInteractPacket) {
             if (postUpdateGround) {
-                mc.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(
+                mc.getConnection().send(new ServerboundMovePlayerPacket.Pos(
                     mc.player.getX(), mc.player.getY(), mc.player.getZ(), false, false
                 ));
                 postUpdateGround = false;
             }
             if (postUpdateSprint) {
-                mc.getNetworkHandler().sendPacket(new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.START_SPRINTING));
+                mc.getConnection().send(new ServerboundPlayerCommandPacket(mc.player, ServerboundPlayerCommandPacket.Action.START_SPRINTING));
                 postUpdateSprint = false;
             }
         }
@@ -120,19 +120,19 @@ public class Criticals extends PVPModule {
         if (entity == null || !entity.isAlive() || !(entity instanceof LivingEntity)) {
             return false;
         }
-        return !(mc.player.isRiding() ||
-            mc.player.isGliding() ||
-            mc.player.isTouchingWater() ||
+        return !(mc.player.isHandsBusy() ||
+            mc.player.isFallFlying() ||
+            mc.player.isInWater() ||
             mc.player.isInLava() ||
-            mc.player.isHoldingOntoLadder() ||
-            mc.player.hasStatusEffect(StatusEffects.BLINDNESS) ||
+            mc.player.isSuppressingSlidingDownLadder() ||
+            mc.player.hasEffect(MobEffects.BLINDNESS) ||
             InventoryManager.isHolding32k());
     }
     private void handleVehicleAttack(Entity target) {
         if (mode.get() == CritMode.PACKET) {
             for (int i = 0; i < 5; i++) {
-                mc.getNetworkHandler().sendPacket(PlayerInteractEntityC2SPacket.attack(target, mc.player.isSneaking()));
-                mc.getNetworkHandler().sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
+                mc.getConnection().send(ServerboundInteractPacket.createAttackPacket(target, mc.player.isShiftKeyDown()));
+                mc.getConnection().send(new ServerboundSwingPacket(InteractionHand.MAIN_HAND));
             }
         }
     }
@@ -142,31 +142,31 @@ public class Criticals extends PVPModule {
         double z = mc.player.getZ();
         switch (mode.get()) {
             case VANILLA -> {
-                if (mc.player.isOnGround() && !mc.options.jumpKey.isPressed()) {
+                if (mc.player.onGround() && !mc.options.keyJump.isDown()) {
                     double d = 1.0e-7 + 1.0e-7 * (1.0 + RANDOM.nextInt(RANDOM.nextBoolean() ? 34 : 43));
-                    mc.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(
+                    mc.getConnection().send(new ServerboundMovePlayerPacket.Pos(
                         x, y + 0.1016f + d * 3.0f, z, false, false));
-                    mc.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(
+                    mc.getConnection().send(new ServerboundMovePlayerPacket.Pos(
                         x, y + 0.0202f + d * 2.0f, z, false, false));
-                    mc.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(
+                    mc.getConnection().send(new ServerboundMovePlayerPacket.Pos(
                         x, y + 3.239e-4 + d, z, false, false));
-                    mc.player.addCritParticles(target);
+                    mc.player.crit(target);
                 }
             }
             case PACKET -> {
-                if (mc.player.isOnGround() && !mc.options.jumpKey.isPressed()) {
-                    mc.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(
+                if (mc.player.onGround() && !mc.options.keyJump.isDown()) {
+                    mc.getConnection().send(new ServerboundMovePlayerPacket.Pos(
                         x, y + 0.0625f, z, false, false));
-                    mc.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(
+                    mc.getConnection().send(new ServerboundMovePlayerPacket.Pos(
                         x, y, z, false, false));
-                    mc.player.addCritParticles(target);
+                    mc.player.crit(target);
                 }
             }
             case PACKET_STRICT -> {
-                if (attackTimer.passed(500) && mc.player.isOnGround() && !mc.options.jumpKey.isPressed()) {
-                    mc.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(
+                if (attackTimer.passed(500) && mc.player.onGround() && !mc.options.keyJump.isDown()) {
+                    mc.getConnection().send(new ServerboundMovePlayerPacket.Pos(
                         x, y + 1.1e-7f, z, false, false));
-                    mc.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(
+                    mc.getConnection().send(new ServerboundMovePlayerPacket.Pos(
                         x, y + 1.0e-8f, z, false, false));
                     postUpdateGround = true;
                     attackTimer.reset();
@@ -179,14 +179,14 @@ public class Criticals extends PVPModule {
                 if (moveFix.get() && MovementUtil.isMovingInput()) {
                     return;
                 }
-                if (attackTimer.passed(250) && mc.player.isOnGround() && !mc.player.isCrawling()) {
-                    float yaw = mc.player.getYaw();
-                    float pitch = mc.player.getPitch();
-                    mc.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.Full(
+                if (attackTimer.passed(250) && mc.player.onGround() && !mc.player.isVisuallyCrawling()) {
+                    float yaw = mc.player.getYRot();
+                    float pitch = mc.player.getXRot();
+                    mc.getConnection().send(new ServerboundMovePlayerPacket.PosRot(
                         x, y + 0.0625, z, yaw, pitch, false, false));
-                    mc.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.Full(
+                    mc.getConnection().send(new ServerboundMovePlayerPacket.PosRot(
                         x, y + 0.0625013579, z, yaw, pitch, false, false));
-                    mc.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.Full(
+                    mc.getConnection().send(new ServerboundMovePlayerPacket.PosRot(
                         x, y + 1.3579e-6, z, yaw, pitch, false, false));
                     attackTimer.reset();
                 }
@@ -198,19 +198,19 @@ public class Criticals extends PVPModule {
                 if (moveFix.get() && MovementUtil.isMovingInput()) {
                     return;
                 }
-                if (mc.player.isOnGround() && !mc.player.isCrawling()) {
-                    float yaw = mc.player.getYaw();
-                    float pitch = mc.player.getPitch();
-                    mc.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.Full(
+                if (mc.player.onGround() && !mc.player.isVisuallyCrawling()) {
+                    float yaw = mc.player.getYRot();
+                    float pitch = mc.player.getXRot();
+                    mc.getConnection().send(new ServerboundMovePlayerPacket.PosRot(
                         x, y, z, yaw, pitch, true, false));
-                    mc.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.Full(
+                    mc.getConnection().send(new ServerboundMovePlayerPacket.PosRot(
                         x, y + 0.0625f, z, yaw, pitch, false, false));
-                    mc.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.Full(
+                    mc.getConnection().send(new ServerboundMovePlayerPacket.PosRot(
                         x, y + 0.04535f, z, yaw, pitch, false, false));
                 }
             }
             case LOW_HOP -> {
-                mc.player.setVelocity(mc.player.getVelocity().x, 0.3425, mc.player.getVelocity().z);
+                mc.player.setDeltaMovement(mc.player.getDeltaMovement().x, 0.3425, mc.player.getDeltaMovement().z);
             }
         }
     }

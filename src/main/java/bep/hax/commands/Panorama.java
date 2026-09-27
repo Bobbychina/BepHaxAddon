@@ -2,20 +2,19 @@ package bep.hax.commands;
 import java.io.File;
 import java.nio.file.*;
 import javax.imageio.ImageIO;
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
 import bep.hax.util.LogUtil;
-import org.jetbrains.annotations.Nullable;
 import java.awt.image.BufferedImage;
 import bep.hax.util.StardustUtil;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.command.CommandSource;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.commands.SharedSuggestionProvider;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
 import meteordevelopment.orbit.EventHandler;
 import java.util.concurrent.ThreadLocalRandom;
 import java.nio.file.attribute.BasicFileAttributes;
 import meteordevelopment.meteorclient.MeteorClient;
-import net.minecraft.client.util.ScreenshotRecorder;
+import net.minecraft.client.Screenshot;
 import meteordevelopment.meteorclient.commands.Command;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
@@ -37,22 +36,20 @@ public class Panorama extends Command {
     private boolean isWarming = false;
     private boolean takingPanorama = false;
     private boolean readyToAssemble = false;
-    @Nullable
     private Path currentPanoramaDir = null;
-    @Nullable
-    private MinecraftClient instance = null;
+    private Minecraft instance = null;
     private void takeWarmedScreenshot() {
         if (currentPanoramaDir == null || instance == null) return;
-        ScreenshotRecorder.saveScreenshot(
+        Screenshot.grab(
             currentPanoramaDir.toFile().toPath().resolve("panorama_"+screenshot+".png").toFile(),
-            instance.getFramebuffer(), msg -> {}
+            instance.getMainRenderTarget(), msg -> {}
         );
         ++screenshot;
         isWarming = false;
     }
     private void startPanoramaProcess(String name) {
         Path panoramaDir = FabricLoader.getInstance().getGameDir().resolve("meteor-client/panoramas/"+name);
-        MinecraftClient mc = MinecraftClient.getInstance();
+        Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
         try {
             panoramaDir.toFile().mkdirs();
@@ -61,16 +58,16 @@ public class Panorama extends Command {
         }
         instance = mc;
         screenshot = 0;
-        preYaw = mc.player.getYaw();
-        prevYaw = mc.player.getYaw();
-        prePitch = mc.player.getPitch();
-        prevPitch = mc.player.getPitch();
+        preYaw = mc.player.getYRot();
+        prevYaw = mc.player.getYRot();
+        prePitch = mc.player.getXRot();
+        prevPitch = mc.player.getXRot();
         currentPanoramaDir = panoramaDir;
-        preWidth = mc.getWindow().getFramebufferWidth();
-        preHeight = mc.getWindow().getFramebufferHeight();
-        instance.getWindow().setFramebufferWidth(4096);
-        instance.getWindow().setFramebufferHeight(4096);
-        instance.getFramebuffer().resize(4096, 4096);
+        preWidth = mc.getWindow().getWidth();
+        preHeight = mc.getWindow().getHeight();
+        instance.getWindow().setWidth(4096);
+        instance.getWindow().setHeight(4096);
+        instance.getMainRenderTarget().resize(4096, 4096);
         takingPanorama = true;
     }
     private void assembleResourcePack() {
@@ -108,12 +105,12 @@ public class Panorama extends Command {
         }
         readyToAssemble = false;
         if (instance.player != null) {
-            instance.player.playSound(SoundEvents.BLOCK_AMETHYST_BLOCK_CHIME, 1f, 1f);
-            instance.player.sendMessage(Text.of("§8<" + StardustUtil.rCC() + "✨§8> §3§oYour resource pack is ready to be enabled§f§o!"), false);
+            instance.player.playSound(SoundEvents.AMETHYST_BLOCK_CHIME, 1f, 1f);
+            instance.player.sendSystemMessage(Component.literal("§8<" + StardustUtil.rCC() + "✨§8> §3§oYour resource pack is ready to be enabled§f§o!"), false);
         }
     }
     @Override
-    public void build(LiteralArgumentBuilder<CommandSource> builder) {
+    public void build(LiteralArgumentBuilder<SharedSuggestionProvider> builder) {
         builder.then(
             argument("name", StringArgumentType.word()).executes(ctx -> {
                 String name = ctx.getArgument("name", String.class);
@@ -139,63 +136,63 @@ public class Panorama extends Command {
             case 0 -> {
                 if (!isWarming) {
                     // Note: setRenderingPanorama removed in 1.21.11
-                    instance.gameRenderer.setBlockOutlineEnabled(false);
-                    instance.worldRenderer.reload();
-                    if (!instance.options.hudHidden) instance.options.hudHidden = true;
-                    instance.player.setYaw(preYaw);
-                    instance.player.setPitch(0f);
+                    instance.gameRenderer.setRenderBlockOutline(false);
+                    instance.levelRenderer.reload();
+                    if (!instance.options.hideGui) instance.options.hideGui = true;
+                    instance.player.setYRot(preYaw);
+                    instance.player.setXRot(0f);
                     isWarming = true;
                 } else takeWarmedScreenshot();
             }
             case 1 -> {
                 if (!isWarming) {
-                    instance.player.setYaw((preYaw + 90f) % 360f);
-                    instance.player.setPitch(0f);
+                    instance.player.setYRot((preYaw + 90f) % 360f);
+                    instance.player.setXRot(0f);
                     isWarming = true;
                 } else takeWarmedScreenshot();
             }
             case 2 -> {
                 if (!isWarming) {
-                    instance.player.setYaw((preYaw + 180f) % 360f);
-                    instance.player.setPitch(0f);
+                    instance.player.setYRot((preYaw + 180f) % 360f);
+                    instance.player.setXRot(0f);
                     isWarming = true;
                 } else takeWarmedScreenshot();
             }
             case 3 -> {
                 if (!isWarming) {
-                    instance.player.setYaw((preYaw - 90f) % 360f);
-                    instance.player.setPitch(0f);
+                    instance.player.setYRot((preYaw - 90f) % 360f);
+                    instance.player.setXRot(0f);
                     isWarming = true;
                 } else takeWarmedScreenshot();
             }
             case 4 -> {
                 if (!isWarming) {
-                    instance.player.setYaw(preYaw);
-                    instance.player.setPitch(-90f);
+                    instance.player.setYRot(preYaw);
+                    instance.player.setXRot(-90f);
                     isWarming = true;
                 } else takeWarmedScreenshot();
             }
             default -> {
                 if (!isWarming) {
-                    instance.player.setYaw(preYaw);
-                    instance.player.setPitch(90f);
+                    instance.player.setYRot(preYaw);
+                    instance.player.setXRot(90f);
                     isWarming = true;
                 } else {
                     takeWarmedScreenshot();
                     takingPanorama = false;
-                    instance.player.setYaw(preYaw);
-                    instance.player.setPitch(prePitch);
+                    instance.player.setYRot(preYaw);
+                    instance.player.setXRot(prePitch);
                     // Note: setRenderingPanorama removed in 1.21.11
-                    instance.gameRenderer.setBlockOutlineEnabled(true);
-                    instance.getWindow().setFramebufferWidth(preWidth);
-                    instance.getWindow().setFramebufferHeight(preHeight);
-                    if (instance.options.hudHidden) instance.options.hudHidden = false;
-                    instance.getFramebuffer().resize(preWidth, preHeight);
-                    instance.worldRenderer.reload();
+                    instance.gameRenderer.setRenderBlockOutline(true);
+                    instance.getWindow().setWidth(preWidth);
+                    instance.getWindow().setHeight(preHeight);
+                    if (instance.options.hideGui) instance.options.hideGui = false;
+                    instance.getMainRenderTarget().resize(preWidth, preHeight);
+                    instance.levelRenderer.reload();
                     timer = 100;
                     readyToAssemble = true;
-                    instance.player.sendMessage(
-                        Text.of("§8<§2§o✨§8> §8§oFinalizing resource pack§2§o, §8§oplease wait§2§o..."), false
+                    instance.player.sendSystemMessage(
+                        Component.literal("§8<§2§o✨§8> §8§oFinalizing resource pack§2§o, §8§oplease wait§2§o..."), false
                     );
                 }
             }

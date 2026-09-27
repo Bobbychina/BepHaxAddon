@@ -6,9 +6,9 @@ import meteordevelopment.meteorclient.systems.hud.HudElement;
 import meteordevelopment.meteorclient.systems.hud.HudElementInfo;
 import meteordevelopment.meteorclient.systems.hud.HudRenderer;
 import meteordevelopment.meteorclient.utils.render.color.SettingColor;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.resources.Identifier;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.Level;
 public class DimensionCoords extends HudElement {
     public static final HudElementInfo<DimensionCoords> INFO = new HudElementInfo<>(Bep.HUD_GROUP, "DimensionCoords", "Displays coordinates for both overworld and nether dimensions.", DimensionCoords::new);
     private final SettingGroup sgGeneral = settings.getDefaultGroup();
@@ -85,15 +85,15 @@ public class DimensionCoords extends HudElement {
     }
     @Override
     public void render(HudRenderer renderer) {
-        if (MeteorClient.mc.world == null || MeteorClient.mc.player == null) {
+        if (MeteorClient.mc.level == null || MeteorClient.mc.player == null) {
             if (isInEditor()) {
                 renderer.text("Dimension Coords", x, y, titleColor.get(), textShadow.get(), textScale.get());
                 setSize(renderer.textWidth("Dimension Coords", textShadow.get(), textScale.get()), renderer.textHeight(textShadow.get(), textScale.get()));
             }
             return;
         }
-        BlockPos playerPos = MeteorClient.mc.player.getBlockPos();
-        Identifier dimensionId = MeteorClient.mc.world.getRegistryKey().getValue();
+        BlockPos playerPos = MeteorClient.mc.player.blockPosition();
+        Identifier dimensionId = MeteorClient.mc.level.dimension().identifier();
         double curX = x;
         double curY = y;
         double maxWidth = 0;
@@ -180,13 +180,13 @@ public class DimensionCoords extends HudElement {
         setSize(maxWidth, height > 0 ? height - spacing : 0);
     }
     private boolean isOverworld(Identifier dimensionId) {
-        return dimensionId.equals(Identifier.of("minecraft:overworld"));
+        return dimensionId.equals(Identifier.parse("minecraft:overworld"));
     }
     private boolean isNether(Identifier dimensionId) {
-        return dimensionId.equals(Identifier.of("minecraft:the_nether"));
+        return dimensionId.equals(Identifier.parse("minecraft:the_nether"));
     }
     private boolean isEnd(Identifier dimensionId) {
-        return dimensionId.equals(Identifier.of("minecraft:the_end"));
+        return dimensionId.equals(Identifier.parse("minecraft:the_end"));
     }
     private String getDimensionName(Identifier dimensionId) {
         if (isOverworld(dimensionId)) return "Overworld";

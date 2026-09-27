@@ -6,15 +6,15 @@ import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.utils.player.Rotations;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.block.Block;
-import net.minecraft.block.Blocks;
-import net.minecraft.item.AxeItem;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.Hand;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.item.AxeItem;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.world.phys.Vec3;
 import java.util.Set;
 public class Stripper extends Module {
     private final SettingGroup sgGeneral = settings.getDefaultGroup();
@@ -123,19 +123,19 @@ public class Stripper extends Module {
     }
     @EventHandler
     private void onTick(TickEvent.Pre event) {
-        if (mc.player == null || mc.world == null) return;
+        if (mc.player == null || mc.level == null) return;
         if (tickTimer > 0) {
             tickTimer--;
             return;
         }
         switch (state) {
             case WAITING_FOR_FIRST_LOG -> {
-                BlockPos playerPos = mc.player.getBlockPos();
+                BlockPos playerPos = mc.player.blockPosition();
                 for (int x = -3; x <= 3; x++) {
                     for (int y = -1; y <= 2; y++) {
                         for (int z = -3; z <= 3; z++) {
-                            BlockPos checkPos = playerPos.add(x, y, z);
-                            Block block = mc.world.getBlockState(checkPos).getBlock();
+                            BlockPos checkPos = playerPos.offset(x, y, z);
+                            Block block = mc.level.getBlockState(checkPos).getBlock();
                             if (LOGS.contains(block) && !firstLogDetected) {
                                 workingPos = checkPos;
                                 targetPos = checkPos;
@@ -154,7 +154,7 @@ public class Stripper extends Module {
                     state = State.WAITING_FOR_FIRST_LOG;
                     return;
                 }
-                Vec3d target = workingPos.toCenterPos();
+                Vec3 target = workingPos.getCenter();
                 Rotations.rotate(getYaw(target), getPitch(target));
                 rotationTimer--;
                 if (rotationTimer <= 0) {
@@ -173,8 +173,8 @@ public class Stripper extends Module {
                     return;
                 }
                 ((PlayerInventoryAccessor) mc.player.getInventory()).setSelectedSlot(logSlot);
-                BlockPos placeAgainst = workingPos.down();
-                Vec3d target = placeAgainst.toCenterPos().add(0, 0.5, 0);
+                BlockPos placeAgainst = workingPos.below();
+                Vec3 target = placeAgainst.getCenter().add(0, 0.5, 0);
                 Rotations.rotate(getYaw(target), getPitch(target));
                 BlockHitResult hitResult = new BlockHitResult(
                     target,
@@ -182,14 +182,14 @@ public class Stripper extends Module {
                     placeAgainst,
                     false
                 );
-                mc.interactionManager.interactBlock(mc.player, Hand.MAIN_HAND, hitResult);
-                mc.player.swingHand(Hand.MAIN_HAND);
+                mc.gameMode.useItemOn(mc.player, InteractionHand.MAIN_HAND, hitResult);
+                mc.player.swing(InteractionHand.MAIN_HAND);
                 state = State.WAIT_AFTER_PLACE;
                 tickTimer = placeDelay.get();
                 targetPos = workingPos;
             }
             case WAIT_AFTER_PLACE -> {
-                if (workingPos != null && LOGS.contains(mc.world.getBlockState(workingPos).getBlock())) {
+                if (workingPos != null && LOGS.contains(mc.level.getBlockState(workingPos).getBlock())) {
                     state = State.ROTATING_TO_STRIP;
                     rotationTimer = rotationTime.get();
                 } else {
@@ -202,7 +202,7 @@ public class Stripper extends Module {
                     state = State.WAITING_FOR_FIRST_LOG;
                     return;
                 }
-                Vec3d target = targetPos.toCenterPos();
+                Vec3 target = targetPos.getCenter();
                 Rotations.rotate(getYaw(target), getPitch(target));
                 rotationTimer--;
                 if (rotationTimer <= 0) {
@@ -215,14 +215,14 @@ public class Stripper extends Module {
                     return;
                 }
                 int slot = axeSlot.get() - 1;
-                ItemStack stack = mc.player.getInventory().getStack(slot);
+                ItemStack stack = mc.player.getInventory().getItem(slot);
                 if (stack.isEmpty() || !(stack.getItem() instanceof AxeItem)) {
                     error("No axe in slot " + axeSlot.get());
                     toggle();
                     return;
                 }
                 ((PlayerInventoryAccessor) mc.player.getInventory()).setSelectedSlot(slot);
-                Vec3d target = targetPos.toCenterPos();
+                Vec3 target = targetPos.getCenter();
                 Rotations.rotate(getYaw(target), getPitch(target));
                 BlockHitResult hitResult = new BlockHitResult(
                     target,
@@ -230,13 +230,13 @@ public class Stripper extends Module {
                     targetPos,
                     false
                 );
-                mc.interactionManager.interactBlock(mc.player, Hand.MAIN_HAND, hitResult);
-                mc.player.swingHand(Hand.MAIN_HAND);
+                mc.gameMode.useItemOn(mc.player, InteractionHand.MAIN_HAND, hitResult);
+                mc.player.swing(InteractionHand.MAIN_HAND);
                 state = State.WAIT_AFTER_STRIP;
                 tickTimer = stripDelay.get();
             }
             case WAIT_AFTER_STRIP -> {
-                if (targetPos != null && STRIPPED_LOGS.contains(mc.world.getBlockState(targetPos).getBlock())) {
+                if (targetPos != null && STRIPPED_LOGS.contains(mc.level.getBlockState(targetPos).getBlock())) {
                     if (autoMine.get()) {
                         state = State.ROTATING_TO_BREAK;
                         rotationTimer = rotationTime.get();
@@ -244,7 +244,7 @@ public class Stripper extends Module {
                         state = State.WAIT_BEFORE_NEXT;
                         tickTimer = breakDelay.get();
                     }
-                } else if (targetPos != null && LOGS.contains(mc.world.getBlockState(targetPos).getBlock())) {
+                } else if (targetPos != null && LOGS.contains(mc.level.getBlockState(targetPos).getBlock())) {
                     state = State.ROTATING_TO_STRIP;
                     rotationTimer = rotationTime.get();
                 } else {
@@ -257,7 +257,7 @@ public class Stripper extends Module {
                     state = State.WAITING_FOR_FIRST_LOG;
                     return;
                 }
-                Vec3d target = targetPos.toCenterPos();
+                Vec3 target = targetPos.getCenter();
                 Rotations.rotate(getYaw(target), getPitch(target));
                 rotationTimer--;
                 if (rotationTimer <= 0) {
@@ -271,15 +271,15 @@ public class Stripper extends Module {
                 }
                 int slot = axeSlot.get() - 1;
                 ((PlayerInventoryAccessor) mc.player.getInventory()).setSelectedSlot(slot);
-                Vec3d target = targetPos.toCenterPos();
+                Vec3 target = targetPos.getCenter();
                 Rotations.rotate(getYaw(target), getPitch(target));
-                mc.interactionManager.updateBlockBreakingProgress(targetPos, Direction.UP);
-                mc.player.swingHand(Hand.MAIN_HAND);
+                mc.gameMode.continueDestroyBlock(targetPos, Direction.UP);
+                mc.player.swing(InteractionHand.MAIN_HAND);
                 state = State.WAIT_AFTER_BREAK;
                 tickTimer = 2;
             }
             case WAIT_AFTER_BREAK -> {
-                if (targetPos == null || mc.world.getBlockState(targetPos).isAir()) {
+                if (targetPos == null || mc.level.getBlockState(targetPos).isAir()) {
                     state = State.WAIT_BEFORE_NEXT;
                     tickTimer = breakDelay.get();
                 } else {
@@ -298,14 +298,14 @@ public class Stripper extends Module {
             }
         }
     }
-    private float getYaw(Vec3d target) {
-        Vec3d playerPos = mc.player.getEyePos();
+    private float getYaw(Vec3 target) {
+        Vec3 playerPos = mc.player.getEyePosition();
         double deltaX = target.x - playerPos.x;
         double deltaZ = target.z - playerPos.z;
         return (float) Math.toDegrees(Math.atan2(-deltaX, deltaZ));
     }
-    private float getPitch(Vec3d target) {
-        Vec3d playerPos = mc.player.getEyePos();
+    private float getPitch(Vec3 target) {
+        Vec3 playerPos = mc.player.getEyePosition();
         double deltaX = target.x - playerPos.x;
         double deltaY = target.y - playerPos.y;
         double deltaZ = target.z - playerPos.z;
@@ -314,9 +314,9 @@ public class Stripper extends Module {
     }
     private int findLogInInventory() {
         for (int i = 0; i < 9; i++) {
-            ItemStack stack = mc.player.getInventory().getStack(i);
+            ItemStack stack = mc.player.getInventory().getItem(i);
             if (!stack.isEmpty()) {
-                Block block = Block.getBlockFromItem(stack.getItem());
+                Block block = Block.byItem(stack.getItem());
                 if (LOGS.contains(block)) {
                     return i;
                 }

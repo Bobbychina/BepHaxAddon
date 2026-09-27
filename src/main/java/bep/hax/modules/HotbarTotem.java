@@ -9,8 +9,8 @@ import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.utils.player.InvUtils;
 import meteordevelopment.orbit.EventHandler;
 import meteordevelopment.orbit.EventPriority;
-import net.minecraft.item.Items;
-import net.minecraft.network.packet.c2s.play.*;
+import net.minecraft.world.item.Items;
+import net.minecraft.network.protocol.game.*;
 public class HotbarTotem extends Module {
     private final SettingGroup sgGeneral = settings.getDefaultGroup();
     private final SettingGroup sgAdvanced = settings.createGroup("Advanced");
@@ -87,9 +87,9 @@ public class HotbarTotem extends Module {
         if (currentClientSlot == totemSlotIndex) {
             return;
         }
-        boolean isInteraction = event.packet instanceof PlayerInteractBlockC2SPacket ||
-                               event.packet instanceof PlayerInteractItemC2SPacket ||
-                               event.packet instanceof PlayerInteractEntityC2SPacket;
+        boolean isInteraction = event.packet instanceof ServerboundUseItemOnPacket ||
+                               event.packet instanceof ServerboundUseItemPacket ||
+                               event.packet instanceof ServerboundInteractPacket;
         if (isInteraction) {
             ticksSinceActivity = 0;
             if (serverSlot != currentClientSlot) {
@@ -99,8 +99,8 @@ public class HotbarTotem extends Module {
     }
     @EventHandler(priority = EventPriority.LOWEST)
     private void onTick(TickEvent.Post event) {
-        if (!isActive() || mc.player == null || mc.world == null) return;
-        if (mc.player.isDead() || mc.player.getHealth() <= 0.0f) return;
+        if (!isActive() || mc.player == null || mc.level == null) return;
+        if (mc.player.isDeadOrDying() || mc.player.getHealth() <= 0.0f) return;
         if (onlyWhenDamaged.get()) {
             float currentHealth = mc.player.getHealth();
             if (currentHealth >= lastHealth) {
@@ -121,8 +121,8 @@ public class HotbarTotem extends Module {
         int serverSlot = inventoryManager.getServerSlot();
         int currentPriority = inventoryManager.getCurrentPriority();
         boolean isActive = mc.player.isUsingItem() ||
-                          mc.options.attackKey.isPressed() ||
-                          mc.options.useKey.isPressed();
+                          mc.options.keyAttack.isDown() ||
+                          mc.options.keyUse.isDown();
         if (isActive) {
             ticksSinceActivity = 0;
         } else {
@@ -132,7 +132,7 @@ public class HotbarTotem extends Module {
             ticksSinceActivity = 0;
             return;
         }
-        boolean hasTotem = mc.player.getInventory().getStack(totemSlotIndex).getItem() == Items.TOTEM_OF_UNDYING;
+        boolean hasTotem = mc.player.getInventory().getItem(totemSlotIndex).getItem() == Items.TOTEM_OF_UNDYING;
         boolean serverNotOnTotem = serverSlot != totemSlotIndex;
         boolean clientNotOnTotem = currentClientSlot != totemSlotIndex;
         boolean canRestore = ticksSinceActivity >= inactivityDelay.get();
@@ -143,11 +143,11 @@ public class HotbarTotem extends Module {
     private void refillTotem() {
         if (mc.player == null) return;
         int totemSlotIndex = totemSlot.get() - 1;
-        if (mc.player.getInventory().getStack(totemSlotIndex).getItem() == Items.TOTEM_OF_UNDYING) {
+        if (mc.player.getInventory().getItem(totemSlotIndex).getItem() == Items.TOTEM_OF_UNDYING) {
             return;
         }
         for (int i = 9; i < 36; i++) {
-            if (mc.player.getInventory().getStack(i).getItem() == Items.TOTEM_OF_UNDYING) {
+            if (mc.player.getInventory().getItem(i).getItem() == Items.TOTEM_OF_UNDYING) {
                 InvUtils.move().from(i).to(totemSlotIndex);
                 break;
             }
@@ -158,8 +158,8 @@ public class HotbarTotem extends Module {
         if (mc.player == null || inventoryManager == null) return null;
         int totemSlotIndex = totemSlot.get() - 1;
         int totemCount = 0;
-        if (mc.player.getInventory().getStack(totemSlotIndex).getItem() == Items.TOTEM_OF_UNDYING) {
-            totemCount = mc.player.getInventory().getStack(totemSlotIndex).getCount();
+        if (mc.player.getInventory().getItem(totemSlotIndex).getItem() == Items.TOTEM_OF_UNDYING) {
+            totemCount = mc.player.getInventory().getItem(totemSlotIndex).getCount();
         }
         int serverSlot = inventoryManager.getServerSlot();
         boolean isProtected = serverSlot == totemSlotIndex;

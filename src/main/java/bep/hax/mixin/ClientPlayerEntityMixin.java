@@ -5,24 +5,24 @@ import bep.hax.modules.RocketMan;
 import bep.hax.util.InventoryManager;
 import bep.hax.util.PushOutOfBlocksEvent;
 import meteordevelopment.meteorclient.systems.modules.movement.NoSlow;
-import net.minecraft.client.input.Input;
-import net.minecraft.component.DataComponentTypes;
-import net.minecraft.item.ItemStack;
-import net.minecraft.sound.SoundEvent;
-import net.minecraft.sound.SoundEvents;
+import net.minecraft.client.player.ClientInput;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundEvents;
 import org.spongepowered.asm.mixin.Mixin;
-import net.minecraft.sound.SoundCategory;
+import net.minecraft.sounds.SoundSource;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.client.player.LocalPlayer;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import meteordevelopment.meteorclient.MeteorClient;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-@Mixin(ClientPlayerEntity.class)
+@Mixin(LocalPlayer.class)
 public abstract class ClientPlayerEntityMixin {
-    @Shadow public Input input;
+    @Shadow public ClientInput input;
     @Shadow public abstract boolean isUsingItem();
     @Shadow public abstract boolean isSneaking();
 
@@ -38,13 +38,13 @@ public abstract class ClientPlayerEntityMixin {
     }
     @Inject(method = "tick", at = @At("HEAD"))
     private void onTickStart(CallbackInfo ci) {
-        ClientPlayerEntity player = (ClientPlayerEntity) (Object) this;
+        LocalPlayer player = (LocalPlayer) (Object) this;
         if (player == null) return;
         bephax$checkStartEating(player);
     }
-    @Inject(method = "tickMovement", at = @At(value = "FIELD", target = "Lnet/minecraft/client/network/ClientPlayerEntity;input:Lnet/minecraft/client/input/Input;", ordinal = 0, shift = At.Shift.AFTER))
+    @Inject(method = "tickMovement", at = @At(value = "FIELD", target = "Lnet/minecraft/client/player/LocalPlayer;input:Lnet/minecraft/client/player/ClientInput;", ordinal = 0, shift = At.Shift.AFTER))
     private void bephax$multiplyInputAfterInputTick(CallbackInfo ci) {
-        ClientPlayerEntity player = (ClientPlayerEntity) (Object) this;
+        LocalPlayer player = (LocalPlayer) (Object) this;
         NoSlow noSlow = Modules.get().get(NoSlow.class);
         if (!noSlow.isActive()) return;
         if (bephax$isGrimV3Enabled(noSlow)) {
@@ -71,13 +71,13 @@ public abstract class ClientPlayerEntityMixin {
     }
     @Inject(method = "tickMovement", at = @At("TAIL"))
     private void bephax$handleManualEatingAtTail(CallbackInfo ci) {
-        ClientPlayerEntity player = (ClientPlayerEntity) (Object) this;
+        LocalPlayer player = (LocalPlayer) (Object) this;
         bephax$handleManualEating(player);
     }
     @Unique
     private boolean bephax$shouldMultiplyInput(NoSlow noSlow) {
-        ClientPlayerEntity player = (ClientPlayerEntity) (Object) this;
-        if (player.hasVehicle() || isSneaking()) return false;
+        LocalPlayer player = (LocalPlayer) (Object) this;
+        if (player.isPassenger() || isSneaking()) return false;
         return isUsingItem() && noSlow.items();
     }
     @Unique
@@ -95,10 +95,10 @@ public abstract class ClientPlayerEntityMixin {
     }
     @Unique
     private boolean bephax$checkGrimV3Timing() {
-        ClientPlayerEntity player = (ClientPlayerEntity) (Object) this;
+        LocalPlayer player = (LocalPlayer) (Object) this;
         if (player == null) return false;
-        return (!player.isSneaking() && !player.hasVehicle() && player.getItemUseTimeLeft() < 5)
-            || (player.getItemUseTime() > 1 && player.getItemUseTime() % 2 != 0);
+        return (!player.isShiftKeyDown() && !player.isPassenger() && player.getUseItemRemainingTicks() < 5)
+            || (player.getTicksUsingItem() > 1 && player.getTicksUsingItem() % 2 != 0);
     }
     @Unique
     private float bephax$getGrimV3Multiplier() {
@@ -139,12 +139,12 @@ public abstract class ClientPlayerEntityMixin {
     @Unique
     private int bephax$lastItemUseTime = 0;
     @Unique
-    private void bephax$checkStartEating(ClientPlayerEntity player) {
+    private void bephax$checkStartEating(LocalPlayer player) {
         if (player == null) return;
-        int currentUseTime = player.getItemUseTime();
+        int currentUseTime = player.getTicksUsingItem();
         if (currentUseTime == 1 && bephax$lastItemUseTime == 0) {
             ItemStack activeStack = player.getActiveItem();
-            if (!activeStack.isEmpty() && activeStack.get(DataComponentTypes.FOOD) != null) {
+            if (!activeStack.isEmpty() && activeStack.get(DataComponents.FOOD) != null) {
                 InventoryManager invManager = InventoryManager.getInstance();
                 int currentSlot = ((PlayerInventoryAccessor) player.getInventory()).getSelectedSlot();
                 int serverSlot = invManager.getServerSlot();
@@ -159,7 +159,7 @@ public abstract class ClientPlayerEntityMixin {
         bephax$lastItemUseTime = currentUseTime;
     }
     @Unique
-    private void bephax$handleManualEating(ClientPlayerEntity player) {
+    private void bephax$handleManualEating(LocalPlayer player) {
         if (player == null) return;
         boolean isEatingNow = bephax$isManuallyEatingFood(player);
         if (!isEatingNow && bephax$wasManuallyEating) {
@@ -169,10 +169,10 @@ public abstract class ClientPlayerEntityMixin {
         }
     }
     @Unique
-    private boolean bephax$isManuallyEatingFood(ClientPlayerEntity player) {
+    private boolean bephax$isManuallyEatingFood(LocalPlayer player) {
         if (!player.isUsingItem()) return false;
         ItemStack stack = player.getActiveItem();
         if (stack.isEmpty()) return false;
-        return stack.get(DataComponentTypes.FOOD) != null;
+        return stack.get(DataComponents.FOOD) != null;
     }
 }

@@ -1,5 +1,5 @@
 package bep.hax.util;
-import net.minecraft.entity.Entity;
+import net.minecraft.world.entity.Entity;
 public class PushEntityEvent {
     private final Entity pushed;
     private final Entity pusher;
