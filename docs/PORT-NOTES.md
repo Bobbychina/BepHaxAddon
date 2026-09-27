@@ -214,3 +214,10 @@ python E:\Files\tools\portkit\port_loop.py 8
 排查顺序建议（省时间）：`crash-reports\crash-*.txt` 里的 `Description:` 行 → 若是 `Initializing game`
 就看 `Caused by` 的第一帧（往往是字段初始化/构造器）；若是 `Bootstrap` 就看是不是某个 mixin 的
 `@At`/描述符失效；两者都不是才回去看 `latest.log` 的 `Mixin apply for mod X failed`。
+
+## 联合实机验收（2026-09-28 04:44，main agent 复核）
+- 三个移植 mod（milky / stardust / bephax）同时装入 `D:\mc\.minecraft\versions\MAIN\mods` 后启动 MC 26.1.2（79 个 mod）：
+  - 脚本：`E:\Files\tools\portkit\mc-smoke.ps1 -Label final`；结论 `logs\smoke-final.txt` → **`new crash reports (0)` + `errors (0)` + `game alive = True (Minecraft* 26.1.2)` + `verdict: PASS`**
+  - 截图证据：`shots\mc-final.png`（2048×1280）与 `shots\mc-bephax-menu.png`（1038×614），肉眼可见 MC 主菜单右上角同时挂 `Meteor Client` 与 `Bep Hax`
+- 已知脚本坑（已修）：PCL 用 `java.exe` 启动，早期版本只查 `javaw` 会误报进程不在；现改为 `java|javaw` + `MainWindowTitle -like 'Minecraft*'`。
+- 仍是人工项：进世界后逐界面点击（物品栏/聊天/Tab/告示牌/书/容器）在本机无法用脚本注入键鼠（GLFW 不响应 `mouse_event/keybd_event`，即使 `AttachThreadInput` 拿前台），需要人手点几下复核。
