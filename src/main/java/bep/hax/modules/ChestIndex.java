@@ -288,7 +288,7 @@ public class ChestIndex extends Module
                         if (chestType == ChestType.LEFT || chestType == ChestType.RIGHT)
                         {
                             Direction facing = blockState.getValue(ChestBlock.FACING);
-                            BlockPos otherPartPos = blockPos.offset(chestType == ChestType.LEFT ? facing.getClockWise() : facing.getCounterClockWise());
+                            BlockPos otherPartPos = blockPos.relative(chestType == ChestType.LEFT ? facing.getClockWise() : facing.getCounterClockWise());
                             currPos[1] = otherPartPos;
                         }
                     }

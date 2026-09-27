@@ -88,14 +88,14 @@ public class AutoPortal extends Module {
             standingPos = standingPos.above();
         }
         BlockPos base = standingPos
-            .offset(forward, 2)
-            .offset(right, -1);
+            .relative(forward, 2)
+            .relative(right, -1);
         int obsidianCheck = 0;
         List<BlockPos> checkPositions = List.of(
-            base.offset(right, 1), base.offset(right, 2),
-            base.offset(right, 0).up(1), base.offset(right, 0).up(2), base.offset(right, 0).up(3),
-            base.offset(right, 3).up(1), base.offset(right, 3).up(2), base.offset(right, 3).up(3),
-            base.offset(right, 1).up(4), base.offset(right, 2).up(4)
+            base.relative(right, 1), base.relative(right, 2),
+            base.relative(right, 0).above(1), base.relative(right, 0).above(2), base.relative(right, 0).above(3),
+            base.relative(right, 3).above(1), base.relative(right, 3).above(2), base.relative(right, 3).above(3),
+            base.relative(right, 1).above(4), base.relative(right, 2).above(4)
         );
         boolean obstructed = checkPositions.stream().anyMatch(pos -> !mc.level.getBlockState(pos).canBeReplaced());
         if (obstructed) {
@@ -115,16 +115,16 @@ public class AutoPortal extends Module {
             toggle();
             return;
         }
-        portalBlocks.add(base.offset(right, 1));
-        portalBlocks.add(base.offset(right, 2));
+        portalBlocks.add(base.relative(right, 1));
+        portalBlocks.add(base.relative(right, 2));
         for (int i = 1; i <= 3; i++) {
-            portalBlocks.add(base.offset(right, 0).up(i));
+            portalBlocks.add(base.relative(right, 0).above(i));
         }
         for (int i = 1; i <= 3; i++) {
-            portalBlocks.add(base.offset(right, 3).up(i));
+            portalBlocks.add(base.relative(right, 3).above(i));
         }
-        portalBlocks.add(base.offset(right, 1).up(4));
-        portalBlocks.add(base.offset(right, 2).up(4));
+        portalBlocks.add(base.relative(right, 1).above(4));
+        portalBlocks.add(base.relative(right, 2).above(4));
         for (int i = 0; i < 9; i++) {
             if (mc.player.getInventory().getItem(i).getItem() == Items.OBSIDIAN) {
                 mc.player.getInventory().setSelectedSlot(i);

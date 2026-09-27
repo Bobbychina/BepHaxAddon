@@ -1,5 +1,6 @@
 package bep.hax.mixin;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.DoorBlock;
 import bep.hax.modules.AutoDoors;
 import org.spongepowered.asm.mixin.Mixin;
@@ -9,7 +10,7 @@ import meteordevelopment.meteorclient.systems.modules.Modules;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(DoorBlock.class)
 public class DoorBlockMixin extends Block {
-    public DoorBlockMixin(Settings settings) {
+    public DoorBlockMixin(BlockBehaviour.Properties settings) {
         super(settings);
     }
     @Inject(method = "playOpenCloseSound", at = @At("HEAD"), cancellable = true)

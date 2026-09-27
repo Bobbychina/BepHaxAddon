@@ -33,7 +33,7 @@ public abstract class AbstractSignEditScreenMixin extends Screen {
     protected AbstractSignEditScreenMixin(Component title) { super(title); }
     @Inject(method = "init", at = @At("TAIL"))
     public void stardustMixinInit(CallbackInfo ci) {
-        if (this.client == null) return;
+        if (this.minecraft == null) return;
         Modules modules = Modules.get();
         if (modules == null) return;
         SignHistorian signHistorian = modules.get(SignHistorian.class);
@@ -52,7 +52,7 @@ public abstract class AbstractSignEditScreenMixin extends Screen {
                 AbstractSignEditScreenAccessor accessor = ((AbstractSignEditScreenAccessor) this);
                 this.selectionManager = new TextFieldHelper(
                     () -> accessor.getMessages()[this.currentRow], this::setCurrentRowMessage,
-                    TextFieldHelper.makeClipboardGetter(this.client), TextFieldHelper.makeClipboardSetter(this.client),
+                    TextFieldHelper.createClipboardGetter(this.minecraft), TextFieldHelper.createClipboardSetter(this.minecraft),
                     string -> true
                 );
             }

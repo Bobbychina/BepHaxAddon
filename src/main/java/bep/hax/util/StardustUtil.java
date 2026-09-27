@@ -5,7 +5,10 @@ import java.util.UUID;
 import java.time.Instant;
 import java.util.Optional;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.phys.Vec3;
 import net.minecraft.network.chat.Style;
+import net.minecraft.world.item.DyeColor;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.network.chat.ClickEvent;
@@ -26,7 +29,7 @@ import net.minecraft.util.Crypt;
 import net.minecraft.server.level.ClientInformation;
 import net.minecraft.network.protocol.common.ServerboundClientInformationPacket;
 import meteordevelopment.meteorclient.systems.modules.misc.AutoReconnect;
-import meteordevelopment.meteorclient.mixin.ClientPlayNetworkHandlerAccessor;
+import meteordevelopment.meteorclient.mixin.ClientPacketListenerAccessor;
 public class StardustUtil {
     private static final Random RANDOM = new Random();
     public static final boolean XAERO_AVAILABLE = FabricLoader.getInstance().isModLoaded("xaeroworldmap")
@@ -282,12 +285,12 @@ public class StardustUtil {
             case Chat -> illegalPacket = new ServerboundChatPacket(
                 "§",
                 Instant.now(),
-                Crypt.SaltSupplier.nextLong(),
+                java.util.concurrent.ThreadLocalRandom.current().nextLong(),
                 null,
                 null
             );
-            case Interact -> illegalPacket = PlayerInteractEntityC2SPacket.interact(mc.player, false, InteractionHand.MAIN_HAND);
-            case Movement -> illegalPacket = new PlayerMoveC2SPacket.PositionAndOnGround(Double.NaN, 69, Double.NaN, false, false);
+            case Interact -> illegalPacket = new ServerboundInteractPacket(mc.player.getId(), InteractionHand.MAIN_HAND, Vec3.ZERO, false);
+            case Movement -> illegalPacket = new ServerboundMovePlayerPacket.Pos(Double.NaN, 69, Double.NaN, false, false);
             case SequenceBreak -> illegalPacket = new ServerboundUseItemPacket(InteractionHand.MAIN_HAND, -420, 13.37F, 69.69F);
             case InvalidSettings -> illegalPacket = new ServerboundClientInformationPacket(new ClientInformation(
                 mc.options.languageCode, -69,
@@ -300,6 +303,27 @@ public class StardustUtil {
         if (illegalPacket != null) mc.getConnection().getConnection().send(
             illegalPacket, null
         );
+    }
+    /** 26.1 删除了 DyeItem.byColor(DyeColor)，改由本表完成 DyeColor -> 染料物品映射。 */
+    public static Item dyeItem(DyeColor color) {
+        return switch (color) {
+            case WHITE -> Items.WHITE_DYE;
+            case ORANGE -> Items.ORANGE_DYE;
+            case MAGENTA -> Items.MAGENTA_DYE;
+            case LIGHT_BLUE -> Items.LIGHT_BLUE_DYE;
+            case YELLOW -> Items.YELLOW_DYE;
+            case LIME -> Items.LIME_DYE;
+            case PINK -> Items.PINK_DYE;
+            case GRAY -> Items.GRAY_DYE;
+            case LIGHT_GRAY -> Items.LIGHT_GRAY_DYE;
+            case CYAN -> Items.CYAN_DYE;
+            case PURPLE -> Items.PURPLE_DYE;
+            case BLUE -> Items.BLUE_DYE;
+            case BROWN -> Items.BROWN_DYE;
+            case GREEN -> Items.GREEN_DYE;
+            case RED -> Items.RED_DYE;
+            case BLACK -> Items.BLACK_DYE;
+        };
     }
     public static void disableAutoReconnect() {
         Modules mods = Modules.get();

@@ -341,7 +341,7 @@ public class VanityESP extends Module {
         int endChunkZ = (pos.getZ() + (viewDistance * 16)) >> 4;
         for (int x = startChunkX; x < endChunkX; x++) {
             for (int z = startChunkZ; z < endChunkZ; z++) {
-                if (mc.level.isChunkLoaded(x, z)) {
+                if (mc.level.getChunkSource().hasChunk(x, z)) {
                     LevelChunk chunk = mc.level.getChunk(x, z);
                     scanChunkForTreasure(chunk);
                 }
@@ -679,8 +679,8 @@ public class VanityESP extends Module {
         if (chunk instanceof LevelChunk) {
             Set<BlockPos> foundVaults = new HashSet<>();
             for (BlockEntity blockEntity : ((LevelChunk) chunk).getBlockEntities().values()) {
-                if (BuiltInRegistries.BLOCK_ENTITY_TYPE.getId(blockEntity.getType()) != null
-                    && BuiltInRegistries.BLOCK_ENTITY_TYPE.getId(blockEntity.getType()).getPath().equals("vault")) {
+                if (BuiltInRegistries.BLOCK_ENTITY_TYPE.getKey(blockEntity.getType()) != null
+                    && BuiltInRegistries.BLOCK_ENTITY_TYPE.getKey(blockEntity.getType()).getPath().equals("vault")) {
                     BlockPos pos = blockEntity.getBlockPos();
                     BlockState state = mc.level.getBlockState(pos);
                     Property<?> ominousProperty = null;

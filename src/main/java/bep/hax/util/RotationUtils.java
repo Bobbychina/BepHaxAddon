@@ -90,7 +90,7 @@ public class RotationUtils {
             float forward = inputAccessor.getMovementForward();
             float sideways = inputAccessor.getMovementSideways();
             if (forward == 0.0f && sideways == 0.0f) return;
-            float delta = (mc.player.getYRot() - rotation.getYRot()) * Mth.DEG_TO_RAD;
+            float delta = (mc.player.getYRot() - rotation.getYaw()) * Mth.DEG_TO_RAD;
             float cos = Mth.cos(delta);
             float sin = Mth.sin(delta);
             inputAccessor.setMovementSideways(Math.round(sideways * cos - forward * sin));
@@ -100,8 +100,8 @@ public class RotationUtils {
     public void setRotation(RotationUtils.Rotation rotation) {
         if (mouseSensFix) {
             double fix = Math.pow(mc.options.sensitivity().get() * 0.6 + 0.2, 3.0) * 1.2;
-            rotation.setYRot((float) (rotation.getYRot() - (rotation.getYRot() - serverYaw) % fix));
-            rotation.setXRot((float) (rotation.getXRot() - (rotation.getXRot() - serverPitch) % fix));
+            rotation.setYaw((float) (rotation.getYaw() - (rotation.getYaw() - serverYaw) % fix));
+            rotation.setPitch((float) (rotation.getPitch() - (rotation.getPitch() - serverPitch) % fix));
         }
         if (rotation.getPriority() == Integer.MAX_VALUE) {
             this.rotation = rotation;
@@ -181,10 +181,10 @@ public class RotationUtils {
         return rotation != null;
     }
     public float getRotationYaw() {
-        return rotation != null ? rotation.getYRot() : mc.player.getYRot();
+        return rotation != null ? rotation.getYaw() : mc.player.getYRot();
     }
     public float getRotationPitch() {
-        return rotation != null ? rotation.getXRot() : mc.player.getXRot();
+        return rotation != null ? rotation.getPitch() : mc.player.getXRot();
     }
     public float getServerYaw() {
         return serverYaw;

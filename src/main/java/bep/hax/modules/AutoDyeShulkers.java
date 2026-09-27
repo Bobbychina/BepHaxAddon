@@ -5,7 +5,6 @@ import net.minecraft.world.item.Item;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Items;
 import bep.hax.util.MsgUtil;
-import net.minecraft.world.item.DyeItem;
 import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.ItemStack;
 import bep.hax.util.StardustUtil;
@@ -189,7 +188,7 @@ public class AutoDyeShulkers extends Module {
                     int occupiedSlotBundle = -1;
                     for (int n = 1; n < inputEnd; n++) {
                         ItemStack stack = cs.getSlot(n).getItem();
-                        if (stack.getItem() == DyeItem.byColor(dyeColor.get())) {
+                        if (stack.getItem() == StardustUtil.dyeItem(dyeColor.get())) {
                             if (!hasDye) {
                                 hasDye = true;
                                 occupiedSlotDye = n;
@@ -207,7 +206,7 @@ public class AutoDyeShulkers extends Module {
                         }
                     }
                     if (!hasDye) {
-                        int dyeSlot = getItemSlot(DyeItem.byColor(dyeColor.get()), cs, invStart, invEnd);
+                        int dyeSlot = getItemSlot(StardustUtil.dyeItem(dyeColor.get()), cs, invStart, invEnd);
                         if (dyeSlot != -1) {
                             if (occupiedSlotShulk != -1) {
                                 InvUtils.move().fromId(dyeSlot).toId(getUnoccupiedSlot(occupiedSlotShulk, inputEnd));
@@ -260,7 +259,7 @@ public class AutoDyeShulkers extends Module {
                     int occupiedSlotShulk = -1;
                     for (int n = 1; n < inputEnd; n++) {
                         ItemStack stack = cs.getSlot(n).getItem();
-                        if (stack.getItem() == DyeItem.byColor(dyeColor.get())) {
+                        if (stack.getItem() == StardustUtil.dyeItem(dyeColor.get())) {
                             if (!hasDye) {
                                 hasDye = true;
                                 occupiedSlotDye = n;
@@ -273,7 +272,7 @@ public class AutoDyeShulkers extends Module {
                         }
                     }
                     if (!hasDye) {
-                        int dyeSlot = getItemSlot(DyeItem.byColor(dyeColor.get()), cs, invStart, invEnd);
+                        int dyeSlot = getItemSlot(StardustUtil.dyeItem(dyeColor.get()), cs, invStart, invEnd);
                         if (dyeSlot != -1) {
                             if (occupiedSlotShulk != -1) {
                                 InvUtils.move().fromId(dyeSlot).toId(getUnoccupiedSlot(occupiedSlotShulk, inputEnd));
@@ -313,7 +312,7 @@ public class AutoDyeShulkers extends Module {
                     int occupiedSlotBundle = -1;
                     for (int n = 1; n < inputEnd; n++) {
                         ItemStack stack = cs.getSlot(n).getItem();
-                        if (stack.getItem() == DyeItem.byColor(dyeColor.get())) {
+                        if (stack.getItem() == StardustUtil.dyeItem(dyeColor.get())) {
                             if (!hasDye) {
                                 hasDye = true;
                                 occupiedSlotDye = n;
@@ -326,7 +325,7 @@ public class AutoDyeShulkers extends Module {
                         }
                     }
                     if (!hasDye) {
-                        int dyeSlot = getItemSlot(DyeItem.byColor(dyeColor.get()), cs, invStart, invEnd);
+                        int dyeSlot = getItemSlot(StardustUtil.dyeItem(dyeColor.get()), cs, invStart, invEnd);
                         if (dyeSlot != -1) {
                             if (occupiedSlotBundle != -1) {
                                 InvUtils.move().fromId(dyeSlot).toId(getUnoccupiedSlot(occupiedSlotBundle, inputEnd));

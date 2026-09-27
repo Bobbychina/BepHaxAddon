@@ -17,7 +17,7 @@ public class NoUnstackableDragMixin<T extends AbstractContainerMenu> {
     public void mouseDragged(MouseButtonEvent click, double deltaX, double deltaY, CallbackInfoReturnable<Boolean> cir) {
         InvFix module = Modules.get().get(InvFix.class);
         if(module == null || !module.shouldFixUnstackableDrag()) return;
-        if(!handler.getCursorStack().isEmpty() && !handler.getCursorStack().isStackable()) {
+        if(!handler.getCarried().isEmpty() && !handler.getCarried().isStackable()) {
             cir.setReturnValue(true);
         }
     }

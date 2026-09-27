@@ -2,7 +2,7 @@ package bep.hax.mixin.meteor;
 import bep.hax.mixin.accessor.BundleS2CPacketAccessor;
 import bep.hax.mixin.accessor.ExplosionS2CPacketAccessor;
 import bep.hax.mixin.accessor.AccessorClientWorld;
-import bep.hax.mixin.accessor.EntityVelocityUpdateS2CPacketAccessor;
+import meteordevelopment.meteorclient.mixin.ClientboundSetEntityMotionPacketAccessor;
 import bep.hax.util.RotationUtils;
 import bep.hax.util.PushEntityEvent;
 import bep.hax.util.PushOutOfBlocksEvent;
@@ -149,9 +149,9 @@ public abstract class VelocityMixin extends Module {
             bephax$concealVelocity = true;
         }
         if (event.packet instanceof ClientboundSetEntityMotionPacket packet && knockback.get()) {
-            EntityVelocityUpdateS2CPacketAccessor accessor = (EntityVelocityUpdateS2CPacketAccessor) packet;
-            if (accessor.getEntityId() != mc.player.getId()) return;
-            Vec3 velocity = accessor.getVelocity();
+            meteordevelopment.meteorclient.mixin.ClientboundSetEntityMotionPacketAccessor accessor = (meteordevelopment.meteorclient.mixin.ClientboundSetEntityMotionPacketAccessor) (Object) packet;
+            if (packet.id() != mc.player.getId()) return;
+            Vec3 velocity = packet.movement();
             if (bephax$concealVelocity && velocity.x == 0 && velocity.y == 0 && velocity.z == 0) {
                 bephax$concealVelocity = false;
                 return;
@@ -177,7 +177,7 @@ public abstract class VelocityMixin extends Module {
                         velocity.y * vMult,
                         velocity.z * hMult
                     );
-                    ((meteordevelopment.meteorclient.mixin.EntityVelocityUpdateS2CPacketAccessor) packet).meteor$setVelocity(modifiedVelocity);
+                    ((meteordevelopment.meteorclient.mixin.ClientboundSetEntityMotionPacketAccessor) (Object) packet).meteor$setMovement(modifiedVelocity);
                 }
                 case GRIM -> {
                     if (!bephax$inventoryManager.hasPassed(100)) {
@@ -285,12 +285,12 @@ public abstract class VelocityMixin extends Module {
                 allowedBundle.add(subPacket);
             }
             else if (subPacket instanceof ClientboundSetEntityMotionPacket packet && knockback.get()) {
-                EntityVelocityUpdateS2CPacketAccessor accessor = (EntityVelocityUpdateS2CPacketAccessor) packet;
-                if (accessor.getEntityId() != mc.player.getId()) {
+                meteordevelopment.meteorclient.mixin.ClientboundSetEntityMotionPacketAccessor accessor = (meteordevelopment.meteorclient.mixin.ClientboundSetEntityMotionPacketAccessor) (Object) packet;
+                if (packet.id() != mc.player.getId()) {
                     allowedBundle.add(subPacket);
                     continue;
                 }
-                Vec3 velocity = accessor.getVelocity();
+                Vec3 velocity = packet.movement();
                 if (bephax$mode.get() == VelocityMode.WALLS) {
                     if (!bephax$isPhased() && (!bephax$wallsTrapped.get() || !bephax$isWallsTrapped())) {
                         allowedBundle.add(subPacket);
@@ -313,7 +313,7 @@ public abstract class VelocityMixin extends Module {
                                 velocity.y * vMult,
                                 velocity.z * hMult
                             );
-                            ((meteordevelopment.meteorclient.mixin.EntityVelocityUpdateS2CPacketAccessor) packet).meteor$setVelocity(modifiedVelocity);
+                            ((meteordevelopment.meteorclient.mixin.ClientboundSetEntityMotionPacketAccessor) (Object) packet).meteor$setMovement(modifiedVelocity);
                             allowedBundle.add(subPacket);
                         }
                     }

@@ -213,12 +213,12 @@ public class AutoMason extends Module {
                     }
                 } else if (output.isEmpty()) {
                     SelectableRecipe.SingleInputSet<StonecutterRecipe> available = mc.level
-                        .recipeAccess().stonecutterRecipes().filter(input);
+                        .recipeAccess().stonecutterRecipes().selectByInput(input);
                     ContextMap contextParameterMap = SlotDisplayContext.fromLevel(mc.level);
                     boolean found = false;
                     for (int n = 0; n < available.entries().size(); n++) {
-                        SelectableRecipe.EntryGroup<StonecutterRecipe> entry = available.entries().get(n);
-                        ItemStack recipeStack = entry.recipe().optionDisplay().getFirst(contextParameterMap);
+                        SelectableRecipe.SingleInputEntry<StonecutterRecipe> entry = available.entries().get(n);
+                        ItemStack recipeStack = entry.recipe().optionDisplay().resolveForFirstStack(contextParameterMap);
                         if (recipeStack.isEmpty()) continue;
                         if (itemList.get().contains(recipeStack.getItem())) {
                             found = true;
@@ -277,7 +277,7 @@ public class AutoMason extends Module {
             );
         } else if (targetStack != null) {
             SelectableRecipe.SingleInputSet<StonecutterRecipe> available = mc.level
-                .recipeAccess().stonecutterRecipes().filter(targetStack);
+                .recipeAccess().stonecutterRecipes().selectByInput(targetStack);
             ContextMap contextParameterMap = SlotDisplayContext.fromLevel(mc.level);
             for (int n = 0; n < available.entries().size(); n++) {
                 var entry = available.entries().get(n);

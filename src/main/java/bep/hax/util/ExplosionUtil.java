@@ -271,7 +271,7 @@ public class ExplosionUtil {
         }
     }
     private static BlockHitResult raycast(ExposureRaycastContext context, RaycastFactory raycastFactory) {
-        return BlockGetter.raycast(context.start, context.end, context, raycastFactory, ctx -> null);
+        return BlockGetter.traverseBlocks(context.start, context.end, context, raycastFactory, ctx -> null);
     }
     public enum IgnoreTerrain {
         ALL,

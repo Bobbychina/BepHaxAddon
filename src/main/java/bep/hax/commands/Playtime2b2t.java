@@ -32,8 +32,7 @@ public class Playtime2b2t extends Command {
                         player.sendSystemMessage(
                             Component.literal(
                                 "§8<"+StardustUtil.rCC()+"§o✨"+"§r§8> §4§oPlayer not found§7."
-                            ), false
-                        );
+                            ));
                     } else {
                         JsonElement ptJson = JsonParser.parseString(response);
                         if (ptJson.getAsJsonObject().has("playtimeSeconds")) {
@@ -53,7 +52,7 @@ public class Playtime2b2t extends Command {
                             if (hours != 0) sb.append(hours).append(" §7Hours, ").append(cc);
                             if (minutes != 0) sb.append(minutes).append(" §7Minutes, ").append(cc);
                             if (seconds != 0) sb.append(seconds).append(" §7Seconds§7.");
-                            if (player != null) player.sendSystemMessage(Component.literal(sb.toString()), false);
+                            if (player != null) player.sendSystemMessage(Component.literal(sb.toString()));
                         } else {
                             ApiHandler.sendErrorResponse();
                             LogUtil.warn("Received unexpected output from api.2b2t.vc : \"" + ptJson + "\"", this.getName());

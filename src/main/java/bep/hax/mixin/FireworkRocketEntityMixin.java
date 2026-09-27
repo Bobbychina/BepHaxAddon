@@ -46,7 +46,7 @@ public abstract class FireworkRocketEntityMixin implements ItemSupplier {
         } else {
             rm.currentRocket = (FireworkRocketEntity)(Object)this;
             rm.extensionStartPos = new BlockPos(player.getBlockX(), 0, player.getBlockZ());
-            if (rm.debug.get()) player.sendSystemMessage(Component.literal("§7Created tracked rocket entity!"), false);
+            if (rm.debug.get()) player.sendSystemMessage(Component.literal("§7Created tracked rocket entity!"));
         }
     }
     @ModifyConstant(method = "tick", constant = @Constant(doubleValue = 1.5))
@@ -83,7 +83,7 @@ public abstract class FireworkRocketEntityMixin implements ItemSupplier {
         if (rm.currentRocket == null) return;
         if (!rm.isActive() || !rm.extendRockets.get()) return;
         if (rm.currentRocket.getId() != ((FireworkRocketEntity)(Object)this).getId()) return;
-        if (rm.debug.get()) rm.getClientInstance().player.sendSystemMessage(Component.literal("§7Cancelling natural rocket expiration!"), false);
+        if (rm.debug.get()) rm.getClientInstance().player.sendSystemMessage(Component.literal("§7Cancelling natural rocket expiration!"));
         ci.cancel();
     }
 }

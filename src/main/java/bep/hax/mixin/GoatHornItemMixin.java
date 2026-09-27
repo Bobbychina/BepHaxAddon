@@ -9,7 +9,7 @@ import meteordevelopment.meteorclient.systems.modules.Modules;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(InstrumentItem.class)
 public class GoatHornItemMixin extends Item {
-    public GoatHornItemMixin(Settings settings) {
+    public GoatHornItemMixin(Item.Properties settings) {
         super(settings);
     }
     @Inject(method = "playSound", at = @At("HEAD"), cancellable = true)

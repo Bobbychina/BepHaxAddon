@@ -399,7 +399,7 @@ public class ChestTrackerModule extends Module {
                         ChestType chestType = blockState.getValue(ChestBlock.TYPE);
                         if (chestType == ChestType.LEFT || chestType == ChestType.RIGHT) {
                             Direction facing = blockState.getValue(ChestBlock.FACING);
-                            BlockPos otherHalf = blockPos.offset(chestType == ChestType.LEFT ? facing.getClockWise() : facing.getCounterClockWise());
+                            BlockPos otherHalf = blockPos.relative(chestType == ChestType.LEFT ? facing.getClockWise() : facing.getCounterClockWise());
                             if (data.getContainer(otherHalf, currentDim) != null) {
                                 isAlreadyTracked = true;
                             }
@@ -422,7 +422,7 @@ public class ChestTrackerModule extends Module {
                                 ChestType chestType = blockState.getValue(ChestBlock.TYPE);
                                 if (chestType == ChestType.LEFT || chestType == ChestType.RIGHT) {
                                     Direction facing = blockState.getValue(ChestBlock.FACING);
-                                    BlockPos otherPos = blockPos.offset(chestType == ChestType.LEFT ? facing.getClockWise() : facing.getCounterClockWise());
+                                    BlockPos otherPos = blockPos.relative(chestType == ChestType.LEFT ? facing.getClockWise() : facing.getCounterClockWise());
                                     currentOpenPositions[1] = otherPos;
                                 }
                             }
@@ -545,7 +545,7 @@ public class ChestTrackerModule extends Module {
         if (mc.player == null || mc.level == null) return;
         if (!renderLabels.get()) return;
         if (currentSearchItem == null) return;
-        GuiGraphicsExtractor context = event.drawContext;
+        GuiGraphicsExtractor context = event.graphics;
         double maxDist = labelMaxDistance.get();
         double maxDistSq = maxDist * maxDist;
         Vector3d tempVec = new Vector3d();

@@ -4,13 +4,11 @@ import bep.hax.Bep;
 import bep.hax.util.RotationUtils;
 import bep.hax.util.InventoryManager;
 import org.lwjgl.glfw.GLFW;
-import meteordevelopment.meteorclient.mixininterface.IClientPlayerInteractionManager;
 import meteordevelopment.meteorclient.events.entity.player.StartBreakingBlockEvent;
 import meteordevelopment.meteorclient.events.game.GameLeftEvent;
 import meteordevelopment.meteorclient.events.packets.PacketEvent;
 import meteordevelopment.meteorclient.events.render.Render3DEvent;
 import meteordevelopment.meteorclient.events.world.TickEvent;
-import meteordevelopment.meteorclient.mixininterface.IClientPlayerInteractionManager;
 import meteordevelopment.meteorclient.renderer.ShapeMode;
 import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.meteorclient.systems.modules.Module;
@@ -117,7 +115,7 @@ public class BepMine extends Module {
         .visible(() -> modeConfig.get() == SpeedmineMode.PACKET)
         .onChanged(enabled -> {
             if (enabled && mc.player != null) {
-                mc.player.sendSystemMessage(Component.literal("§7[§bBepMine§7] §aPersistent mode enabled! Module cannot be disabled until you turn this off or disconnect."), false);
+                mc.player.sendSystemMessage(Component.literal("§7[§bBepMine§7] §aPersistent mode enabled! Module cannot be disabled until you turn this off or disconnect."));
             }
         })
         .build()
@@ -276,7 +274,7 @@ public class BepMine extends Module {
     public void toggle() {
         if (isActive() && persistentConfig.get() && mc.getConnection() != null) {
             if (mc.player != null) {
-                mc.player.sendSystemMessage(Component.literal("§7[§bBepMine§7] §cCannot disable while Persistent mode is active! Disable Persistent first or disconnect from server."), false);
+                mc.player.sendSystemMessage(Component.literal("§7[§bBepMine§7] §cCannot disable while Persistent mode is active! Disable Persistent first or disconnect from server."));
             }
             return;
         }
@@ -355,7 +353,7 @@ public class BepMine extends Module {
                 autoMine.set(!autoMine.get());
                 if (mc.player != null) {
                     String status = autoMine.get() ? "§aenabled" : "§cdisabled";
-                    mc.player.sendSystemMessage(Component.literal("§7[§bBepMine§7] §fAuto-mine " + status), false);
+                    mc.player.sendSystemMessage(Component.literal("§7[§bBepMine§7] §fAuto-mine " + status));
                 }
             }
         } else {
@@ -370,7 +368,7 @@ public class BepMine extends Module {
                 }
                 if (mc.player != null) {
                     String status = instantConfig.get() ? "§aenabled" : "§cdisabled";
-                    mc.player.sendSystemMessage(Component.literal("§7[§bBepMine§7] §fInstant mining " + status), false);
+                    mc.player.sendSystemMessage(Component.literal("§7[§bBepMine§7] §fInstant mining " + status));
                 }
             }
         } else {

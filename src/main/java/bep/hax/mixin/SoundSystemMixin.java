@@ -11,11 +11,12 @@ import bep.hax.mixin.accessor.SourceManagerAccessor;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import net.minecraft.client.sounds.ChannelAccess;
-@Mixin(Library.class)
+import net.minecraft.client.sounds.SoundEngine;
+@Mixin(SoundEngine.class)
 public class SoundSystemMixin {
     @Shadow
     @Final
-    private Map<SoundInstance, ChannelAccess.ChannelHandle> sources;
+    private Map<SoundInstance, ChannelAccess.ChannelHandle> instanceToChannel;
     @Unique
     @Mutable
     private int totalTicksPlaying;
@@ -23,33 +24,33 @@ public class SoundSystemMixin {
     private boolean dirtyPitch = false;
     @Unique
     private boolean dirtyVolume = false;
-    @Inject(method = "tick()V", at = @At("TAIL"))
+    @Inject(method = "tick(Z)V", at = @At("TAIL"))
     private void mixinTick(CallbackInfo ci) {
         Modules modules = Modules.get();
         if (modules == null ) return;
         MusicTweaks tweaks = modules.get(MusicTweaks.class);
         boolean playing = false;
         String songID = null;
-        for (SoundInstance instance : sources.keySet()) {
+        for (SoundInstance instance : instanceToChannel.keySet()) {
             Sound sound = instance.getSound();
             if (sound == null) continue;
-            String location = sound.getIdentifier().toString();
+            String location = sound.getLocation().toString();
             if (!location.startsWith("minecraft:sounds/music/") && !sound.toString().contains("minecraft:records/")) continue;
-            ChannelAccess.ChannelHandle sourceManager = this.sources.get(instance);
+            ChannelAccess.ChannelHandle sourceManager = this.instanceToChannel.get(instance);
             songID = location.substring(location.lastIndexOf('/') + 1);
             if (sourceManager == null) continue;
-            ChannelAccess source = ((SourceManagerAccessor) sourceManager).getSource();
+            com.mojang.blaze3d.audio.Channel source = ((SourceManagerAccessor) sourceManager).getChannel();
             if (source == null) continue;
             playing = true;
             tweaks.setCurrentSong(sound.toString());
             if (tweaks.isActive() && !tweaks.randomPitch()) {
                 this.dirtyPitch = true;
-                source.setXRot(1.0f + tweaks.getPitchAdjustment());
+                source.setPitch(1.0f + tweaks.getPitchAdjustment());
             } else if (tweaks.isActive() && tweaks.randomPitch() && tweaks.trippyPitch()) {
                 this.dirtyPitch = true;
-                source.setXRot(tweaks.getNextPitchStep(instance.getXRot()));
+                source.setPitch(tweaks.getNextPitchStep(instance.getPitch()));
             } else if (!tweaks.isActive() && this.dirtyPitch) {
-                source.setXRot(1f);
+                source.setPitch(1f);
                 this.dirtyPitch = false;
             }
             if (tweaks.isActive()) {

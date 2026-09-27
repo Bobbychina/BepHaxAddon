@@ -298,7 +298,7 @@ public class WheelPicker extends Module {
     @EventHandler
     private void onRender2D(Render2DEvent event) {
         if (!wheelActive) return;
-        GuiGraphicsExtractor context = event.drawContext;
+        GuiGraphicsExtractor context = event.graphics;
         int scaledWidth = mc.getWindow().getGuiScaledWidth();
         int scaledHeight = mc.getWindow().getGuiScaledHeight();
         int centerX = scaledWidth / 2 + wheelX.get();

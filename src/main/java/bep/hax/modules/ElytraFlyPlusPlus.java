@@ -31,6 +31,7 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.phys.Vec3;
 import java.util.List;
 import static bep.hax.util.Utils.*;
+import net.minecraft.util.Mth;
 public class ElytraFlyPlusPlus extends Module {
     private final SettingGroup sgGeneral = settings.getDefaultGroup();
     private final SettingGroup sgObstaclePasser = settings.createGroup("Obstacle Passer");

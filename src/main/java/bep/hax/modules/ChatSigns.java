@@ -645,7 +645,7 @@ public class ChatSigns extends Module {
             int endChunkZ = (pos.getZ() + (viewDistance * 16)) >> 4;
             for (int x = startChunkX; x < endChunkX; x++) {
                 for (int z = startChunkZ; z < endChunkZ; z++) {
-                    if (mc.level.isChunkLoaded(x, z)) {
+                    if (mc.level.getChunkSource().hasChunk(x, z)) {
                         LevelChunk chunk = mc.level.getChunk(x, z);
                         List<SignBlockEntity> signs = getNearbySigns(chunk);
                         chatSigns(signs, chunk, mc);

@@ -31,7 +31,7 @@ public abstract class TitleScreenMixin extends Screen {
     @Unique
     private void onClick2b2tButton(Button btn) {
         if (mc == null) mc = Minecraft.getInstance();
-        ConnectScreen.connect(mc.screen, mc,
+        ConnectScreen.startConnecting(mc.screen, mc,
             ServerAddress.parseString(OLD_SERVER.ip), OLD_SERVER, true, null
         );
     }

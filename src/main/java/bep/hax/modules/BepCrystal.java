@@ -46,8 +46,10 @@ import org.joml.Vector3d;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
-import meteordevelopment.meteorclient.utils.render.Box;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.util.Mth;
+import net.minecraft.network.protocol.game.ServerboundAttackPacket;
 public class BepCrystal extends Module {
     SettingGroup sgPlace = settings.createGroup("Place");
     SettingGroup sgBasePlace = settings.createGroup("Base Place");
@@ -169,11 +171,11 @@ public class BepCrystal extends Module {
                 lerpRenderPos = renderPos;
             }
             if (movement.get()) {
-                lerpRenderPos = new Vec3(MathHelper.lerp(0.15f / 10f, lerpRenderPos.x, renderPos.x), MathHelper.lerp(0.15f / 10f, lerpRenderPos.y, renderPos.y), MathHelper.lerp(0.15f / 10f, lerpRenderPos.z, renderPos.z));
+                lerpRenderPos = new Vec3(Mth.lerp(0.15f / 10f, lerpRenderPos.x, renderPos.x), Mth.lerp(0.15f / 10f, lerpRenderPos.y, renderPos.y), Mth.lerp(0.15f / 10f, lerpRenderPos.z, renderPos.z));
             } else {
                 lerpRenderPos = renderPos;
             }
-            Box renderBox = new Box(lerpRenderPos.x - 0.5, lerpRenderPos.y + 0.5, lerpRenderPos.z - 0.5, lerpRenderPos.x + 0.5, lerpRenderPos.y - 0.5, lerpRenderPos.z + 0.5);
+            AABB renderBox = new AABB(lerpRenderPos.x - 0.5, lerpRenderPos.y + 0.5, lerpRenderPos.z - 0.5, lerpRenderPos.x + 0.5, lerpRenderPos.y - 0.5, lerpRenderPos.z + 0.5);
             event.renderer.box(renderBox, fill.get(), line.get(), ShapeMode.Both, 0);
             if (damageRender.get() && targetInfo != null) {
                 NametagUtils.begin(new Vector3d(lerpRenderPos.x, lerpRenderPos.y - 0.25, lerpRenderPos.z));
@@ -245,7 +247,7 @@ public class BepCrystal extends Module {
                 if (entity == null || !entity.isAlive() || entity == mc.player || !entity.isAlive() || !(entity instanceof Player) || Friends.get().isFriend((Player) entity)) {
                     continue;
                 }
-                double blockDist = pos.distSqr(entity.position());
+                double blockDist = pos.distSqr(BlockPos.containing(entity.position()));
                 if (blockDist > 144.0f) {
                     continue;
                 }
@@ -435,15 +437,15 @@ public class BepCrystal extends Module {
         if (!mc.level.isEmptyBlock(p2) && !state2.is(Blocks.FIRE)) {
             return false;
         } else {
-            final Box bb = new Box(0.0, 0.0, 0.0, 1.0, 2.0, 1.0);
+            final AABB bb = new AABB(0.0, 0.0, 0.0, 1.0, 2.0, 1.0);
             double d = p2.getX();
             double e = p2.getY();
             double f = p2.getZ();
-            List<Entity> list = getEntitiesBlockingCrystal(new Box(d, e, f, d + bb.maxX, e + bb.maxY, f + bb.maxZ));
+            List<Entity> list = getEntitiesBlockingCrystal(new AABB(d, e, f, d + bb.maxX, e + bb.maxY, f + bb.maxZ));
             return list.isEmpty();
         }
     }
-    private List<Entity> getEntitiesBlockingCrystal(Box box) {
+    private List<Entity> getEntitiesBlockingCrystal(AABB box) {
         List<Entity> entities = new CopyOnWriteArrayList<>(mc.level.getEntities(null, box));
         for (Entity entity : entities) {
             if (entity == null || !entity.isAlive() || entity instanceof ExperienceOrb || forcePlace.get() != ForcePlaceModes.Off && entity instanceof ItemEntity && entity.tickCount <= 10) {
@@ -498,7 +500,7 @@ public class BepCrystal extends Module {
     public void breakCrystalInternal(EndCrystal crystal) {
         EndCrystal entity = new EndCrystal(mc.level, 0, 0, 0);
         entity.setId(crystal.getId());
-        ServerboundInteractPacket packet = ServerboundInteractPacket.createAttackPacket(crystal, mc.player.isShiftKeyDown());
+        ServerboundAttackPacket packet = new ServerboundAttackPacket(crystal.getId());
         if (breakRotate.get()) {
             float[] rotations = RotationUtils.getRotationsTo(mc.player.position(), crystal.getEyePosition());
             RotationUtils.getInstance().setRotationSilent(rotations[0], rotations[1], ROTATION_PRIORITY);
@@ -511,7 +513,7 @@ public class BepCrystal extends Module {
     public void placeCrystal(BlockPos blockPos) {
         if (checkMultitask()) return;
         if (!placeTimer.passed(placeDelay.get().longValue())) return;
-        if (await.get() && mc.level.getOtherEntities(null, new Box(blockPos.above())).stream().anyMatch(entity -> entity instanceof EndCrystal))
+        if (await.get() && mc.level.getEntities((Entity) null, new AABB(blockPos.above()), e -> true).stream().anyMatch(entity -> entity instanceof EndCrystal))
             return;
         Direction sidePlace = getPlaceDirection(blockPos);
         BlockHitResult result = new BlockHitResult(blockPos.getCenter(), sidePlace, blockPos, false);

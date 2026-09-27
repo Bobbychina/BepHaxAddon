@@ -2,7 +2,6 @@ package bep.hax.modules;
 import bep.hax.Bep;
 import meteordevelopment.meteorclient.events.packets.PacketEvent;
 import bep.hax.util.InventoryManager;
-import bep.hax.util.InventoryManager.IPlayerInteractEntityC2SPacket;
 import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.world.entity.Entity;
@@ -19,6 +18,7 @@ import bep.hax.util.EntityUtil;
 import bep.hax.util.MovementUtil;
 import bep.hax.util.PlacementUtils;
 import static meteordevelopment.meteorclient.MeteorClient.mc;
+import net.minecraft.network.protocol.game.ServerboundAttackPacket;
 public class Criticals extends PVPModule {
     private final SettingGroup sgGeneral = settings.getDefaultGroup();
     private final Setting<Boolean> multitask = sgGeneral.add(new BoolSetting.Builder()
@@ -69,12 +69,10 @@ public class Criticals extends PVPModule {
     private void onSendPacket(PacketEvent.Send event) {
         if (mc.player == null || mc.level == null) return;
         if (isOtherCombatActive()) return;
-        if (event.packet instanceof ServerboundInteractPacket packet) {
-            IPlayerInteractEntityC2SPacket accessor = (IPlayerInteractEntityC2SPacket) packet;
-            if (!accessor.isAttackPacket()) return;
+        if (event.packet instanceof ServerboundAttackPacket attackPacket) {
             Entity target = null;
             if (mc.level != null) {
-                int entityId = accessor.getTargetEntityId();
+                int entityId = attackPacket.entityId();
                 for (Entity entity : mc.level.entitiesForRendering()) {
                     if (entity.getId() == entityId) {
                         target = entity;
@@ -131,7 +129,7 @@ public class Criticals extends PVPModule {
     private void handleVehicleAttack(Entity target) {
         if (mode.get() == CritMode.PACKET) {
             for (int i = 0; i < 5; i++) {
-                mc.getConnection().send(ServerboundInteractPacket.createAttackPacket(target, mc.player.isShiftKeyDown()));
+                mc.getConnection().send(new ServerboundAttackPacket(target.getId()));
                 mc.getConnection().send(new ServerboundSwingPacket(InteractionHand.MAIN_HAND));
             }
         }

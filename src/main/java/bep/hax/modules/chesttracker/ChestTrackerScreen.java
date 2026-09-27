@@ -71,7 +71,7 @@ public class ChestTrackerScreen extends Screen {
             searchField.setValue(initialSearch);
             this.searchQuery = initialSearch;
         }
-        this.addSelectableChild(searchField);
+        this.addWidget(searchField);
         clearSearchButton = Button.builder(
             Component.literal("§cx"),
             button -> {
@@ -173,7 +173,7 @@ public class ChestTrackerScreen extends Screen {
         cachedMaxY = TOP_PADDING + cachedVisibleHeight;
     }
     @Override
-    public void render(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
+    public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
         updateCachedBounds();
         context.fill(0, 0, this.width, this.height, 0xF0000000);
         int panelWidth = (ITEMS_PER_ROW * ITEM_SIZE) + 20;
@@ -193,7 +193,7 @@ public class ChestTrackerScreen extends Screen {
         String dimName = currentDim.contains("overworld") ? "Overworld" :
                         currentDim.contains("nether") ? "Nether" :
                         currentDim.contains("end") ? "End" : currentDim;
-        context.drawCenteredTextWithShadow(
+        context.centeredText(
             this.font,
             "§l§eChest Tracker §r§7- " + dimName,
             this.width / 2,
@@ -205,11 +205,11 @@ public class ChestTrackerScreen extends Screen {
         clearSearchButton.active = !searchQuery.isEmpty();
         renderItemGrid(context, mouseX, mouseY);
         renderScrollbar(context, mouseX, mouseY);
-        super.render(context, mouseX, mouseY, delta);
+        super.extractRenderState(context, mouseX, mouseY, delta);
         renderTooltip(context, mouseX, mouseY);
     }
     @Override
-    public void renderBackground(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
+    public void extractBackground(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
     }
     private void renderItemGrid(GuiGraphicsExtractor context, int mouseX, int mouseY) {
         int index = scrollOffset * ITEMS_PER_ROW;
@@ -314,10 +314,10 @@ public class ChestTrackerScreen extends Screen {
                     List<TrackedContainer> containers = data.searchItem(entry.item);
                     int withinRange = 0;
                     double renderDist = module.getRenderDistance();
-                    if (client != null && client.player != null) {
+                    if (minecraft != null && minecraft.player != null) {
                         for (TrackedContainer container : containers) {
                             BlockPos pos = container.getPosition();
-                            double distSq = client.player.distanceToSqr(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5);
+                            double distSq = minecraft.player.distanceToSqr(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5);
                             if (distSq <= renderDist * renderDist) {
                                 withinRange++;
                             }
@@ -341,7 +341,7 @@ public class ChestTrackerScreen extends Screen {
                     if (itemSearchBar != null && itemSearchBar.isActive()) {
                         tooltip.add(Component.literal("§7(Also searches in ItemSearchBar)"));
                     }
-                    context.drawTooltip(this.font, tooltip, mouseX, mouseY);
+                    context.setComponentTooltipForNextFrame(this.font, tooltip, mouseX, mouseY);
                     return;
                 }
                 index++;
@@ -416,23 +416,23 @@ public class ChestTrackerScreen extends Screen {
             filterItems();
         }
         int withinRange = 0;
-        if (client != null && client.player != null) {
+        if (minecraft != null && minecraft.player != null) {
             double renderDist = module.getRenderDistance();
             for (TrackedContainer container : results) {
                 BlockPos pos = container.getPosition();
-                double distSq = client.player.distanceToSqr(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5);
+                double distSq = minecraft.player.distanceToSqr(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5);
                 if (distSq <= renderDist * renderDist) {
                     withinRange++;
                 }
             }
         }
-        if (client != null && client.player != null) {
+        if (minecraft != null && minecraft.player != null) {
             String msg = withinRange < results.size()
                 ? String.format("§aLit: §e%d§7/§f%d §7(%d far)", withinRange, results.size(), results.size() - withinRange)
                 : String.format("§aLit: §e%d §7boxes", results.size());
-            client.player.sendMessage(Component.literal(msg), false);
+            minecraft.player.sendSystemMessage(Component.literal(msg));
         }
-        this.close();
+        this.onClose();
     }
     @Override
     public boolean mouseDragged(MouseButtonEvent click, double deltaX, double deltaY) {
@@ -473,7 +473,7 @@ public class ChestTrackerScreen extends Screen {
         return true;
     }
     @Override
-    public boolean shouldPause() {
+    public boolean isPauseScreen() {
         return false;
     }
     private String formatCount(int count) {
@@ -488,8 +488,8 @@ public class ChestTrackerScreen extends Screen {
         return String.format("%,d", count);
     }
     private String getCurrentDimension() {
-        if (client == null || client.world == null) return "unknown";
-        return client.world.getRegistryKey().getValue().toString();
+        if (minecraft == null || minecraft.level == null) return "unknown";
+        return minecraft.level.dimension().identifier().toString();
     }
     private static class ItemEntry {
         final Item item;

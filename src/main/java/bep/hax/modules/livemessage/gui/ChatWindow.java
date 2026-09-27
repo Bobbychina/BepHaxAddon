@@ -21,6 +21,7 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import static bep.hax.modules.livemessage.gui.GuiUtil.*;
+import net.minecraft.client.gui.components.PlayerFaceExtractor;
 public class ChatWindow extends LiveWindow {
     boolean valid;
     LiveProfile liveProfile;
@@ -344,7 +345,7 @@ public class ChatWindow extends LiveWindow {
             if (!url.startsWith("http://") && !url.startsWith("https://")) {
                 url = "https://" + url;
             }
-            net.minecraft.util.Util.getPlatform().open(url);
+            net.minecraft.util.Util.getPlatform().openUri(url);
             bep.hax.modules.livemessage.LiveMessage.LOG.info("Opening URL: {}", url);
         } catch (Exception e) {
             bep.hax.modules.livemessage.LiveMessage.LOG.error("Failed to open URL: {}", url, e);
@@ -390,7 +391,7 @@ public class ChatWindow extends LiveWindow {
                 if (!isTrimmed)
                     message = timeFormat.format(timestamp) + message;
                 int maxWidth = w - (chatBoxX * 2 + 8 + (isTrimmed ? fontRenderer.width("<00:00> ") : 0) + scrollBarWidth - 5);
-                String trimmed = fontRenderer.trimToWidth(message, maxWidth);
+                String trimmed = fontRenderer.plainSubstrByWidth(message, maxWidth);
                 int baseX = chatBoxX + 4 + (isTrimmed ? fontRenderer.width("<00:00> ") : 0);
                 int baseY = chatBoxY + 5 + 12 * drawHeight;
                 int baseColor = chatMessage.sentByMe ? chatColorMe : chatColorOther;
@@ -454,7 +455,7 @@ public class ChatWindow extends LiveWindow {
         int displayY = Math.round(y - (progress * 32));
         net.minecraft.client.multiplayer.PlayerInfo entry = mc.getConnection().getPlayerInfo(liveProfile.uuid);
         if (entry != null) {
-            net.minecraft.client.gui.components.PlayerFaceRenderer.draw(context, entry.getSkin(), displayX, displayY, displaySize);
+            net.minecraft.client.gui.components.PlayerFaceExtractor.extractRenderState(context, entry.getSkin(), displayX, displayY, displaySize);
         }
     }
     @Override

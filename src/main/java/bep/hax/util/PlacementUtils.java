@@ -18,6 +18,7 @@ import net.minecraft.world.phys.Vec3;
 import java.util.Arrays;
 import java.util.List;
 import static meteordevelopment.meteorclient.MeteorClient.mc;
+import net.minecraft.util.Mth;
 public class PlacementUtils {
     private static final List<Block> RESISTANT_BLOCKS = Arrays.asList(
         Blocks.OBSIDIAN,
@@ -65,7 +66,7 @@ public class PlacementUtils {
     public static boolean canPlace(BlockPos pos, boolean strictDirection) {
         if (!mc.level.getBlockState(pos).canBeReplaced()) return false;
         if (!mc.level.isUnobstructed(Blocks.OBSIDIAN.defaultBlockState(), pos, net.minecraft.world.phys.shapes.CollisionContext.empty())) return false;
-        AABB checkBox = AABB.from(Vec3.atCenterOf(pos));
+        AABB checkBox = AABB.ofSize(Vec3.atCenterOf(pos), 1.0, 1.0, 1.0);
         List<net.minecraft.world.entity.Entity> entities = mc.level.getEntities(null, checkBox);
         for (net.minecraft.world.entity.Entity entity : entities) {
             if (!entity.isSpectator() && entity.isAlive()) {

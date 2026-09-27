@@ -224,7 +224,7 @@ public class GrimScaffold extends Module {
         }
         targetPos.set(predictedPos.x, playerPos.y - 1, predictedPos.z);
         if (mc.level.getBlockState(targetPos).canBeReplaced()) {
-            positions.add(targetPos.toImmutable());
+            positions.add(targetPos.immutable());
         }
         if (Math.abs(velocity.y) > 0.4) {
             BlockPos aboveTarget = targetPos.above().immutable();

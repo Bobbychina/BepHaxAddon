@@ -20,7 +20,7 @@ public class GameMenuScreenMixin extends Screen {
     @Inject(method = "initWidgets", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/layouts/GridLayout;refreshPositions()V"))
     private void addIllegalDisconnectButton(CallbackInfo ci, @Local GridLayout.RowHelper adder) {
         if (StardustConfig.illegalDisconnectButtonSetting.get() && !mc.isLocalServer()) {
-            adder.add(Button.builder(Component.literal("§cIllegal Disconnect"), button -> {
+            adder.addChild(Button.builder(Component.literal("§cIllegal Disconnect"), button -> {
                 button.active = false;
                 StardustUtil.illegalDisconnect(false, StardustConfig.illegalDisconnectMethodSetting.get());
             }).width(204).build(), 2);

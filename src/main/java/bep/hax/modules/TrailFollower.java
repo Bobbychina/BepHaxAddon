@@ -449,7 +449,7 @@ public class TrailFollower extends Module
                             if (netherPathMode.get() == NetherPathMode.AVERAGE) {
                                 Vec3 averagePos = calculateAveragePosition(trail);
                                 Vec3 directionVec = averagePos.subtract(mc.player.position()).normalize();
-                                Vec3 predictedPos = mc.player.position().add(directionVec.multiply(10));
+                                Vec3 predictedPos = mc.player.position().add(directionVec.scale(10));
                                 targetYaw = Rotations.getYaw(predictedPos);
                                 baritoneTarget = positionInDirection(mc.player.position(), targetYaw, pathDistanceActual);
                             } else {
@@ -494,7 +494,7 @@ public class TrailFollower extends Module
         ResourceKey<Level> currentDimension = mc.level.dimension();
         LevelChunk chunk = event.chunk();
         ChunkPos chunkPos = chunk.getPos();
-        long chunkLong = chunkPos.asLong();
+        long chunkLong = chunkPos.pack();
         if (seenChunksCache.getIfPresent(chunkLong) != null) return;
         ChunkPos chunkDelta = new ChunkPos(chunkPos.x() - mc.player.chunkPosition().x(), chunkPos.z() - mc.player.chunkPosition().z());
         if (oppositeDimension.get())
@@ -569,7 +569,7 @@ public class TrailFollower extends Module
             if (followMode == FollowMode.YAWLOCK) {
                 Vec3 averagePos = calculateAveragePosition(trail);
                 Vec3 positionVec = averagePos.subtract(mc.player.position()).normalize();
-                Vec3 targetPos = mc.player.position().add(positionVec.multiply(10));
+                Vec3 targetPos = mc.player.position().add(positionVec.scale(10));
                 targetYaw = Rotations.getYaw(targetPos);
             } else {
                 Vec3 lastTrailPoint = trail.getLast();

@@ -640,7 +640,7 @@ public class SignatureSign extends Module {
                 if (textRenderer.width(line.toString()) >= 87) break;
                 if (textRenderer.width(storyText.get(i).trim()) > 87) {
                     if (!line.isEmpty()) break;
-                    line.append(textRenderer.trimToWidth(storyText.get(i).trim(), 85));
+                    line.append(textRenderer.plainSubstrByWidth(storyText.get(i).trim(), 85));
                     ++storyIndex;
                     ++lastIndexAmount;
                     break;
@@ -901,7 +901,7 @@ public class SignatureSign extends Module {
                     .toList();
                 if (!signs.isEmpty()) {
                     SignBlockEntity sbe = signs.get(0);
-                    interactSign(sbe, DyeItem.byColor(signColor.get()));
+                    interactSign(sbe, StardustUtil.dyeItem(signColor.get()));
                     return;
                 }
             }

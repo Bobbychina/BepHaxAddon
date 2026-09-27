@@ -43,6 +43,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import java.util.List;
+import net.minecraft.network.protocol.game.ServerboundAttackPacket;
 @Mixin(value = KillAura.class, remap = false)
 public abstract class KillAuraMixin extends Module {
     public KillAuraMixin(Category category, String name, String description) {
@@ -430,7 +431,7 @@ public abstract class KillAuraMixin extends Module {
         if (bephax$silentRotate.get() && bephax$silentRotations != null) {
             bephax$rotationManager.setRotationSilent(bephax$silentRotations[0], bephax$silentRotations[1]);
         }
-        ServerboundInteractPacket packet = ServerboundInteractPacket.createAttackPacket(entity, mc.player.isShiftKeyDown());
+        ServerboundAttackPacket packet = new ServerboundAttackPacket(entity.getId());
         mc.getConnection().send(packet);
         mc.player.swing(InteractionHand.MAIN_HAND);
         if (bephax$silentRotate.get()) {

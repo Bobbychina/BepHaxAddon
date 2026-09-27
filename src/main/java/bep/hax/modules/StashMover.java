@@ -961,7 +961,7 @@ public class StashMover extends Module {
         }
         for (Direction dir : Direction.Plane.HORIZONTAL) {
             for (int yOffset = 0; yOffset >= -2; yOffset--) {
-                BlockPos checkPos = containerPos.offset(dir, 2).add(0, yOffset, 0);
+                BlockPos checkPos = containerPos.relative(dir, 2).offset(0, yOffset, 0);
                 if (isValidStandingSpot(checkPos)) {
                     Vec3 standingEyePos = Vec3.atLowerCornerOf(checkPos).add(0.5, 1.62, 0.5);
                     double reach = standingEyePos.distanceTo(Vec3.atCenterOf(containerPos));
@@ -1593,7 +1593,7 @@ public class StashMover extends Module {
     }
     private boolean shouldJump() {
         Vec3 feetPos = mc.player.position();
-        Vec3 forwardPos = feetPos.add(mc.player.getRotationVector().scale(1.0));
+        Vec3 forwardPos = feetPos.add(mc.player.getViewVector(1.0f).scale(1.0));
         BlockPos feetBlock = BlockPos.containing(forwardPos);
         BlockPos headBlock = feetBlock.above();
         BlockPos aboveBlock = feetBlock.above(2);
@@ -2350,7 +2350,7 @@ public class StashMover extends Module {
         }
         if (goalPos == null) {
             for (Direction dir : preferredDirections) {
-                BlockPos candidate = throwPos.offset(dir, 2);
+                BlockPos candidate = throwPos.relative(dir, 2);
                 BlockState state = mc.level.getBlockState(candidate);
                 BlockState belowState = mc.level.getBlockState(candidate.below());
                 if (state.isAir() && belowState.isRedstoneConductor(mc.level, candidate.below())) {
@@ -2363,7 +2363,7 @@ public class StashMover extends Module {
             }
         }
         if (goalPos == null) {
-            goalPos = throwPos.offset(Direction.NORTH, 2);
+            goalPos = throwPos.relative(Direction.NORTH, 2);
             safeRetreatPos = throwPos.relative(Direction.NORTH);
             approachDirection = Direction.SOUTH;
             warning("Using fallback approach position");
@@ -3603,7 +3603,7 @@ public class StashMover extends Module {
     }
     private boolean isBlockedAhead() {
         Vec3 playerPos = mc.player.position();
-        Vec3 lookVec = mc.player.getRotationVector();
+        Vec3 lookVec = mc.player.getViewVector(1.0f);
         Vec3 checkPos = playerPos.add(lookVec.scale(1.0));
         BlockPos blockPos = BlockPos.containing(checkPos);
         BlockPos blockAbove = blockPos.above();

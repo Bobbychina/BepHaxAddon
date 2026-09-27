@@ -40,34 +40,34 @@ public class MsgUtil {
     }
     public static void sendRawMsg(String msg) {
         if (mc.player == null) return;
-        mc.player.sendSystemMessage(Component.literal(msg), false);
+        mc.player.sendSystemMessage(Component.literal(msg));
     }
     public static void sendMsg(String msg) {
         if (mc.player == null) return;
         try {
             StringBuilder sb = new StringBuilder();
-            mc.player.sendSystemMessage(Component.literal(sb.append(getPrefix()).append(' ').append(ChatFormatting.GRAY).append(msg).toString()), false);
+            mc.player.sendSystemMessage(Component.literal(sb.append(getPrefix()).append(' ').append(ChatFormatting.GRAY).append(msg).toString()));
         } catch (Exception ignored) {}
     }
     public static void sendMsg(String msg, Style style) {
         if (mc.player == null) return;
         try {
             String message = getPrefix() + ' ' + ChatFormatting.GRAY + msg;
-            mc.player.sendSystemMessage(Component.literal(message).setStyle(style), false);
+            mc.player.sendSystemMessage(Component.literal(message).setStyle(style));
         } catch (Exception ignored) {}
     }
     public static void sendModuleMsg(String msg, String module) {
         if (mc.player == null) return;
         try {
             StringBuilder sb = new StringBuilder();
-            mc.player.sendSystemMessage(Component.literal(sb.append(getModulePrefix(module)).append(' ').append(ChatFormatting.GRAY).append(msg).toString()), false);
+            mc.player.sendSystemMessage(Component.literal(sb.append(getModulePrefix(module)).append(' ').append(ChatFormatting.GRAY).append(msg).toString()));
         } catch (Exception ignored) {}
     }
     public static void sendModuleMsg(String msg, Style style, String module) {
         if (mc.player == null) return;
         try {
             String message = getModulePrefix(module) + ' ' + ChatFormatting.GRAY + msg;
-            mc.player.sendSystemMessage(Component.literal(message).setStyle(style), false);
+            mc.player.sendSystemMessage(Component.literal(message).setStyle(style));
         } catch (Exception ignored) {}
     }
     public static void updateMsg(String msg, int hashcode) {

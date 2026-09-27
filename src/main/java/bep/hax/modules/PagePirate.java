@@ -196,7 +196,7 @@ public class PagePirate extends Module {
         FindItemResult result = InvUtils.find(stack -> {
             if (stack.getItem() instanceof WritableBookItem) {
                 WritableBookContent data = stack.get(DataComponents.WRITABLE_BOOK_CONTENT);
-                List<String> pageList = data.pages().stream().map(RawFilteredPair::raw).toList();
+                List<String> pageList = data.pages().stream().map(net.minecraft.server.network.Filterable::raw).toList();
                 return overwrite.get()
                     || pageList.stream()
                     .map(this::formatPageText)
@@ -240,7 +240,7 @@ public class PagePirate extends Module {
             WrittenBookContent metadata = book.get(DataComponents.WRITTEN_BOOK_CONTENT);
             String author = metadata.author();
             String title = metadata.title().raw();
-            List<String> pages = metadata.getPages(false).stream().map(Text::getString).toList();
+            List<String> pages = metadata.getPages(false).stream().map(Component::getString).toList();
             String pageText = pages.stream()
                 .map(this::formatPageText)
                 .map(this::decodeUnicodeChars)

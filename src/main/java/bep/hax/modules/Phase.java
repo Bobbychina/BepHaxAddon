@@ -28,8 +28,8 @@ import bep.hax.util.RotationUtils;
 import bep.hax.util.PlacementUtils;
 import bep.hax.util.RotationUtils;
 import bep.hax.util.InventoryManager;
-import meteordevelopment.meteorclient.utils.render.Box;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.AABB;
 public class Phase extends Module {
     private final SettingGroup sgGeneral = settings.getDefaultGroup();
     private final SettingGroup sgPearl = settings.createGroup("Pearl");
@@ -157,9 +157,8 @@ public class Phase extends Module {
     @EventHandler
     private void onPacketReceive(PacketEvent.Receive event) {
         if (event.packet instanceof ClientboundSetEntityMotionPacket packet) {
-            bep.hax.mixin.accessor.EntityVelocityUpdateS2CPacketAccessor accessor = (bep.hax.mixin.accessor.EntityVelocityUpdateS2CPacketAccessor) packet;
-            if (accessor.getEntityId() == mc.player.getId() && isActive()) {
-                Vec3 velocity = accessor.getVelocity();
+            if (packet.id() == mc.player.getId() && isActive()) {
+                Vec3 velocity = packet.movement();
                 if (velocity.lengthSqr() < 0.1) {
                     event.cancel();
                 }
@@ -240,10 +239,10 @@ public class Phase extends Module {
     }
     private void handlePearlAttacks(float yaw) {
         BlockHitResult hitResult = (BlockHitResult) mc.player.pick(3.0, 0, false);
-        Box searchBox = Box.from(Vec3.atCenterOf(hitResult.getBlockPos())).inflate(0.2);
+        AABB searchBox = AABB.ofSize(Vec3.atCenterOf(hitResult.getBlockPos()), 1.0, 1.0, 1.0).inflate(0.2);
         for (Entity entity : mc.level.getEntities(null, searchBox)) {
             if (entity instanceof ItemFrame itemFrame) {
-                mc.getConnection().send(PlayerInteractEntityC2SPacket.attack(entity, mc.player.isShiftKeyDown()));
+                mc.getConnection().send(new ServerboundAttackPacket(entity.getId()));
                 mc.getConnection().send(new ServerboundSwingPacket(InteractionHand.MAIN_HAND));
             }
         }
@@ -294,7 +293,7 @@ public class Phase extends Module {
         double sin = Math.sin(Math.toRadians(mc.player.getYRot() + 90.0f));
         double newX = mc.player.getX() + (blocks.get() * cos);
         double newZ = mc.player.getZ() + (blocks.get() * sin);
-        mc.player.setPosition(newX, mc.player.getY(), newZ);
+        mc.player.setPos(newX, mc.player.getY(), newZ);
     }
     private void performClipTick() {
         Vec3 center = mc.player.blockPosition().getCenter();
@@ -302,7 +301,7 @@ public class Phase extends Module {
         boolean flagZ = (center.z - mc.player.getZ()) > 0;
         double x = center.x + 0.2 * (flagX ? -1 : 1);
         double z = center.z + 0.2 * (flagZ ? -1 : 1);
-        mc.player.setPosition(x, mc.player.getY(), z);
+        mc.player.setPos(x, mc.player.getY(), z);
     }
     private void performClipPhase() {
         performClipTick();
@@ -312,7 +311,7 @@ public class Phase extends Module {
         float yaw = mc.player.getYRot();
         double offsetX = distance.get() * Math.cos(Math.toRadians(yaw + 90.0f));
         double offsetZ = distance.get() * Math.sin(Math.toRadians(yaw + 90.0f));
-        Box newBB = mc.player.getBoundingBox().move(offsetX, 0.0, offsetZ);
+        AABB newBB = mc.player.getBoundingBox().move(offsetX, 0.0, offsetZ);
         mc.player.setBoundingBox(newBB);
     }
     private void handleSandMovement(PlayerMoveEvent event) {

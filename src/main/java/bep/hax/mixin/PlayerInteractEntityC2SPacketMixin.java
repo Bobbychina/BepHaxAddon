@@ -1,30 +1,23 @@
 package bep.hax.mixin;
+
 import bep.hax.util.InventoryManager.IPlayerInteractEntityC2SPacket;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.network.protocol.game.ServerboundInteractPacket;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.Unique;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+
+/** 26.1 起攻击走独立的 ServerboundAttackPacket，交互包只承载 use/useOn，故本 mixin 仅暴露实体 id。 */
 @Mixin(ServerboundInteractPacket.class)
 public class PlayerInteractEntityC2SPacketMixin implements IPlayerInteractEntityC2SPacket {
-    @Shadow @Final private int entityId;
-    @Unique
-    private boolean bepHax$isAttackPacket = false;
-    @Inject(method = "attack", at = @At("RETURN"))
-    private static void onAttack(Entity entity, boolean sneaking, CallbackInfoReturnable<ServerboundInteractPacket> cir) {
-        ServerboundInteractPacket packet = cir.getReturnValue();
-        if (packet != null) {
-            ((PlayerInteractEntityC2SPacketMixin)(Object)packet).bepHax$isAttackPacket = true;
-        }
-    }
+    @Shadow
+    @Final
+    private int entityId;
+
     @Override
     public boolean isAttackPacket() {
-        return bepHax$isAttackPacket;
+        return false;
     }
+
     @Override
     public int getTargetEntityId() {
         return entityId;

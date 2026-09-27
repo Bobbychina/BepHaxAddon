@@ -50,8 +50,8 @@ public abstract class PeekScreenMixin extends ShulkerBoxScreen {
         if (bephax$searchModule == null || !bephax$searchModule.isActive() || !bephax$searchModule.shouldShowSearchField()) return;
         bephax$searchField = new EditBox(
             Minecraft.getInstance().font,
-            this.x + bephax$searchModule.getOffsetX(),
-            this.y + bephax$searchModule.getOffsetY(),
+            this.leftPos + bephax$searchModule.getOffsetX(),
+            this.topPos + bephax$searchModule.getOffsetY(),
             bephax$searchModule.getFieldWidth(),
             bephax$searchModule.getFieldHeight(),
             Component.literal("Search items...")
@@ -129,8 +129,8 @@ public abstract class PeekScreenMixin extends ShulkerBoxScreen {
     private void onDrawBackground(GuiGraphicsExtractor context, float delta, int mouseX, int mouseY, CallbackInfo ci) {
         if (bephax$searchModule == null || !bephax$searchModule.isActive() || !bephax$searchModule.shouldShowSearchField()) return;
         if (bephax$searchField == null) return;
-        bephax$searchField.setX(this.x + bephax$searchModule.getOffsetX());
-        bephax$searchField.setY(this.y + bephax$searchModule.getOffsetY());
+        bephax$searchField.setX(this.leftPos + bephax$searchModule.getOffsetX());
+        bephax$searchField.setY(this.topPos + bephax$searchModule.getOffsetY());
     }
     @Unique
     private boolean shouldSetComponent(ItemStack stack) {

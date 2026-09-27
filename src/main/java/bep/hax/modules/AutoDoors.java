@@ -195,8 +195,8 @@ public class AutoDoors extends Module {
             this.interactDoor(pos.relative(side, n), moving);
             return true;
         } else {
-            BlockState upState = mc.level.getBlockState(pos.relative(moving.getOpposite()).offset(side, n).above());
-            BlockState downState = mc.level.getBlockState(pos.relative(moving.getOpposite()).offset(side, n).below());
+            BlockState upState = mc.level.getBlockState(pos.relative(moving.getOpposite()).relative(side, n).above());
+            BlockState downState = mc.level.getBlockState(pos.relative(moving.getOpposite()).relative(side, n).below());
             Block upBlock = upState.getBlock();
             Block downBlock = downState.getBlock();
             if (upBlock instanceof ButtonBlock || upBlock instanceof LeverBlock) {
@@ -206,7 +206,7 @@ public class AutoDoors extends Module {
                     else if(!open && upBlock instanceof LeverBlock && !upState.getValue(LeverBlock.POWERED)) return false;
                 }catch (IllegalArgumentException ignored) {}
                 if (!open && upBlock instanceof ButtonBlock) return true;
-                this.interactDoor(pos.relative(moving.getOpposite()).offset(side, n).above(), moving);
+                this.interactDoor(pos.relative(moving.getOpposite()).relative(side, n).above(), moving);
                 return true;
             } else if (downBlock instanceof ButtonBlock || downBlock instanceof LeverBlock) {
                 try {
@@ -215,7 +215,7 @@ public class AutoDoors extends Module {
                     else if(!open && downBlock instanceof LeverBlock && !downState.getValue(LeverBlock.POWERED)) return false;
                 } catch (IllegalArgumentException ignored) {}
                 if (!open && downBlock instanceof ButtonBlock) return true;
-                this.interactDoor(pos.relative(moving).offset(side, n).below(), moving);
+                this.interactDoor(pos.relative(moving).relative(side, n).below(), moving);
                 return true;
             }
         }
@@ -228,9 +228,9 @@ public class AutoDoors extends Module {
         this.ticksSinceInteracted = 0;
         for (int n = 0; n < 4; n++) {
             for (Direction side : Direction.values()) {
-                Block offset = mc.level.getBlockState(pos.relative(direction.getOpposite()).offset(side, n)).getBlock();
+                Block offset = mc.level.getBlockState(pos.relative(direction.getOpposite()).relative(side, n)).getBlock();
                 Block offset2 = mc.level.getBlockState(pos.relative(side, n)).getBlock();
-                Block offset3 = mc.level.getBlockState(pos.relative(direction).offset(side, n)).getBlock();
+                Block offset3 = mc.level.getBlockState(pos.relative(direction).relative(side, n)).getBlock();
                 if (this.scanForSwitches(pos, offset, open, direction, side, n)) return;
                 else if (this.scanForSwitches(pos, offset2, open, direction, side, n)) return;
                 else if (this.scanForSwitches(pos, offset3, open, direction, side, n)) return;

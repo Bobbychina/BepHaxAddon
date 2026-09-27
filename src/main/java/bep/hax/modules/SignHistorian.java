@@ -473,7 +473,7 @@ public class SignHistorian extends Module {
             if (sbe1.getFrontText().getColor() != sbe2.getFrontText().getColor()) return false;
             if (sbe1.getFrontText().hasGlowingText() != sbe2.getFrontText().hasGlowingText()) return false;
         }
-        return ((SignBlock) SignBlock.getWoodType(sbe1.getBlockState().getBlock())) == ((SignBlock) SignBlock.getWoodType(sbe2.getBlockState().getBlock()));
+        return (SignBlock.getWoodType(sbe1.getBlockState().getBlock())) == (SignBlock.getWoodType(sbe2.getBlockState().getBlock()));
     }
     private boolean containsBlacklistedText(SignBlockEntity sbe) {
         String front = Arrays.stream(sbe.getFrontText().getMessages(false))
@@ -639,7 +639,7 @@ public class SignHistorian extends Module {
             if (event.result.getBlockPos().closerThan(sbe.getBlockPos(), 1)) {
                 MsgUtil.sendModuleMsg("§e§lOriginal§7§l: §7§o" + Arrays.stream(sbe.getFrontText().getMessages(false)).map(Component::getString).collect(Collectors.joining(" ")), this.name);
                 MsgUtil.sendModuleMsg(
-                    "§6§lWoodType§7§l: " + ((SignBlock) SignBlock.getWoodType(sbe.getBlockState().getBlock())).name()
+                    "§6§lWoodType§7§l: " + SignBlock.getWoodType(sbe.getBlockState().getBlock()).name()
                         + " | §3§lColor§7§l: " + sbe.getText(true).getColor().name()
                         + " | §f§lGlow Ink§7§l: " + sbe.getText(true).hasGlowingText(), this.name
                 );
@@ -656,7 +656,7 @@ public class SignHistorian extends Module {
             if (packet.getPos().closerThan(ghost.getBlockPos(), 1.5)) {
                 MsgUtil.sendModuleMsg("§e§lOriginal§7§l: §7§o" + Arrays.stream(ghost.getFrontText().getMessages(false)).map(Component::getString).collect(Collectors.joining(" ")), this.name);
                 MsgUtil.sendModuleMsg(
-                    "§6§lWoodType§7§l: " + ((SignBlock) SignBlock.getWoodType(ghost.getBlockState().getBlock())).name()
+                    "§6§lWoodType§7§l: " + SignBlock.getWoodType(ghost.getBlockState().getBlock()).name()
                         + " | §3§lColor§7§l: " + ghost.getText(true).getColor().name()
                         + " | §f§lGlow Ink§7§l: " + ghost.getText(true).hasGlowingText(), this.name
                 );
@@ -807,7 +807,7 @@ public class SignHistorian extends Module {
                 .toList();
             if (!toColor.isEmpty()) {
                 SignBlockEntity sbe = toColor.get(0);
-                interactSign(sbe, DyeItem.byColor(signsToColor.get(sbe)));
+                interactSign(sbe, StardustUtil.dyeItem(signsToColor.get(sbe)));
                 return;
             }
             if (!signsToGlowInk.isEmpty()) {

@@ -19,6 +19,7 @@ import net.minecraft.world.level.block.entity.SignText;
 import meteordevelopment.orbit.EventHandler;
 import net.fabricmc.loader.api.FabricLoader;
 import meteordevelopment.orbit.EventPriority;
+import net.minecraft.network.syncher.EntityDataSerializer;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import meteordevelopment.meteorclient.settings.*;
@@ -176,20 +177,18 @@ public class AntiToS extends Module {
             for (SynchedEntityData.DataValue<?> entry : packet.packedItems()) {
                 if (entry.id() == 2) {
                     @SuppressWarnings("unchecked")
-                    SynchedEntityData.DataItem<Optional<Component>> e = new SynchedEntityData.DataItem<>(
-                        (EntityDataAccessor<Optional<Component>>) entry.handler().create(entry.id()),
-                        (Optional<Component>) entry.value()
-                    );
-                    if (e.get().isPresent()) {
-                        Component data = e.get().get();
+                    Optional<Component> value = (Optional<Component>) entry.value();
+                    if (value.isPresent()) {
+                        Component data = value.get();
                         if (containsBlacklistedText(data.getString())) {
-                            e.set(
-                                Optional.of(
-                                    Component.literal(censorText(data.getString())).setStyle(data.getStyle())
-                                )
+                            @SuppressWarnings("unchecked")
+                            SynchedEntityData.DataValue<Optional<Component>> e = new SynchedEntityData.DataValue<>(
+                                entry.id(),
+                                (EntityDataSerializer<Optional<Component>>) entry.serializer(),
+                                Optional.of(Component.literal(censorText(data.getString())).setStyle(data.getStyle()))
                             );
                             modified = true;
-                            entries.add(e.toSerialized());
+                            entries.add(e);
                         } else entries.add(entry);
                     } else entries.add(entry);
                 } else {

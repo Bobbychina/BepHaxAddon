@@ -39,6 +39,7 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.core.Direction;
 import net.minecraft.world.phys.Vec3;
 import java.util.*;
+import net.minecraft.network.protocol.game.ServerboundAttackPacket;
 public class Surround extends PVPModule {
     private final SettingGroup sgGeneral = settings.getDefaultGroup();
     private final SettingGroup sgTiming = settings.createGroup("Timing");
@@ -553,7 +554,7 @@ public class Surround extends PVPModule {
                 .findFirst()
                 .orElse(null);
             if (crystal != null) {
-                mc.getConnection().send(ServerboundInteractPacket.createAttackPacket(crystal, mc.player.isShiftKeyDown()));
+                mc.getConnection().send(new ServerboundAttackPacket(crystal.getId()));
                 mc.getConnection().send(new ServerboundSwingPacket(InteractionHand.MAIN_HAND));
                 return;
             }

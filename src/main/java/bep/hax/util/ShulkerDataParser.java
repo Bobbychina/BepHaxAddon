@@ -17,7 +17,7 @@ public class ShulkerDataParser {
         Map<Item, Integer> itemCounts = new HashMap<>();
         ItemContainerContents container = shulkerStack.get(DataComponents.CONTAINER);
         if (container != null) {
-            List<ItemStack> items = container.stream().toList();
+            List<ItemStack> items = container.allItemsCopyStream().toList();
             for (ItemStack itemStack : items) {
                 if (!itemStack.isEmpty()) {
                     itemCounts.merge(itemStack.getItem(), itemStack.getCount(), Integer::sum);
@@ -54,13 +54,13 @@ public class ShulkerDataParser {
         return itemCounts;
     }
     private static ItemStack parseItemFromNbt(CompoundTag itemTag) {
-        String id = itemTag.getString("id", "");
+        String id = itemTag.getStringOr("id", "");
         if (id.isEmpty()) return ItemStack.EMPTY;
         int count = 1;
         if (itemTag.contains("count")) {
-            count = itemTag.getInt("count", 1);
+            count = itemTag.getIntOr("count", 1);
         } else if (itemTag.contains("Count")) {
-            count = itemTag.getByte("Count", (byte) 1);
+            count = itemTag.getByteOr("Count", (byte) 1);
         }
         Identifier itemId = Identifier.tryParse(id);
         if (itemId == null) return ItemStack.EMPTY;

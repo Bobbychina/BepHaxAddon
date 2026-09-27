@@ -36,8 +36,7 @@ public class FirstSeen2b2t extends Command {
                         player.sendSystemMessage(
                             Component.literal(
                                 "§8<"+StardustUtil.rCC()+"§o✨"+"§r§8> §4§oThat player has not been seen§7..."
-                            ), false
-                        );
+                            ));
                     }else {
                         JsonElement seenJson = JsonParser.parseString(response);
                         if (seenJson.getAsJsonObject().has("firstSeen")) {
@@ -52,8 +51,7 @@ public class FirstSeen2b2t extends Command {
                                     Component.literal(
                                         "§8<" + StardustUtil.rCC() + "§o✨" + "§r§8> "+cc+"§o"
                                             + playerString + "§r§7 was first seen on "+cc+"§o" + formattedTimestamp + "§7."
-                                    ), false
-                                );
+                                    ));
                             }
                         } else {
                             ApiHandler.sendErrorResponse();

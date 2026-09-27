@@ -244,7 +244,7 @@ public class AutoBreed extends Module {
             EntityHitResult hitResult = new EntityHitResult(target, hitPos);
             InteractionResult result = mc.gameMode.interact(mc.player, target, hitResult, InteractionHand.MAIN_HAND);
             if (!result.consumesAction()) {
-                result = mc.gameMode.interact(mc.player, target, InteractionHand.MAIN_HAND);
+                result = mc.gameMode.interact(mc.player, target, new EntityHitResult(target), InteractionHand.MAIN_HAND);
             }
             clickCount++;
             if (debugMode.get()) {

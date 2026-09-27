@@ -16,6 +16,7 @@ import net.minecraft.util.Mth;
 import org.lwjgl.glfw.GLFW;
 import java.util.*;
 import static bep.hax.modules.livemessage.gui.GuiUtil.*;
+import net.minecraft.client.gui.components.PlayerFaceExtractor;
 public class ManeWindow extends LiveWindow {
     LiveProfile liveProfile;
     LiveSkinUtil liveSkinUtil;
@@ -131,7 +132,7 @@ public class ManeWindow extends LiveWindow {
         int displayY = Math.round(y - (progress * 32));
         net.minecraft.client.multiplayer.PlayerInfo entry = mc.getConnection().getPlayerInfo(uuid);
         if (entry != null) {
-            net.minecraft.client.gui.components.PlayerFaceRenderer.draw(context, entry.getSkin(), displayX, displayY, displaySize);
+            net.minecraft.client.gui.components.PlayerFaceExtractor.extractRenderState(context, entry.getSkin(), displayX, displayY, displaySize);
         }
     }
     @Override
@@ -413,7 +414,7 @@ public class ManeWindow extends LiveWindow {
                 PlayerInfo tabEntry = mc.getConnection() != null ?
                     mc.getConnection().getPlayerInfo(buddyListEntry.uuid) : null;
                 if (tabEntry != null) {
-                    net.minecraft.client.gui.components.PlayerFaceRenderer.draw(context, tabEntry.getSkin(),
+                    net.minecraft.client.gui.components.PlayerFaceExtractor.extractRenderState(context, tabEntry.getSkin(),
                         buddyListX + 5, yPos - 1, 10);
                 }
             }
@@ -433,7 +434,7 @@ public class ManeWindow extends LiveWindow {
                 textColor = getSingleRGB(255);
             }
             int maxTextWidth = availableWidth - 10;
-            String clippedText = fontRenderer.trimToWidth(buddyText, maxTextWidth);
+            String clippedText = fontRenderer.plainSubstrByWidth(buddyText, maxTextWidth);
             context.text(fontRenderer, clippedText, buddyListX + 5, yPos, textColor, false);
             if (buddyListEntry.uuid != null) {
                 int unreads = LivemessageGui.unreadMessages.getOrDefault(buddyListEntry.uuid, 0);

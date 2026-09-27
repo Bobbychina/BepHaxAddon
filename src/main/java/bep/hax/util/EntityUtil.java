@@ -49,7 +49,7 @@ public class EntityUtil {
             entity instanceof Llama ||
             entity instanceof TraderLlama ||
             entity instanceof Bee ||
-            entity instanceof Spider ||
+            entity instanceof net.minecraft.world.entity.monster.spider.Spider ||
             entity instanceof CaveSpider ||
             entity instanceof PolarBear ||
             entity instanceof Panda ||
@@ -81,7 +81,7 @@ public class EntityUtil {
         if (entity instanceof IronGolem ironGolem) {
             return ironGolem.isAggressive();
         }
-        if (entity instanceof Spider || entity instanceof CaveSpider) {
+        if (entity instanceof net.minecraft.world.entity.monster.spider.Spider || entity instanceof CaveSpider) {
             return entity.level().getSkyDarken() >= 0.5f;
         }
         return false;
@@ -127,7 +127,7 @@ public class EntityUtil {
             entity instanceof Phantom;
     }
     public static boolean isArthropod(Entity entity) {
-        return entity instanceof Spider ||
+        return entity instanceof net.minecraft.world.entity.monster.spider.Spider ||
             entity instanceof CaveSpider ||
             entity instanceof Silverfish ||
             entity instanceof Endermite ||

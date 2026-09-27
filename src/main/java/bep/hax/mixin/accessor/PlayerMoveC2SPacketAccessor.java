@@ -5,10 +5,8 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
 @Mixin(ServerboundMovePlayerPacket.class)
 public interface PlayerMoveC2SPacketAccessor {
-    @Mutable
-    @Accessor("pitch")
-    void setPitch(float pitch);
-    @Mutable
-    @Accessor("yaw")
-    void setYaw(float yaw);
+    @Accessor("xRot")
+    void setXRot(float pitch);
+    @Accessor("yRot")
+    void setYRot(float yaw);
 }

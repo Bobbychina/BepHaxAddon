@@ -107,7 +107,7 @@ public class Panorama extends Command {
         readyToAssemble = false;
         if (instance.player != null) {
             instance.player.playSound(SoundEvents.AMETHYST_BLOCK_CHIME, 1f, 1f);
-            instance.player.sendSystemMessage(Component.literal("§8<" + StardustUtil.rCC() + "✨§8> §3§oYour resource pack is ready to be enabled§f§o!"), false);
+            instance.player.sendSystemMessage(Component.literal("§8<" + StardustUtil.rCC() + "✨§8> §3§oYour resource pack is ready to be enabled§f§o!"));
         }
     }
     @Override
@@ -138,7 +138,7 @@ public class Panorama extends Command {
                 if (!isWarming) {
                     // Note: setRenderingPanorama removed in 1.21.11
                     instance.gameRenderer.setRenderBlockOutline(false);
-                    instance.levelRenderer.reload();
+                    instance.levelRenderer.allChanged();
                     if (!instance.options.hideGui) instance.options.hideGui = true;
                     instance.player.setYRot(preYaw);
                     instance.player.setXRot(0f);
@@ -189,12 +189,11 @@ public class Panorama extends Command {
                     instance.getWindow().setHeight(preHeight);
                     if (instance.options.hideGui) instance.options.hideGui = false;
                     instance.getMainRenderTarget().resize(preWidth, preHeight);
-                    instance.levelRenderer.reload();
+                    instance.levelRenderer.allChanged();
                     timer = 100;
                     readyToAssemble = true;
                     instance.player.sendSystemMessage(
-                        Component.literal("§8<§2§o✨§8> §8§oFinalizing resource pack§2§o, §8§oplease wait§2§o..."), false
-                    );
+                        Component.literal("§8<§2§o✨§8> §8§oFinalizing resource pack§2§o, §8§oplease wait§2§o..."));
                 }
             }
         }

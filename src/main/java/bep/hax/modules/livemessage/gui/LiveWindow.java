@@ -100,7 +100,7 @@ public class LiveWindow {
                 int iconX = gx() + 1;
                 int iconY = by + 1;
                 int texU = iconIndex * 9;
-                context.drawTexture(RenderPipelines.GUI_TEXTURED, ICONS_TEXTURE,
+                context.blit(RenderPipelines.GUI_TEXTURED, ICONS_TEXTURE,
                     iconX, iconY,
                     texU, 0,
                     9, 9,
@@ -108,7 +108,7 @@ public class LiveWindow {
                 if (iconActive) {
                     int color = (iconColor != -1) ? iconColor : LiveWindow.this.primaryColor;
                     int argb = 0xFF000000 | (color & 0x00FFFFFF);
-                    context.drawTexture(RenderPipelines.GUI_TEXTURED, ICONS_TEXTURE,
+                    context.blit(RenderPipelines.GUI_TEXTURED, ICONS_TEXTURE,
                         iconX, iconY,
                         texU, 0,
                         9, 9,

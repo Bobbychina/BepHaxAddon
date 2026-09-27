@@ -17,7 +17,7 @@ import meteordevelopment.meteorclient.events.render.Render3DEvent;
 import meteordevelopment.meteorclient.systems.modules.render.blockesp.ESPBlockData;
 import static meteordevelopment.meteorclient.MeteorClient.mc;
 public class RenderUtils {
-    private static final VertexConsumerProvider.Immediate vertex = VertexConsumerProvider.immediate(new ByteBufferBuilder(2048));
+    private static final MultiBufferSource.BufferSource vertex = MultiBufferSource.immediate(new ByteBufferBuilder(2048));
     public static boolean shouldRenderBox(ESPBlockData esp) {
         return switch (esp.shapeMode) {
             case Both -> esp.lineColor.a > 0 || esp.sideColor.a > 0;
@@ -50,8 +50,8 @@ public class RenderUtils {
         );
     }
     public static void text(String text, PoseStack stack, float x, float y, int color) {
-        mc.font.draw(text, x, y, color, false, stack.last().getPositionMatrix(), vertex, Font.DisplayMode.NORMAL, 0, 15728880);
-        vertex.draw();
+        mc.font.drawInBatch(text, x, y, color, false, stack.last().pose(), vertex, Font.DisplayMode.NORMAL, 0, 15728880);
+        vertex.endBatch();
     }
     public enum RenderMode {
         Solid,

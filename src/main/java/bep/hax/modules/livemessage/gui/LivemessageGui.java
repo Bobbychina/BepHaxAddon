@@ -23,7 +23,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class LivemessageGui extends Screen {
     public LivemessageGui() {
         super(Component.literal("Livemessage"));
-        if (client != null) {
+        if (minecraft != null) {
             setScl();
         }
     }
@@ -67,8 +67,8 @@ public class LivemessageGui extends Screen {
     public void setScl() {
         int guiScale = LiveMessage.INSTANCE.guiScale.get();
         scl = 1.0 / guiScale;
-        screenHeight = (int) (client.getWindow().getScaledHeight() / guiScale);
-        screenWidth = (int) (client.getWindow().getScaledWidth() / guiScale);
+        screenHeight = (int) (minecraft.getWindow().getGuiScaledHeight() / guiScale);
+        screenWidth = (int) (minecraft.getWindow().getGuiScaledWidth() / guiScale);
     }
     @Override
     protected void init() {
@@ -256,14 +256,14 @@ public class LivemessageGui extends Screen {
         return doHide;
     }
     @Override
-    public void renderBackground(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
+    public void extractBackground(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
         if (LiveMessage.INSTANCE != null && LiveMessage.INSTANCE.enableBlur.get()) {
-            super.renderBackground(context, mouseX, mouseY, delta);
+            super.extractBackground(context, mouseX, mouseY, delta);
         }
     }
     @Override
-    public void render(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
-        super.render(context, mouseX, mouseY, delta);
+    public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
+        super.extractRenderState(context, mouseX, mouseY, delta);
         float reverseGuiScale = (float) (1f / scl);
         if (LiveMessage.INSTANCE != null && LiveMessage.INSTANCE.enableBlur.get()) {
             boolean shouldDrawBlur = false;
@@ -299,7 +299,7 @@ public class LivemessageGui extends Screen {
         context.pose().scale((float) scl, (float) scl);
     }
     @Override
-    public boolean shouldPause() {
+    public boolean isPauseScreen() {
         return false;
     }
 }
