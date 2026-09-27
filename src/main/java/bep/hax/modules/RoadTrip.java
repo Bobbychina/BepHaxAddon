@@ -27,6 +27,7 @@ import bep.hax.mixin.accessor.DisconnectS2CPacketAccessor;
 import meteordevelopment.meteorclient.events.packets.PacketEvent;
 import net.minecraft.network.protocol.common.ClientboundDisconnectPacket;
 import meteordevelopment.meteorclient.events.entity.EntityAddedEvent;
+import net.minecraft.network.DisconnectionDetails;
 public class RoadTrip extends Module {
     public RoadTrip() {
         super(Bep.STARDUST, "RoadTrip", "Tools for AFK-travelling over long distances.");
@@ -329,7 +330,7 @@ public class RoadTrip extends Module {
     private void disconnect(Component reason) {
         if (mc.getConnection() == null) return;
         StardustUtil.disableAutoReconnect();
-        mc.getConnection().onDisconnect(new ClientboundDisconnectPacket(reason));
+        mc.getConnection().onDisconnect(new DisconnectionDetails(reason));
         switch (autoLogToggle.get()) {
             case Module -> toggle();
             case Settings -> disableAutoLogSettings();

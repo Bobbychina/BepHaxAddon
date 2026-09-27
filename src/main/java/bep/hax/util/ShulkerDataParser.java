@@ -64,8 +64,8 @@ public class ShulkerDataParser {
         }
         Identifier itemId = Identifier.tryParse(id);
         if (itemId == null) return ItemStack.EMPTY;
-        Item item = BuiltInRegistries.ITEM.get(itemId);
-        if (item == null || item == BuiltInRegistries.ITEM.get(BuiltInRegistries.ITEM.getDefaultKey())) {
+        Item item = BuiltInRegistries.ITEM.getValue(itemId);
+        if (item == null || item == BuiltInRegistries.ITEM.getValue(BuiltInRegistries.ITEM.getDefaultKey())) {
             return ItemStack.EMPTY;
         }
         return new ItemStack(item, count);

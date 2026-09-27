@@ -12,13 +12,14 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.core.BlockPos;
 import java.util.List;
+import net.minecraft.client.multiplayer.ClientSuggestionProvider;
 import static com.mojang.brigadier.Command.SINGLE_SUCCESS;
 public class ChestTrackerCommand extends Command {
     public ChestTrackerCommand() {
         super("chesttracker", "Search for items in tracked containers.", "ct", "track");
     }
     @Override
-    public void build(LiteralArgumentBuilder<SharedSuggestionProvider> builder) {
+    public void build(LiteralArgumentBuilder<ClientSuggestionProvider> builder) {
         builder.then(literal("search")
             .then(literal("hand").executes(context -> {
                 ChestTrackerModule module = Modules.get().get(ChestTrackerModule.class);
@@ -125,7 +126,7 @@ public class ChestTrackerCommand extends Command {
     }
     private void searchAndDisplay(ChestTrackerModule module, Item item) {
         List<TrackedContainer> results = module.getData().searchItem(item);
-        String name = item.getName().getString();
+        String name = new ItemStack(item).getHoverName().getString();
         if (results.isEmpty()) {
             info("§cNone found: §f" + name);
             return;
@@ -148,12 +149,12 @@ public class ChestTrackerCommand extends Command {
         query = query.toLowerCase().replace(" ", "_");
         Identifier id = Identifier.tryParse("minecraft:" + query);
         if (id != null && BuiltInRegistries.ITEM.containsKey(id)) {
-            return BuiltInRegistries.ITEM.get(id);
+            return BuiltInRegistries.ITEM.getValue(id);
         }
         for (Identifier itemId : BuiltInRegistries.ITEM.keySet()) {
             String path = itemId.getPath();
             if (path.contains(query)) {
-                return BuiltInRegistries.ITEM.get(itemId);
+                return BuiltInRegistries.ITEM.getValue(itemId);
             }
         }
         return null;

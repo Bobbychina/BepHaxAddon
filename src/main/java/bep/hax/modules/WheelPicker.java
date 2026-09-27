@@ -503,24 +503,24 @@ public class WheelPicker extends Module {
         if (hasIcon) {
             Item item = slot.icon.get();
             ItemStack stack = new ItemStack(item);
-            context.getMatrices().pushMatrix();
-            context.getMatrices().translate(labelX, currentY);
-            context.getMatrices().scale(iconScaleValue, iconScaleValue);
-            context.drawItem(stack, -8, 0);
-            context.getMatrices().popMatrix();
+            context.pose().pushMatrix();
+            context.pose().translate(labelX, currentY);
+            context.pose().scale(iconScaleValue, iconScaleValue);
+            context.item(stack, -8, 0);
+            context.pose().popMatrix();
             currentY += iconSize + spacing;
         }
         if (hasText) {
             Color textColor = isModuleActive ? moduleActiveColor.get() : this.textColor.get();
             int textWidth = mc.font.width(label);
-            context.getMatrices().pushMatrix();
-            context.getMatrices().translate(labelX, currentY);
-            context.getMatrices().scale(textScaleValue, textScaleValue);
-            context.drawText(mc.font, label,
+            context.pose().pushMatrix();
+            context.pose().translate(labelX, currentY);
+            context.pose().scale(textScaleValue, textScaleValue);
+            context.text(mc.font, label,
                 -textWidth / 2,
                 0,
                 textColor.getPacked(), false);
-            context.getMatrices().popMatrix();
+            context.pose().popMatrix();
         }
     }
     private String getSlotLabel(SlotConfig slot, int slotIndex) {

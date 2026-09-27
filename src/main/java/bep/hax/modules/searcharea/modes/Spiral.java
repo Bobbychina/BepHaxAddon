@@ -61,7 +61,7 @@ public class Spiral extends SearchAreaMode
         }
         if (goingToStart)
         {
-            if (Math.sqrt(mc.player.blockPosition().distSqr(pd.currPos.getX(), mc.player.getY(), pd.currPos.getZ())) < 5)
+            if (Math.sqrt(mc.player.blockPosition().distToCenterSqr(pd.currPos.getX(), mc.player.getY(), pd.currPos.getZ())) < 5)
             {
                 goingToStart = false;
                 mc.player.setDeltaMovement(0, 0, 0);

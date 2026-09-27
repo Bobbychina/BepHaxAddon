@@ -4,12 +4,13 @@ import meteordevelopment.meteorclient.commands.Command;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import bep.hax.modules.StashMover;
 import net.minecraft.commands.SharedSuggestionProvider;
+import net.minecraft.client.multiplayer.ClientSuggestionProvider;
 public class SetClear extends Command {
     public SetClear() {
         super("setclear", "Clear all StashMover area selections");
     }
     @Override
-    public void build(LiteralArgumentBuilder<SharedSuggestionProvider> builder) {
+    public void build(LiteralArgumentBuilder<ClientSuggestionProvider> builder) {
         builder.executes(context -> {
             StashMover module = Modules.get().get(StashMover.class);
             if (module != null) {

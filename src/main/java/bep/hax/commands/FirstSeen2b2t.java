@@ -17,11 +17,12 @@ import meteordevelopment.meteorclient.commands.Command;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import meteordevelopment.meteorclient.utils.network.MeteorExecutor;
+import net.minecraft.client.multiplayer.ClientSuggestionProvider;
 public class FirstSeen2b2t extends Command {
     private final String API_ENDPOINT = "/seen?playerName=";
     public FirstSeen2b2t() { super("firstseen2b2t", "Check the first-seen status of a 2b2t player.", "fs"); }
     @Override
-    public void build(LiteralArgumentBuilder<SharedSuggestionProvider> builder) {
+    public void build(LiteralArgumentBuilder<ClientSuggestionProvider> builder) {
         builder.then(
             argument("player", StringArgumentType.word()).executes(ctx -> {
                 MeteorExecutor.execute(() -> {

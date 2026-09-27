@@ -192,7 +192,7 @@ public class AutoDoors extends Module {
                 else if(!open && block instanceof LeverBlock && !state.getValue(LeverBlock.POWERED)) return false;
             } catch (IllegalArgumentException ignored) {}
             if (!open && block instanceof ButtonBlock) return true;
-            this.interactDoor(pos.offset(side, n), moving);
+            this.interactDoor(pos.relative(side, n), moving);
             return true;
         } else {
             BlockState upState = mc.level.getBlockState(pos.relative(moving.getOpposite()).offset(side, n).above());
@@ -201,18 +201,18 @@ public class AutoDoors extends Module {
             Block downBlock = downState.getBlock();
             if (upBlock instanceof ButtonBlock || upBlock instanceof LeverBlock) {
                 try {
-                    if (open && upBlock instanceof ButtonBlock && upState.get(ButtonBlock.POWERED)) return false;
-                    else if (open && upBlock instanceof LeverBlock && upState.get(LeverBlock.POWERED)) return false;
-                    else if(!open && upBlock instanceof LeverBlock && !upState.get(LeverBlock.POWERED)) return false;
+                    if (open && upBlock instanceof ButtonBlock && upState.getValue(ButtonBlock.POWERED)) return false;
+                    else if (open && upBlock instanceof LeverBlock && upState.getValue(LeverBlock.POWERED)) return false;
+                    else if(!open && upBlock instanceof LeverBlock && !upState.getValue(LeverBlock.POWERED)) return false;
                 }catch (IllegalArgumentException ignored) {}
                 if (!open && upBlock instanceof ButtonBlock) return true;
                 this.interactDoor(pos.relative(moving.getOpposite()).offset(side, n).above(), moving);
                 return true;
             } else if (downBlock instanceof ButtonBlock || downBlock instanceof LeverBlock) {
                 try {
-                    if (open && downBlock instanceof ButtonBlock && downState.get(ButtonBlock.POWERED)) return false;
-                    else if (open && downBlock instanceof LeverBlock && downState.get(LeverBlock.POWERED)) return false;
-                    else if(!open && downBlock instanceof LeverBlock && !downState.get(LeverBlock.POWERED)) return false;
+                    if (open && downBlock instanceof ButtonBlock && downState.getValue(ButtonBlock.POWERED)) return false;
+                    else if (open && downBlock instanceof LeverBlock && downState.getValue(LeverBlock.POWERED)) return false;
+                    else if(!open && downBlock instanceof LeverBlock && !downState.getValue(LeverBlock.POWERED)) return false;
                 } catch (IllegalArgumentException ignored) {}
                 if (!open && downBlock instanceof ButtonBlock) return true;
                 this.interactDoor(pos.relative(moving).offset(side, n).below(), moving);
@@ -310,14 +310,14 @@ public class AutoDoors extends Module {
         Block doorBehind = behindState.getBlock();
         if (useTrapdoors.get() && doorInFront instanceof TrapDoorBlock && autoOpen.get()) {
             try {
-                if (!frontState.get(TrapDoorBlock.OPEN)) {
+                if (!frontState.getValue(TrapDoorBlock.OPEN)) {
                     interactDoor(frontPos, movementDirection);
                     return;
                 }
             } catch (IllegalArgumentException ignored) {}
         } else if (useTrapdoors.get() && mc.level.getBlockState(frontPos.below()).getBlock() instanceof TrapDoorBlock && autoOpen.get()) {
             try {
-                if (!mc.level.getBlockState(frontPos.below()).get(TrapDoorBlock.OPEN)) {
+                if (!mc.level.getBlockState(frontPos.below()).getValue(TrapDoorBlock.OPEN)) {
                     interactDoor(frontPos.below(), Direction.DOWN);
                     return;
                 }
@@ -327,9 +327,9 @@ public class AutoDoors extends Module {
         Block doorAboveBack = mc.level.getBlockState(behindPos.above()).getBlock();
         if (useFenceGates.get() && doorInFront instanceof FenceGateBlock || doorAboveFront instanceof FenceGateBlock && autoOpen.get()) {
             try {
-                if (!frontState.get(FenceGateBlock.OPEN)) {
+                if (!frontState.getValue(FenceGateBlock.OPEN)) {
                     interactDoor(frontPos, movementDirection);
-                    if (doorAboveFront instanceof FenceGateBlock && !mc.level.getBlockState(frontPos.above()).get(FenceGateBlock.OPEN)) {
+                    if (doorAboveFront instanceof FenceGateBlock && !mc.level.getBlockState(frontPos.above()).getValue(FenceGateBlock.OPEN)) {
                         interactDoor(frontPos.above(), movementDirection);
                     }
                     return;
@@ -372,14 +372,14 @@ public class AutoDoors extends Module {
         }
         if (useTrapdoors.get() && doorBehind instanceof TrapDoorBlock) {
             try {
-                if (behindState.get(TrapDoorBlock.OPEN)) {
+                if (behindState.getValue(TrapDoorBlock.OPEN)) {
                     this.interactDoor(behindPos, movementDirection);
                     return;
                 }
             }catch (IllegalArgumentException ignored) {}
         } else if (useTrapdoors.get() && mc.level.getBlockState(behindPos.below()).getBlock() instanceof TrapDoorBlock) {
             try {
-                if (mc.level.getBlockState(behindPos.below()).get(TrapDoorBlock.OPEN)) {
+                if (mc.level.getBlockState(behindPos.below()).getValue(TrapDoorBlock.OPEN)) {
                     this.interactDoor(behindPos.below(), Direction.DOWN);
                     return;
                 }
@@ -387,9 +387,9 @@ public class AutoDoors extends Module {
         }
         if (useFenceGates.get() && doorBehind instanceof FenceGateBlock || doorAboveBack instanceof FenceGateBlock) {
             try {
-                if (behindState.get(FenceGateBlock.OPEN)) {
+                if (behindState.getValue(FenceGateBlock.OPEN)) {
                     interactDoor(behindPos, movementDirection);
-                    if (doorAboveBack instanceof FenceGateBlock && mc.level.getBlockState(behindPos.above()).get(FenceGateBlock.OPEN)) {
+                    if (doorAboveBack instanceof FenceGateBlock && mc.level.getBlockState(behindPos.above()).getValue(FenceGateBlock.OPEN)) {
                         interactDoor(behindPos.above(), movementDirection);
                     }
                     return;

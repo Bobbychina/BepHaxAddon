@@ -160,7 +160,7 @@ public class Phase extends Module {
             bep.hax.mixin.accessor.EntityVelocityUpdateS2CPacketAccessor accessor = (bep.hax.mixin.accessor.EntityVelocityUpdateS2CPacketAccessor) packet;
             if (accessor.getEntityId() == mc.player.getId() && isActive()) {
                 Vec3 velocity = accessor.getVelocity();
-                if (velocity.lengthSquared() < 0.1) {
+                if (velocity.lengthSqr() < 0.1) {
                     event.cancel();
                 }
             }

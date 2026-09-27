@@ -60,7 +60,7 @@ public abstract class HandledScreenMixin extends Screen {
         itemSearchField.setFocused(false);
         itemSearchField.setEditable(true);
         itemSearchField.setVisible(true);
-        this.addDrawableChild(itemSearchField);
+        this.addRenderableWidget(itemSearchField);
     }
     @Inject(method = "render", at = @At("TAIL"))
     private void onRender(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta, CallbackInfo ci) {

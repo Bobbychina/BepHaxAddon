@@ -13,11 +13,12 @@ import net.minecraft.client.player.LocalPlayer;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import meteordevelopment.meteorclient.utils.network.MeteorExecutor;
+import net.minecraft.client.multiplayer.ClientSuggestionProvider;
 public class Playtime2b2t extends Command {
     private final String API_ENDPOINT = "/playtime?playerName=";
     public Playtime2b2t() { super("playtime2b2t", "Check the playtime of a 2b2t player.", "pt"); }
     @Override
-    public void build(LiteralArgumentBuilder<SharedSuggestionProvider> builder) {
+    public void build(LiteralArgumentBuilder<ClientSuggestionProvider> builder) {
         builder.then(
             argument("player", StringArgumentType.word()).executes(ctx -> {
                 MeteorExecutor.execute(() -> {

@@ -628,7 +628,7 @@ public class StashMover extends Module {
         if (container.type == ContainerType.DOUBLE_CHEST ||
             container.type == ContainerType.DOUBLE_TRAPPED_CHEST) {
             BlockState state = mc.level.getBlockState(container.pos);
-            if (state.contains(BlockStateProperties.CHEST_TYPE)) {
+            if (state.hasProperty(BlockStateProperties.CHEST_TYPE)) {
                 ChestType chestType = state.getValue(BlockStateProperties.CHEST_TYPE);
                 Direction facing = state.getValue(BlockStateProperties.HORIZONTAL_FACING);
                 if (chestType == ChestType.LEFT) {
@@ -735,7 +735,7 @@ public class StashMover extends Module {
                     Block block = state.getBlock();
                     ContainerInfo container = null;
                     if (block instanceof ChestBlock && !(block instanceof TrappedChestBlock)) {
-                        if (state.contains(BlockStateProperties.CHEST_TYPE)) {
+                        if (state.hasProperty(BlockStateProperties.CHEST_TYPE)) {
                             ChestType chestType = state.getValue(BlockStateProperties.CHEST_TYPE);
                             if (chestType != ChestType.SINGLE) {
                                 Direction facing = state.getValue(BlockStateProperties.HORIZONTAL_FACING);
@@ -754,7 +754,7 @@ public class StashMover extends Module {
                             container = new ContainerInfo(pos, ContainerType.CHEST);
                         }
                     } else if (block instanceof TrappedChestBlock) {
-                        if (state.contains(BlockStateProperties.CHEST_TYPE)) {
+                        if (state.hasProperty(BlockStateProperties.CHEST_TYPE)) {
                             ChestType chestType = state.getValue(BlockStateProperties.CHEST_TYPE);
                             if (chestType != ChestType.SINGLE) {
                                 Direction facing = state.getValue(BlockStateProperties.HORIZONTAL_FACING);
@@ -1603,15 +1603,15 @@ public class StashMover extends Module {
         return !feetState.isAir() && headState.isAir() && aboveState.isAir();
     }
     private boolean canStrafeAround() {
-        Vec3 leftCheck = mc.player.position().add(mc.player.getRotationVector().rotateY((float)Math.toRadians(90)));
-        Vec3 rightCheck = mc.player.position().add(mc.player.getRotationVector().rotateY((float)Math.toRadians(-90)));
+        Vec3 leftCheck = mc.player.position().add(mc.player.getViewVector(1.0f).yRot((float)Math.toRadians(90)));
+        Vec3 rightCheck = mc.player.position().add(mc.player.getViewVector(1.0f).yRot((float)Math.toRadians(-90)));
         BlockPos leftBlock = BlockPos.containing(leftCheck);
         BlockPos rightBlock = BlockPos.containing(rightCheck);
         return mc.level.getBlockState(leftBlock).isAir() || mc.level.getBlockState(rightBlock).isAir();
     }
     private void handleStrafeMovement(Vec3 toContainer) {
-        Vec3 left = mc.player.getRotationVector().rotateY((float)Math.toRadians(90));
-        Vec3 right = mc.player.getRotationVector().rotateY((float)Math.toRadians(-90));
+        Vec3 left = mc.player.getViewVector(1.0f).yRot((float)Math.toRadians(90));
+        Vec3 right = mc.player.getViewVector(1.0f).yRot((float)Math.toRadians(-90));
         Vec3 leftCheck = mc.player.position().add(left);
         Vec3 rightCheck = mc.player.position().add(right);
         BlockPos leftBlock = BlockPos.containing(leftCheck);
@@ -1797,7 +1797,7 @@ public class StashMover extends Module {
                 if (!invStack.isEmpty() && !isShulkerBox(invStack.getItem())) {
                     mc.player.closeContainer();
                     InvUtils.drop().slot(j);
-                    info("Dropping non-shulker: " + invStack.getItem().getName().getString());
+                    info("Dropping non-shulker: " + new ItemStack(invStack.getItem()).getHoverName().getString());
                     currentState = ProcessState.OPENING_CONTAINER;
                     stateTimer = 5;
                     return;
@@ -1860,7 +1860,7 @@ public class StashMover extends Module {
                     ItemStack stack = mc.player.getInventory().getItem(i);
                     if (!stack.isEmpty() && !isShulkerBox(stack.getItem())) {
                         InvUtils.drop().slot(i);
-                        info("Dropped non-shulker at output: " + stack.getItem().getName().getString());
+                        info("Dropped non-shulker at output: " + new ItemStack(stack.getItem()).getHoverName().getString());
                         stateTimer = 5;
                         return;
                     }
@@ -1899,7 +1899,7 @@ public class StashMover extends Module {
                     ItemStack stack = mc.player.getInventory().getItem(i);
                     if (!stack.isEmpty() && !isShulkerBox(stack.getItem())) {
                         InvUtils.drop().slot(i);
-                        info("Dropped non-shulker: " + stack.getItem().getName().getString());
+                        info("Dropped non-shulker: " + new ItemStack(stack.getItem()).getHoverName().getString());
                         stateTimer = 5;
                         foundNonShulker = true;
                         if (currentContainer != null && !currentContainer.isEmpty) {
@@ -3493,7 +3493,7 @@ public class StashMover extends Module {
                     ContainerInput.PICKUP,
                     mc.player
                 );
-                info("Moved " + slot0.getItem().getName().getString() + " from slot 0 to offhand");
+                info("Moved " + new ItemStack(slot0.getItem()).getHoverName().getString() + " from slot 0 to offhand");
             } else {
                 for (int i = 9; i < 36; i++) {
                     if (mc.player.getInventory().getItem(i).isEmpty()) {
@@ -3536,7 +3536,7 @@ public class StashMover extends Module {
                         ContainerInput.PICKUP,
                         mc.player
                     );
-                    info("Moved " + stack.getItem().getName().getString() + " to offhand");
+                    info("Moved " + new ItemStack(stack.getItem()).getHoverName().getString() + " to offhand");
                     return;
                 }
             }

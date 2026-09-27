@@ -59,6 +59,7 @@ import meteordevelopment.meteorclient.utils.render.color.SettingColor;
 import meteordevelopment.meteorclient.systems.modules.render.blockesp.ESPBlockData;
 import net.minecraft.world.level.block.state.properties.WoodType;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.network.DisconnectionDetails;
 public class ChatSigns extends Module {
     public ChatSigns() {
         super(Bep.STARDUST, "ChatSigns", "Read nearby signs in your chat.");
@@ -413,8 +414,8 @@ public class ChatSigns extends Module {
             if (!String.join(" ", lines).contains("**Pre-1.19 Sign restored by 0xTas' SignHistorian**")) {
                 WoodType woodType = WoodType.BAMBOO;
                 Block block = sign.getBlockState().getBlock();
-                if (block instanceof SignBlock signBlock) woodType = signBlock.getWoodType();
-                else if (block instanceof WallSignBlock wallSignBlock) woodType = wallSignBlock.getWoodType();
+                if (block instanceof SignBlock signBlock) woodType = SignBlock.getWoodType(signBlock);
+                else if (block instanceof WallSignBlock wallSignBlock) woodType = SignBlock.getWoodType(wallSignBlock);
                 if (woodType == WoodType.OAK) {
                     CompoundTag metadata = sign.saveWithoutMetadata(mc.level.registryAccess());
                     if (!metadata.toString().contains("{\"extra\":[") && !lines.isEmpty()) {
@@ -720,7 +721,7 @@ public class ChatSigns extends Module {
             } else {
                 signBoardAutoLog.set(false);
                 StardustUtil.disableAutoReconnect();
-                mc.getConnection().onDisconnect(new ClientboundDisconnectPacket(reason));
+                mc.getConnection().onDisconnect(new DisconnectionDetails(reason));
             }
             toggle();
             return;

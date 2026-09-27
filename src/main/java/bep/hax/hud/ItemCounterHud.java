@@ -191,7 +191,7 @@ public class ItemCounterHud extends HudElement {
                 countText = String.valueOf(count);
             }
             if (showItemName.get()) {
-                String itemName = item.getName().getString();
+                String itemName = new ItemStack(item).getHoverName().getString();
                 if (itemName.length() > 10) {
                     itemName = itemName.substring(0, 8) + "..";
                 }

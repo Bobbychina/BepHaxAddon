@@ -10,6 +10,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import bep.hax.mixin.accessor.SourceManagerAccessor;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import net.minecraft.client.sounds.ChannelAccess;
 @Mixin(Library.class)
 public class SoundSystemMixin {
     @Shadow

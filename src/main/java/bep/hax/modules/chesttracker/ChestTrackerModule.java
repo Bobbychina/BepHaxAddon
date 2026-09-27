@@ -396,9 +396,9 @@ public class ChestTrackerModule extends Module {
                     if (!isTrackableContainer(block)) continue;
                     boolean isAlreadyTracked = data.getContainer(blockPos, currentDim) != null;
                     if (!isAlreadyTracked && block instanceof ChestBlock) {
-                        ChestType chestType = blockState.get(ChestBlock.TYPE);
+                        ChestType chestType = blockState.getValue(ChestBlock.TYPE);
                         if (chestType == ChestType.LEFT || chestType == ChestType.RIGHT) {
-                            Direction facing = blockState.get(ChestBlock.FACING);
+                            Direction facing = blockState.getValue(ChestBlock.FACING);
                             BlockPos otherHalf = blockPos.offset(chestType == ChestType.LEFT ? facing.getClockWise() : facing.getCounterClockWise());
                             if (data.getContainer(otherHalf, currentDim) != null) {
                                 isAlreadyTracked = true;
@@ -419,9 +419,9 @@ public class ChestTrackerModule extends Module {
                             currentOpenPositions[0] = blockPos.immutable();
                             currentOpenPositions[1] = null;
                             if (block instanceof ChestBlock) {
-                                ChestType chestType = blockState.get(ChestBlock.TYPE);
+                                ChestType chestType = blockState.getValue(ChestBlock.TYPE);
                                 if (chestType == ChestType.LEFT || chestType == ChestType.RIGHT) {
-                                    Direction facing = blockState.get(ChestBlock.FACING);
+                                    Direction facing = blockState.getValue(ChestBlock.FACING);
                                     BlockPos otherPos = blockPos.offset(chestType == ChestType.LEFT ? facing.getClockWise() : facing.getCounterClockWise());
                                     currentOpenPositions[1] = otherPos;
                                 }
@@ -561,16 +561,16 @@ public class ChestTrackerModule extends Module {
             int itemSize = (int) (16 * labelScale.get());
             int renderX = screenX - itemSize / 2;
             int renderY = screenY - itemSize / 2;
-            var matrices = context.getMatrices();
+            var matrices = context.pose();
             matrices.pushMatrix();
             if (itemSize != 16) {
                 float scale = itemSize / 16.0f;
                 matrices.translate(renderX + itemSize / 2.0f, renderY + itemSize / 2.0f);
                 matrices.scale(scale, scale);
                 matrices.translate(-8.0f, -8.0f);
-                context.drawItem(new ItemStack(currentSearchItem), 0, 0);
+                context.item(new ItemStack(currentSearchItem), 0, 0);
             } else {
-                context.drawItem(new ItemStack(currentSearchItem), renderX, renderY);
+                context.item(new ItemStack(currentSearchItem), renderX, renderY);
             }
             matrices.popMatrix();
         }
@@ -581,10 +581,10 @@ public class ChestTrackerModule extends Module {
         Block block = state.getBlock();
         if (!(block instanceof ChestBlock || block instanceof TrappedChestBlock)) return null;
         try {
-            if (state.contains(ChestBlock.TYPE)) {
+            if (state.hasProperty(ChestBlock.TYPE)) {
                 ChestType chestType = state.getValue(ChestBlock.TYPE);
                 if (chestType == ChestType.SINGLE) return null;
-                if (state.contains(ChestBlock.FACING)) {
+                if (state.hasProperty(ChestBlock.FACING)) {
                     Direction facing = state.getValue(ChestBlock.FACING);
                     BlockPos otherPos = chestType == ChestType.LEFT ?
                         pos.relative(facing.getClockWise()) :
@@ -633,7 +633,7 @@ public class ChestTrackerModule extends Module {
         }
         currentSearchItem = held.getItem();
         List<TrackedContainer> results = data.searchItem(currentSearchItem);
-        if (debugMode.get()) info("Found " + results.size() + " containers with " + currentSearchItem.getName().getString());
+        if (debugMode.get()) info("Found " + results.size() + " containers with " + new ItemStack(currentSearchItem).getHoverName().getString());
     }
     private boolean isTrackableContainer(Block block) {
         if (block instanceof ChestBlock || block instanceof TrappedChestBlock) {

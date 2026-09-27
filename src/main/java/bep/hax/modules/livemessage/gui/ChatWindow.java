@@ -361,7 +361,7 @@ public class ChatWindow extends LiveWindow {
     private void drawChatHistory(GuiGraphicsExtractor context, int chatBoxX, int chatBoxY, int chatColorMe, int chatColorOther) {
         clickableLinks.clear();
         if (chatHistory.size() == 0) {
-            context.drawText(fontRenderer, "You're chatting with " + liveProfile.username, chatBoxX + 4, chatBoxY + 5, getSingleRGB(96), false);
+            context.text(fontRenderer, "You're chatting with " + liveProfile.username, chatBoxX + 4, chatBoxY + 5, getSingleRGB(96), false);
             chatScrolledToBottom = false;
             return;
         }
@@ -383,7 +383,7 @@ public class ChatWindow extends LiveWindow {
                 String thisDay = dateFormat.format(timestamp);
                 if (!thisDay.equals(lastDay)) {
                     lastDay = thisDay;
-                    context.drawText(fontRenderer, lastDay, chatBoxX + 4, chatBoxY + 5 + 12 * drawHeight, getSingleRGB(64), false);
+                    context.text(fontRenderer, lastDay, chatBoxX + 4, chatBoxY + 5 + 12 * drawHeight, getSingleRGB(64), false);
                     drawHeight++;
                     continue;
                 }
@@ -414,7 +414,7 @@ public class ChatWindow extends LiveWindow {
         while (matcher.find()) {
             if (matcher.start() > lastEnd) {
                 String beforeUrl = text.substring(lastEnd, matcher.start());
-                context.drawText(fontRenderer, beforeUrl, currentX, y, baseColor, false);
+                context.text(fontRenderer, beforeUrl, currentX, y, baseColor, false);
                 currentX += fontRenderer.width(beforeUrl);
             }
             String url = matcher.group();
@@ -422,7 +422,7 @@ public class ChatWindow extends LiveWindow {
             boolean hovering = lastMouseX >= (x + currentX - x) && lastMouseX <= (x + currentX - x + urlWidth) &&
                                lastMouseY >= y && lastMouseY <= y + fontRenderer.lineHeight;
             int urlColor = hovering ? getRGB(100, 200, 255) : getRGB(85, 170, 255);
-            context.drawText(fontRenderer, url, currentX, y, urlColor, true);
+            context.text(fontRenderer, url, currentX, y, urlColor, true);
             drawRect(context, currentX - x, y + fontRenderer.lineHeight - 1 - (chatBoxY + 5), urlWidth, 1, urlColor);
             clickableLinks.add(new ClickableLink(url, currentX, y, urlWidth, fontRenderer.lineHeight));
             currentX += urlWidth;
@@ -430,10 +430,10 @@ public class ChatWindow extends LiveWindow {
         }
         if (lastEnd < text.length()) {
             String afterUrl = text.substring(lastEnd);
-            context.drawText(fontRenderer, afterUrl, currentX, y, baseColor, false);
+            context.text(fontRenderer, afterUrl, currentX, y, baseColor, false);
         }
         if (lastEnd == 0) {
-            context.drawText(fontRenderer, text, x, y, baseColor, false);
+            context.text(fontRenderer, text, x, y, baseColor, false);
         }
     }
     public boolean shouldDrawBlur() {
@@ -484,9 +484,9 @@ public class ChatWindow extends LiveWindow {
             displayUsername += " (enemy)";
             usernameColor = getRGB(255, 85, 85);
         }
-        context.drawText(fontRenderer, displayUsername, 42, titlebarHeight + 5, usernameColor, false);
-        context.drawText(fontRenderer, liveProfile.uuid.toString(), 42, titlebarHeight + 5 + 11, getSingleRGB(128), false);
-        context.drawText(fontRenderer, (online) ? "online" : "offline", 42, titlebarHeight + 5 + 21, getSingleRGB(128), false);
+        context.text(fontRenderer, displayUsername, 42, titlebarHeight + 5, usernameColor, false);
+        context.text(fontRenderer, liveProfile.uuid.toString(), 42, titlebarHeight + 5 + 11, getSingleRGB(128), false);
+        context.text(fontRenderer, (online) ? "online" : "offline", 42, titlebarHeight + 5 + 21, getSingleRGB(128), false);
         liveButtons.forEach(btn -> btn.draw(context));
         int chatbg = 36;
         int textbg = 24;
@@ -500,8 +500,8 @@ public class ChatWindow extends LiveWindow {
             String warningIcon = "§l!";
             int iconX = chatBoxX + w - 10 - fontRenderer.width(warningIcon) - 3;
             int iconY = chatBoxY + h - (chatBoxY + 5 + chatBoxSize) + 2;
-            context.drawText(fontRenderer, warningIcon, iconX + 1, iconY, getRGB(100, 20, 20), false);
-            context.drawText(fontRenderer, warningIcon, iconX, iconY, getRGB(255, 85, 85), false);
+            context.text(fontRenderer, warningIcon, iconX + 1, iconY, getRGB(100, 20, 20), false);
+            context.text(fontRenderer, warningIcon, iconX, iconY, getRGB(255, 85, 85), false);
         }
         if (chatHistory.size() > 1) {
             int maxScroll = Math.max(0, chatHistory.size() - 1);
@@ -528,12 +528,12 @@ public class ChatWindow extends LiveWindow {
     }
     @Override
     public void drawTextFields(GuiGraphicsExtractor context) {
-        context.getMatrices().translate((float)x, (float)y);
+        context.pose().translate((float)x, (float)y);
         this.inputField.setTextColor(active ? 0xFFFFFFFF : 0xFF808080);
         this.inputField.setX(8);
         this.inputField.setY(this.h - chatBoxSize - 2);
         this.inputField.setWidth(this.w - 18);
-        this.inputField.render(context, lastMouseX - x, lastMouseY - y, 0);
-        context.getMatrices().translate((float)-x, (float)-y);
+        this.inputField.extractRenderState(context, lastMouseX - x, lastMouseY - y, 0);
+        context.pose().translate((float)-x, (float)-y);
     }
 }

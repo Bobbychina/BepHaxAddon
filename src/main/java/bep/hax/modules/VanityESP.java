@@ -520,7 +520,7 @@ public class VanityESP extends Module {
                     BlockPos pos = banner.getBlockPos();
                     BlockState state = mc.level.getBlockState(pos);
                     AABB box;
-                    if (state.contains(WallBannerBlock.FACING)) {
+                    if (state.hasProperty(WallBannerBlock.FACING)) {
                         Direction facing = state.getValue(WallBannerBlock.FACING);
                         double centerX = pos.getX() + 0.5;
                         double centerZ = pos.getZ() + 0.5;
@@ -546,7 +546,7 @@ public class VanityESP extends Module {
                                 continue;
                         }
                         event.renderer.box(box, fill, outline, shapeMode, 0);
-                    } else if (state.contains(BannerBlock.ROTATION)) {
+                    } else if (state.hasProperty(BannerBlock.ROTATION)) {
                         int rotation = state.getValue(BannerBlock.ROTATION);
                         double centerX = pos.getX() + 0.5;
                         double centerZ = pos.getZ() + 0.5;

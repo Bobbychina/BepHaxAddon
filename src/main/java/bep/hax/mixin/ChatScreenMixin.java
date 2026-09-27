@@ -26,7 +26,7 @@ public abstract class ChatScreenMixin extends Screen {
             if (webChat != null && webChat.isActive() && webChat.shouldHideInGameChat()) {
                 if (this.chatField != null) {
                     context.fill(2, this.height - 14 - 2, this.width - 2, this.height - 2, 0x80000000);
-                    this.chatField.render(context, mouseX, mouseY, delta);
+                    this.chatField.extractRenderState(context, mouseX, mouseY, delta);
                 }
                 ci.cancel();
             }

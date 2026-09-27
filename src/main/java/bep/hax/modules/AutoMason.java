@@ -281,7 +281,7 @@ public class AutoMason extends Module {
             ContextMap contextParameterMap = SlotDisplayContext.fromLevel(mc.level);
             for (int n = 0; n < available.entries().size(); n++) {
                 var entry = available.entries().get(n);
-                ItemStack recipeStack = entry.recipe().optionDisplay().getFirst(contextParameterMap);
+                ItemStack recipeStack = entry.recipe().optionDisplay().resolveForFirstStack(contextParameterMap);
                 if (recipeStack.isEmpty()) continue;
                 if (itemList.get().contains(recipeStack.getItem())) {
                     outputStack = recipeStack;

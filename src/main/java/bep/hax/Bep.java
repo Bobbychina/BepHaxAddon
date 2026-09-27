@@ -16,9 +16,9 @@ import bep.hax.managers.PacketManager;
 import net.minecraft.world.item.Items;
 public class Bep extends MeteorAddon {
     public static final Logger LOG = LoggerFactory.getLogger("BepHax");
-    public static final Category CATEGORY = new Category("Bephax", Items.ENCHANTED_GOLDEN_APPLE.getDefaultInstance());
-    public static final Category STASH = new Category("Stash Hunt", Items.ELYTRA.getDefaultInstance());
-    public static final Category STARDUST = new Category("Stardust", Items.TRIDENT.getDefaultInstance());
+    public static final Category CATEGORY = new Category("Bephax", () -> Items.ENCHANTED_GOLDEN_APPLE.getDefaultInstance());
+    public static final Category STASH = new Category("Stash Hunt", () -> Items.ELYTRA.getDefaultInstance());
+    public static final Category STARDUST = new Category("Stardust", () -> Items.TRIDENT.getDefaultInstance());
     public static final HudGroup HUD_GROUP = new HudGroup("Bephax");
     private PacketManager packetManager;
     @Override

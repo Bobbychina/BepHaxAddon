@@ -60,7 +60,7 @@ public abstract class InventoryScreenMixin extends AbstractRecipeBookScreen<Inve
             if (loadouts == null) return;
         }
         if (!loadouts.quickLoadout.get()) return;
-        saveLoadoutButton = this.addDrawableChild(
+        saveLoadoutButton = this.addRenderableWidget(
             Button.builder(
                     Component.literal(StardustUtil.rCC()+"§o✨§fSave"),
                     this::onSaveLoadoutButtonPress
@@ -69,7 +69,7 @@ public abstract class InventoryScreenMixin extends AbstractRecipeBookScreen<Inve
                 .tooltip(Tooltip.create(Component.literal("§7§oSave your current inventory to Loadouts.")))
                 .build()
         );
-        loadLoadoutButton = this.addDrawableChild(
+        loadLoadoutButton = this.addRenderableWidget(
             Button.builder(
                     Component.literal("Load"+StardustUtil.rCC()+"§o✨"),
                     this::onLoadLoadoutButtonPress

@@ -289,14 +289,14 @@ public class LivemessageGui extends Screen {
                 context.fill(0, 0, screenWidth, screenHeight, GuiUtil.getRGBA(0, 0, 0, blurAlpha));
             }
         }
-        context.getMatrices().scale(reverseGuiScale, reverseGuiScale);
+        context.pose().scale(reverseGuiScale, reverseGuiScale);
         for (LiveWindow liveWindow : liveWindows) {
             liveWindow.preDrawWindow(context);
         }
         for (LiveWindow liveWindow : liveWindows) {
             liveWindow.drawTextFields(context);
         }
-        context.getMatrices().scale((float) scl, (float) scl);
+        context.pose().scale((float) scl, (float) scl);
     }
     @Override
     public boolean shouldPause() {

@@ -434,8 +434,8 @@ public class DubCounterHud extends HudElement {
                     if (countChests.get()) {
                         if (blockEntity instanceof ChestBlockEntity || blockEntity instanceof TrappedChestBlockEntity) {
                             var blockState = blockEntity.getBlockState();
-                            if (blockState.getBlock() instanceof ChestBlock && blockState.contains(ChestBlock.TYPE)) {
-                                ChestType type = blockState.get(ChestBlock.TYPE);
+                            if (blockState.getBlock() instanceof ChestBlock && blockState.hasProperty(ChestBlock.TYPE)) {
+                                ChestType type = blockState.getValue(ChestBlock.TYPE);
                                 if (type == ChestType.SINGLE) {
                                     counts.singleChests++;
                                 } else if (type == ChestType.LEFT) {

@@ -434,14 +434,14 @@ public class ManeWindow extends LiveWindow {
             }
             int maxTextWidth = availableWidth - 10;
             String clippedText = fontRenderer.trimToWidth(buddyText, maxTextWidth);
-            context.drawText(fontRenderer, clippedText, buddyListX + 5, yPos, textColor, false);
+            context.text(fontRenderer, clippedText, buddyListX + 5, yPos, textColor, false);
             if (buddyListEntry.uuid != null) {
                 int unreads = LivemessageGui.unreadMessages.getOrDefault(buddyListEntry.uuid, 0);
                 if (unreads > 0) {
                     String unreadString = "(" + unreads + ")";
                     int unreadX = buddyListX + 5 + fontRenderer.width(clippedText + " ");
                     if (unreadX + fontRenderer.width(unreadString) < buddyListX + availableWidth - 5) {
-                        context.drawText(fontRenderer, unreadString, unreadX, yPos, getRGB(255, 255, 0), false);
+                        context.text(fontRenderer, unreadString, unreadX, yPos, getRGB(255, 255, 0), false);
                     }
                 }
             }
@@ -487,24 +487,24 @@ public class ManeWindow extends LiveWindow {
                 (mouseInRect(buddyListX + w - 10 - scrollBarWidth, buddyListY, scrollBarWidth, h - (buddyListY + 10 + footer), lastMouseX, lastMouseY)) ?
                 getSingleRGB(96) : getSingleRGB(64));
         }
-        context.drawText(fontRenderer, liveProfile.username, 42, titlebarHeight + 5, getSingleRGB(255), false);
-        context.drawText(fontRenderer, "online", 42, titlebarHeight + 5 + 11, getSingleRGB(128), false);
+        context.text(fontRenderer, liveProfile.username, 42, titlebarHeight + 5, getSingleRGB(255), false);
+        context.text(fontRenderer, "online", 42, titlebarHeight + 5 + 11, getSingleRGB(128), false);
         drawRect(context, 3, titlebarHeight + 3, 36, 36, getRGB(60, 148, 100));
         drawProfilePic(context, 5, titlebarHeight + 5, liveProfile.uuid);
         drawRect(context, 5 - 1, this.h - footer - 5 - 1, this.w - 10 + 2, footer + 2, getSingleRGB(64));
         drawRect(context, 5, this.h - footer - 5, this.w - 10, footer, getSingleRGB(24));
         if (this.searchField.getValue().trim().length() == 0)
-            context.drawText(fontRenderer, "Search...", 8, this.h - footer - 2, getSingleRGB(64), false);
+            context.text(fontRenderer, "Search...", 8, this.h - footer - 2, getSingleRGB(64), false);
         liveButtons.forEach(btn -> btn.drawTooltips(context));
     }
     @Override
     public void drawTextFields(GuiGraphicsExtractor context) {
-        context.getMatrices().translate((float)x, (float)y);
+        context.pose().translate((float)x, (float)y);
         this.searchField.setTextColor(active ? 0xFFFFFFFF : 0xFF808080);
         this.searchField.setX(8);
         this.searchField.setY(this.h - footer - 2);
         this.searchField.setWidth(this.w - 18);
-        this.searchField.render(context, lastMouseX - x, lastMouseY - y, 0);
-        context.getMatrices().translate((float)-x, (float)-y);
+        this.searchField.extractRenderState(context, lastMouseX - x, lastMouseY - y, 0);
+        context.pose().translate((float)-x, (float)-y);
     }
 }

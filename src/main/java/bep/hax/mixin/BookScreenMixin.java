@@ -87,7 +87,7 @@ public abstract class BookScreenMixin extends Screen {
             ((BookScreenContentsAccessor)(Object) this.contents).setPages(filtered);
             this.cachedPageIndex = -1;
         } else if (bookTools.skipDeobfuscation()) return;
-        this.deobfuscateButton = this.addDrawableChild(
+        this.deobfuscateButton = this.addRenderableWidget(
             Button.builder(
                     Component.literal("§0<§b§o✨§r§0> "+StardustUtil.rCC()+"§oDeobfuscate "+"§0<§a§o✨§r§0> "),
                     this::deobfuscateBook)

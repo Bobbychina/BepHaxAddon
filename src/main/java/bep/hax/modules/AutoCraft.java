@@ -58,7 +58,7 @@ public class AutoCraft extends Module {
         List<Item> itemList = items.get();
         List<RecipeCollection> recipeResultCollectionList  = mc.player.getRecipeBook().getCollections();
         for (RecipeCollection recipeResultCollection : recipeResultCollectionList) {
-            List<RecipeDisplayEntry> craftRecipes = recipeResultCollection.filter(RecipeCollection.CraftableStatus.CRAFTABLE);
+            List<RecipeDisplayEntry> craftRecipes = recipeResultCollection.getSelectedRecipes(RecipeCollection.CraftableStatus.CRAFTABLE);
             for (RecipeDisplayEntry recipe : craftRecipes) {
                 RecipeDisplay recipeDisplay = recipe.display();
                 List<ItemStack> resultStacks = recipeDisplay.result().resolveForStacks(SlotDisplayContext.fromLevel(mc.level));

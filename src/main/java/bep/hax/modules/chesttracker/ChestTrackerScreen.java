@@ -57,7 +57,7 @@ public class ChestTrackerScreen extends Screen {
             initialSearch = itemSearchBar.searchQuery.get();
         }
         searchField = new EditBox(
-            this.textRenderer,
+            this.font,
             this.width / 2 - 110,
             20,
             200,
@@ -85,7 +85,7 @@ public class ChestTrackerScreen extends Screen {
         )
         .bounds(this.width / 2 + 95, 20, 20, 20)
         .build();
-        this.addDrawableChild(clearSearchButton);
+        this.addRenderableWidget(clearSearchButton);
         sortButton = Button.builder(
             Component.literal("Sort: " + currentSortMode.getDisplayName()),
             button -> {
@@ -97,7 +97,7 @@ public class ChestTrackerScreen extends Screen {
         )
         .bounds(this.width / 2 - 220, 20, 100, 20)
         .build();
-        this.addDrawableChild(sortButton);
+        this.addRenderableWidget(sortButton);
         loadItems();
         filterItems();
     }
@@ -113,7 +113,7 @@ public class ChestTrackerScreen extends Screen {
         for (Map.Entry<String, Integer> entry : itemCounts.entrySet()) {
             Identifier id = Identifier.tryParse(entry.getKey());
             if (id != null && BuiltInRegistries.ITEM.containsKey(id)) {
-                Item item = BuiltInRegistries.ITEM.get(id);
+                Item item = BuiltInRegistries.ITEM.getValue(id);
                 allItems.add(new ItemEntry(item, entry.getValue()));
             }
         }
@@ -128,10 +128,10 @@ public class ChestTrackerScreen extends Screen {
                 allItems.sort((a, b) -> Integer.compare(a.count, b.count));
                 break;
             case NAME_ASC:
-                allItems.sort((a, b) -> a.item.getName().getString().compareToIgnoreCase(b.item.getName().getString()));
+                allItems.sort((a, b) -> new ItemStack(a.item).getHoverName().getString().compareToIgnoreCase(new ItemStack(b.item).getHoverName().getString()));
                 break;
             case NAME_DESC:
-                allItems.sort((a, b) -> b.item.getName().getString().compareToIgnoreCase(a.item.getName().getString()));
+                allItems.sort((a, b) -> new ItemStack(b.item).getHoverName().getString().compareToIgnoreCase(new ItemStack(a.item).getHoverName().getString()));
                 break;
         }
     }
@@ -144,7 +144,7 @@ public class ChestTrackerScreen extends Screen {
         } else {
             String query = searchQuery.toLowerCase();
             filteredItems = allItems.stream()
-                .filter(entry -> entry.item.getName().getString().toLowerCase().contains(query))
+                .filter(entry -> new ItemStack(entry.item).getHoverName().getString().toLowerCase().contains(query))
                 .collect(Collectors.toList());
         }
         int rows = (int) Math.ceil(filteredItems.size() / (double) ITEMS_PER_ROW);
@@ -194,13 +194,13 @@ public class ChestTrackerScreen extends Screen {
                         currentDim.contains("nether") ? "Nether" :
                         currentDim.contains("end") ? "End" : currentDim;
         context.drawCenteredTextWithShadow(
-            this.textRenderer,
+            this.font,
             "§l§eChest Tracker §r§7- " + dimName,
             this.width / 2,
             8,
             0xFFFFFF
         );
-        searchField.render(context, mouseX, mouseY, delta);
+        searchField.extractRenderState(context, mouseX, mouseY, delta);
         clearSearchButton.visible = !searchQuery.isEmpty();
         clearSearchButton.active = !searchQuery.isEmpty();
         renderItemGrid(context, mouseX, mouseY);
@@ -243,7 +243,7 @@ public class ChestTrackerScreen extends Screen {
                     context.fill(x + ITEM_SIZE - 1, y, x + ITEM_SIZE, y + ITEM_SIZE, 0xFF2A2A2A);
                     context.fill(x, y + ITEM_SIZE - 1, x + ITEM_SIZE, y + ITEM_SIZE, 0xFF2A2A2A);
                 }
-                context.drawItem(new ItemStack(entry.item), x + 1, y + 1);
+                context.item(new ItemStack(entry.item), x + 1, y + 1);
                 index++;
             }
             if (index >= maxIndex) break;
@@ -255,12 +255,12 @@ public class ChestTrackerScreen extends Screen {
         } else {
             itemCountText = String.format("§e%d §7items found (filtered from §e%d§7 total)", filteredItems.size(), allItems.size());
         }
-        int countTextWidth = this.textRenderer.getWidth(itemCountText);
+        int countTextWidth = this.font.width(itemCountText);
         int countX = this.width / 2 - countTextWidth / 2;
         int countY = 52;
         context.fill(countX - 4, countY - 2, countX + countTextWidth + 4, countY + 10, 0xDD000000);
-        context.drawText(
-            this.textRenderer,
+        context.text(
+            this.font,
             itemCountText,
             countX,
             countY,
@@ -324,7 +324,7 @@ public class ChestTrackerScreen extends Screen {
                         }
                     }
                     List<Component> tooltip = new ArrayList<>();
-                    tooltip.add(Component.literal("§f§l" + entry.item.getName().getString()));
+                    tooltip.add(Component.literal("§f§l" + new ItemStack(entry.item).getHoverName().getString()));
                     tooltip.add(Component.literal(""));
                     tooltip.add(Component.literal("§7Total Amount: §a" + formatCountFull(entry.count)));
                     tooltip.add(Component.literal("§7Found in: §e" + containers.size() + " §7container(s)"));
@@ -341,7 +341,7 @@ public class ChestTrackerScreen extends Screen {
                     if (itemSearchBar != null && itemSearchBar.isActive()) {
                         tooltip.add(Component.literal("§7(Also searches in ItemSearchBar)"));
                     }
-                    context.drawTooltip(this.textRenderer, tooltip, mouseX, mouseY);
+                    context.drawTooltip(this.font, tooltip, mouseX, mouseY);
                     return;
                 }
                 index++;
@@ -409,7 +409,7 @@ public class ChestTrackerScreen extends Screen {
         module.searchItem(entry.item);
         ItemSearchBar itemSearchBar = Modules.get().get(ItemSearchBar.class);
         if (itemSearchBar != null && itemSearchBar.isActive()) {
-            String itemName = entry.item.getName().getString();
+            String itemName = new ItemStack(entry.item).getHoverName().getString();
             itemSearchBar.updateSearchQuery(itemName);
             searchField.setValue(itemName);
             this.searchQuery = itemName;

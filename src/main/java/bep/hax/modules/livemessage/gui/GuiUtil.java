@@ -127,6 +127,6 @@ public class GuiUtil {
         context.fill(x, y + height - 1, x + width, y + height, getRGBA(80, 80, 255, 255));
         context.fill(x, y, x + 1, y + height, getRGBA(80, 80, 255, 255));
         context.fill(x + width - 1, y, x + width, y + height, getRGBA(80, 80, 255, 255));
-        context.drawText(mc.font, text, x + 4, y + 2, getSingleRGB(255), false);
+        context.text(mc.font, text, x + 4, y + 2, getSingleRGB(255), false);
     }
 }

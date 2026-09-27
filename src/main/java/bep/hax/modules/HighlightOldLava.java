@@ -27,6 +27,7 @@ import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import java.io.*;
 import java.util.HashSet;
+import net.minecraft.network.DisconnectionDetails;
 import static bep.hax.util.Utils.sendWebhook;
 public class HighlightOldLava extends Module
 {
@@ -205,7 +206,7 @@ public class HighlightOldLava extends Module
                             {
                                 new Thread(() -> sendWebhook(webhookLink.get(), "Old ChunkAccess Found", "At: " + blockPos.getX() + " " + blockPos.getZ(), (ping.get() ? discordId.get() : null), mc.player.getGameProfile().name())).start();
                             }
-                            if (disconnectOnFound.get()) mc.player.connection.onDisconnect(new ClientboundDisconnectPacket(Component.literal("[HighlightOldLava] Old lava was found.")));
+                            if (disconnectOnFound.get()) mc.player.connection.onDisconnect(new DisconnectionDetails(Component.literal("[HighlightOldLava] Old lava was found.")));
                             oldLava.add(blockPos);
                             return;
                         }

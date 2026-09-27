@@ -242,24 +242,24 @@ public class AutoBreed extends Module {
             mc.player.setXRot(Mth.clamp(pitch, -90, 90));
             Vec3 hitPos = targetPos;
             EntityHitResult hitResult = new EntityHitResult(target, hitPos);
-            InteractionResult result = mc.gameMode.interactEntityAtLocation(mc.player, target, hitResult, InteractionHand.MAIN_HAND);
+            InteractionResult result = mc.gameMode.interact(mc.player, target, hitResult, InteractionHand.MAIN_HAND);
             if (!result.consumesAction()) {
-                result = mc.gameMode.interactEntity(mc.player, target, InteractionHand.MAIN_HAND);
+                result = mc.gameMode.interact(mc.player, target, InteractionHand.MAIN_HAND);
             }
             clickCount++;
             if (debugMode.get()) {
                 ItemStack heldItem = mc.player.getMainHandItem();
                 int countBefore = heldItem.getCount();
                 ChatUtils.info("[AutoBreed] Click " + clickCount + "/" + clicksPerAnimal.get() +
-                    " on " + target.getType().getName().getString() +
+                    " on " + target.getType().getDescription().getString() +
                     " - " + (result.consumesAction() ? "ACCEPTED" : "REJECTED") +
                     " - Item count: " + countBefore);
             }
         }
         if (clickCount >= clicksPerAnimal.get()) {
-            fedAnimals.put(target.getUuid(), System.currentTimeMillis());
+            fedAnimals.put(target.getUUID(), System.currentTimeMillis());
             if (debugMode.get()) {
-                ChatUtils.info("[AutoBreed] Completed feeding " + target.getType().getName().getString());
+                ChatUtils.info("[AutoBreed] Completed feeding " + target.getType().getDescription().getString());
             }
             restoreSlot();
             resetState();
@@ -292,7 +292,7 @@ public class AutoBreed extends Module {
                 animalRotation.put(type, (idx + 1) % list.size());
                 if (debugMode.get()) {
                     ItemStack item = mc.player.getInventory().getItem(slot);
-                    ChatUtils.info("[AutoBreed] Targeting " + animal.getType().getName().getString() +
+                    ChatUtils.info("[AutoBreed] Targeting " + animal.getType().getDescription().getString() +
                         " with " + item.getHoverName().getString());
                 }
                 return;
@@ -311,7 +311,7 @@ public class AutoBreed extends Module {
                     if (animal.isBaby()) continue;
                 } catch (Exception ignored) {}
             }
-            if (fedAnimals.containsKey(animal.getUuid())) continue;
+            if (fedAnimals.containsKey(animal.getUUID())) continue;
             if (!canBreed(animal)) continue;
             if (findBreedingItemSlot(animal) == -1) continue;
             result.add(animal);
@@ -374,10 +374,10 @@ public class AutoBreed extends Module {
         return null;
     }
     private boolean canBreed(AgeableMob animal) {
-        if (animal instanceof Horse horse) return horse.isTame();
-        if (animal instanceof Donkey donkey) return donkey.isTame();
-        if (animal instanceof Wolf wolf) return wolf.isTamed();
-        if (animal instanceof Cat cat) return cat.isTamed();
+        if (animal instanceof Horse horse) return horse.isTamed();
+        if (animal instanceof Donkey donkey) return donkey.isTamed();
+        if (animal instanceof Wolf wolf) return wolf.isTame();
+        if (animal instanceof Cat cat) return cat.isTame();
         return true;
     }
     @Override

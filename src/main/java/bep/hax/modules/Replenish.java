@@ -257,7 +257,7 @@ public class Replenish extends Module {
                 return customName.getString();
             }
         }
-        return stack.getItem().getName().getString();
+        return new ItemStack(stack.getItem()).getHoverName().getString();
     }
     private int findSourceSlot(ItemStack targetStack) {
         int bestSlot = -1;

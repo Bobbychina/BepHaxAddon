@@ -418,12 +418,12 @@ public class BepCrystal extends Module {
     private boolean placeRangeCheck(BlockPos pos) {
         double placeR = placeRange.get().floatValue();
         Vec3 player = mc.player.position();
-        double dist = pos.distSqr(player.x, player.y, player.z);
+        double dist = pos.distToCenterSqr(player.x, player.y, player.z);
         if (dist > placeR * placeR) {
             return true;
         }
-        Vec3 raytrac = Vec3.of(pos).add(0.5, 2.70000004768372, 0.5);
-        BlockHitResult result = mc.level.raycast(new ClipContext(mc.player.getEyePosition(), raytrac, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, mc.player));
+        Vec3 raytrac = Vec3.atLowerCornerOf(pos).add(0.5, 2.70000004768372, 0.5);
+        BlockHitResult result = mc.level.clip(new ClipContext(mc.player.getEyePosition(), raytrac, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, mc.player));
         return false;
     }
     public boolean isCrystalHitboxClear(BlockPos pos) {
@@ -466,7 +466,7 @@ public class BepCrystal extends Module {
         for (double x = -rad; x <= rad; ++x) {
             for (double y = -rad; y <= rad; ++y) {
                 for (double z = -rad; z <= rad; ++z) {
-                    Vec3i pos = new Vec3i((int) (origin.getX() + x), (int) (origin.getY() + y), (int) (origin.getZ() + z));
+                    Vec3i pos = new Vec3i((int) (origin.x() + x), (int) (origin.y() + y), (int) (origin.z() + z));
                     final BlockPos p = new BlockPos(pos);
                     sphere.add(p);
                 }
@@ -590,7 +590,7 @@ public class BepCrystal extends Module {
             if (mc.player.getY() >= blockPos.getY()) {
                 return Direction.UP;
             }
-            BlockHitResult result = mc.level.raycast(new ClipContext(mc.player.getEyePosition(), new Vec3(x + 0.5, y + 0.5, z + 0.5), ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, mc.player));
+            BlockHitResult result = mc.level.clip(new ClipContext(mc.player.getEyePosition(), new Vec3(x + 0.5, y + 0.5, z + 0.5), ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, mc.player));
             if (result != null && result.getType() == HitResult.Type.BLOCK) {
                 return result.getDirection();
             }
@@ -598,7 +598,7 @@ public class BepCrystal extends Module {
             if (mc.level.isInWorldBounds(blockPos)) {
                 return Direction.DOWN;
             }
-            BlockHitResult result = mc.level.raycast(new ClipContext(mc.player.getEyePosition(), new Vec3(x + 0.5, y + 0.5, z + 0.5), ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, mc.player));
+            BlockHitResult result = mc.level.clip(new ClipContext(mc.player.getEyePosition(), new Vec3(x + 0.5, y + 0.5, z + 0.5), ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, mc.player));
             if (result != null && result.getType() == HitResult.Type.BLOCK) {
                 return result.getDirection();
             }
@@ -717,7 +717,7 @@ public class BepCrystal extends Module {
         return null;
     }
     private Vec3 crystalDamageVec(BlockPos pos) {
-        return Vec3.of(pos).add(0.5, 1.0, 0.5);
+        return Vec3.atLowerCornerOf(pos).add(0.5, 1.0, 0.5);
     }
     private static class DamageData<T> {
         private T damageData;

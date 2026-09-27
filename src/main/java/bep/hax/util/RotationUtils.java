@@ -289,7 +289,7 @@ public class RotationUtils {
         return new Vec3(i * j, -k, h * j);
     }
     public static boolean canSeePosition(Vec3 from, Vec3 to) {
-        BlockHitResult result = mc.level.raycast(new ClipContext(
+        BlockHitResult result = mc.level.clip(new ClipContext(
                 from, to,
                 ClipContext.Block.COLLIDER,
                 ClipContext.Fluid.NONE,

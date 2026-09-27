@@ -17,11 +17,12 @@ import meteordevelopment.meteorclient.commands.Command;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import meteordevelopment.meteorclient.utils.network.MeteorExecutor;
+import net.minecraft.client.multiplayer.ClientSuggestionProvider;
 public class Stats2b2t extends Command {
     private final String API_ENDPOINT = "/stats/player?playerName=";
     public Stats2b2t() { super("stats2b2t", "Fetch stats for a 2b2t player from api.2b2t.vc.", "stats"); }
     @Override
-    public void build(LiteralArgumentBuilder<SharedSuggestionProvider> builder) {
+    public void build(LiteralArgumentBuilder<ClientSuggestionProvider> builder) {
         builder.then(argument("player", StringArgumentType.word()).executes(ctx -> {
             MeteorExecutor.execute(() -> {
                 LocalPlayer player = mc.player;

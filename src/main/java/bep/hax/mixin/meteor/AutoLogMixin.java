@@ -29,6 +29,7 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.network.protocol.common.ClientboundDisconnectPacket;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import net.minecraft.network.DisconnectionDetails;
 @Mixin(value = AutoLog.class, remap = false)
 public abstract class AutoLogMixin extends Module {
     public AutoLogMixin(Category category, String name, String description) {
@@ -232,7 +233,7 @@ public abstract class AutoLogMixin extends Module {
         if (!Utils.canUpdate() || !isActive()) ci.cancel();
         if (didLog && System.currentTimeMillis() - requestedDcAt >= 1337) {
             LogUtil.warn("Detected illegal disconnect failure, falling back on regular disconnect (try adjusting your illegal disconnect method config setting).");
-            if (mc.getConnection() != null) mc.getConnection().onDisconnect(new ClientboundDisconnectPacket(disconnectReason));
+            if (mc.getConnection() != null) mc.getConnection().onDisconnect(new DisconnectionDetails(disconnectReason));
             disconnectReason = null;
             didLog = false;
             requestedDcAt = 0L;
@@ -323,7 +324,7 @@ public abstract class AutoLogMixin extends Module {
             disconnectReason = Component.literal("§8[§a§oAutoLog§8] §f" + reason);
             StardustUtil.illegalDisconnect(true, StardustConfig.illegalDisconnectMethodSetting.get());
         } else {
-            mc.player.connection.onDisconnect(new ClientboundDisconnectPacket(Component.literal("[AutoLog] " + reason)));
+            mc.player.connection.onDisconnect(new DisconnectionDetails(Component.literal("[AutoLog] " + reason)));
         }
     }
     @Inject(method = "disconnect(Lnet/minecraft/network/chat/Component;)V", at = @At("HEAD"), cancellable = true, remap = true)

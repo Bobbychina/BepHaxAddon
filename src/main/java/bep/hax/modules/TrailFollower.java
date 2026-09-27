@@ -30,6 +30,7 @@ import xaeroplus.module.impl.OldChunks;
 import xaeroplus.module.impl.PaletteNewChunks;
 import java.time.Duration;
 import java.util.ArrayDeque;
+import net.minecraft.network.DisconnectionDetails;
 import static bep.hax.util.Utils.positionInDirection;
 import static bep.hax.util.Utils.sendWebhook;
 public class TrailFollower extends Module
@@ -421,7 +422,7 @@ public class TrailFollower extends Module
                 }
                 case DISCONNECT:
                 {
-                    mc.player.connection.onDisconnect(new ClientboundDisconnectPacket(Component.literal("[TrailFollower] Trail timed out.")));
+                    mc.player.connection.onDisconnect(new DisconnectionDetails(Component.literal("[TrailFollower] Trail timed out.")));
                     break;
                 }
             }

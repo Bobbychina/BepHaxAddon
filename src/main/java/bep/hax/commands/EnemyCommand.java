@@ -5,13 +5,14 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import meteordevelopment.meteorclient.commands.Command;
 import meteordevelopment.meteorclient.systems.friends.Friends;
 import net.minecraft.commands.SharedSuggestionProvider;
+import net.minecraft.client.multiplayer.ClientSuggestionProvider;
 import static com.mojang.brigadier.Command.SINGLE_SUCCESS;
 public class EnemyCommand extends Command {
     public EnemyCommand() {
         super("enemy", "Manage friends marked as enemies");
     }
     @Override
-    public void build(LiteralArgumentBuilder<SharedSuggestionProvider> builder) {
+    public void build(LiteralArgumentBuilder<ClientSuggestionProvider> builder) {
         builder.then(literal("add")
             .then(argument("name", StringArgumentType.word())
                 .executes(context -> {

@@ -4,12 +4,13 @@ import meteordevelopment.meteorclient.commands.Command;
 import meteordevelopment.meteorclient.utils.render.MeteorToast;
 import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.world.item.Items;
+import net.minecraft.client.multiplayer.ClientSuggestionProvider;
 public class Coordinates extends Command {
     public Coordinates() {
         super("coordinates", "Copies your coordinates to the clipboard.", "coords");
     }
     @Override
-    public void build(LiteralArgumentBuilder<SharedSuggestionProvider> builder) {
+    public void build(LiteralArgumentBuilder<ClientSuggestionProvider> builder) {
         builder.executes(context -> {
             mc.keyboardHandler.setClipboard("%d, %d, %d".formatted(mc.player.blockPosition().getX(), mc.player.blockPosition().getY(), mc.player.blockPosition().getZ()));
             mc.getToastManager().addToast(new MeteorToast.Builder("Coordinates")

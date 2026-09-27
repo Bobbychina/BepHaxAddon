@@ -11,6 +11,7 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraft.network.protocol.common.ClientboundDisconnectPacket;
 import net.minecraft.network.chat.Component;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.DisconnectionDetails;
 import java.io.*;
 import static meteordevelopment.meteorclient.utils.player.ChatUtils.info;
 import static bep.hax.util.Utils.*;
@@ -104,7 +105,7 @@ public class Rectangle extends SearchAreaMode
         }
         if (goingToStart)
         {
-            if (Math.sqrt(mc.player.blockPosition().distSqr(pd.currPos.getX(), mc.player.getY(), pd.currPos.getZ())) < 5)
+            if (Math.sqrt(mc.player.blockPosition().distToCenterSqr(pd.currPos.getX(), mc.player.getY(), pd.currPos.getZ())) < 5)
             {
                 goingToStart = false;
                 mc.player.setDeltaMovement(0, 0, 0);
@@ -119,7 +120,7 @@ public class Rectangle extends SearchAreaMode
         }
         setPressed(mc.options.keyUp, true);
         mc.player.setYRot(pd.yawDirection);
-        if (Math.sqrt(mc.player.blockPosition().distSqr(pd.targetPos.getX(), mc.player.getY(), pd.targetPos.getZ())) < 20)
+        if (Math.sqrt(mc.player.blockPosition().distToCenterSqr(pd.targetPos.getX(), mc.player.getY(), pd.targetPos.getZ())) < 20)
         {
             setPressed(mc.options.keyUp, false);
             searchArea.toggle();
@@ -127,7 +128,7 @@ public class Rectangle extends SearchAreaMode
             {
                 var autoReconnect = Modules.get().get(AutoReconnect.class);
                 if (autoReconnect.isActive()) autoReconnect.toggle();
-                mc.player.connection.onDisconnect(new ClientboundDisconnectPacket(Component.literal("[Search Area] Path is complete")));
+                mc.player.connection.onDisconnect(new DisconnectionDetails(Component.literal("[Search Area] Path is complete")));
             }
         }
         else if (pd.mainPath && ((pd.yawDirection == -90.0f && mc.player.getX() >= (Math.max(pd.initialPos.getX(), pd.targetPos.getX())))) ||

@@ -116,7 +116,7 @@ public class LiveWindow {
                         argb);
                 }
             } else if (!btnText.isEmpty()) {
-                context.drawText(fontRenderer, btnText, gx() + bw / 2 - fontRenderer.width(btnText) / 2, by + 2, textColor, false);
+                context.text(fontRenderer, btnText, gx() + bw / 2 - fontRenderer.width(btnText) / 2, by + 2, textColor, false);
             }
         }
         public void drawTooltips(GuiGraphicsExtractor context) {
@@ -137,7 +137,7 @@ public class LiveWindow {
             if (y < 0) y = lastMouseY - LiveWindow.this.y + 15;
             drawRect(context, x - 1, y - 1, tooltipWidth + 2, tooltipHeight + 2, getSingleRGB(255));
             drawRect(context, x, y, tooltipWidth, tooltipHeight, getRGB(32, 32, 32));
-            context.drawText(fontRenderer, text, x + padding, y + padding, getSingleRGB(255), false);
+            context.text(fontRenderer, text, x + padding, y + padding, getSingleRGB(255), false);
         }
     }
     public void mouseReleased(int mouseX, int mouseY, int state) {
@@ -233,11 +233,11 @@ public class LiveWindow {
             w = Math.max(LivemessageGui.screenWidth, minw);
         if (y + h > LivemessageGui.screenHeight)
             h = Math.max(LivemessageGui.screenHeight, minh);
-        context.getMatrices().translate((float)x, (float)y);
+        context.pose().translate((float)x, (float)y);
         int bgColor = getRGB(32, 32, 32);
         int fgColor = active ? primaryColor : getRGB(128, 128, 128);
         drawWindow(context, bgColor, fgColor);
-        context.getMatrices().translate((float)-x, (float)-y);
+        context.pose().translate((float)-x, (float)-y);
     }
     public void drawTextFields(GuiGraphicsExtractor context) {
     }
@@ -245,7 +245,7 @@ public class LiveWindow {
         drawRect(context, 0, 0, w, h, bgColor);
         drawRectOutline(context, 0, 0, w, h, fgColor);
         drawRect(context, 0, 0, w, titlebarHeight, fgColor);
-        context.drawText(fontRenderer, title, 5, 5, 0xFFFFFF, false);
+        context.text(fontRenderer, title, 5, 5, 0xFFFFFF, false);
         if (closeButton) {
             drawRect(context, w - 13, 3, 11, 11, bgColor);
             int closeX = w - 13;

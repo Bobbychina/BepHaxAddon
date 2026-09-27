@@ -175,8 +175,8 @@ public class ChestIndex extends Module
                 JsonObject json = new JsonObject();
                 for (Map.Entry<String, Integer> entry : sortedBlocks) {
                     Identifier identifier = Identifier.tryParse(entry.getKey());
-                    Item item = BuiltInRegistries.ITEM.get(identifier);
-                    String displayName = item.getName().getString();
+                    Item item = BuiltInRegistries.ITEM.getValue(identifier);
+                    String displayName = new ItemStack(item).getHoverName().getString();
                     json.add(displayName, new JsonPrimitive(entry.getValue()));
                 }
                 saveToJson(gson, "blocks_name", json);
@@ -192,8 +192,8 @@ public class ChestIndex extends Module
                 JsonObject json = new JsonObject();
                 for (Map.Entry<String, Integer> entry : sortedBlocks) {
                     Identifier identifier = Identifier.tryParse(entry.getKey());
-                    Item item = BuiltInRegistries.ITEM.get(identifier);
-                    String displayName = item.getName().getString();
+                    Item item = BuiltInRegistries.ITEM.getValue(identifier);
+                    String displayName = new ItemStack(item).getHoverName().getString();
                     int stackSize = item.getDefaultMaxStackSize();
                     double dubs = entry.getValue() / (stackSize * 27.0 * 54.0);
                     json.add(displayName, new JsonPrimitive(String.format("%.2f", dubs)));
@@ -212,8 +212,8 @@ public class ChestIndex extends Module
                 for (Map.Entry<String, Integer> entry : sortedBlocks) {
                     try {
                         Identifier identifier = Identifier.tryParse(entry.getKey());
-                        Item item = BuiltInRegistries.ITEM.get(identifier);
-                        String displayName =item.getName().getString();
+                        Item item = BuiltInRegistries.ITEM.getValue(identifier);
+                        String displayName =new ItemStack(item).getHoverName().getString();
                         int stackSize = item.getDefaultMaxStackSize();
                         double shulkers = entry.getValue() / (stackSize * 27.0);
                         json.add(displayName, new JsonPrimitive(String.format("%.2f", shulkers)));
@@ -284,10 +284,10 @@ public class ChestIndex extends Module
                     currPos[0] = blockPos.immutable();
                     if (blockState.getBlock() == Blocks.CHEST || blockState.getBlock() == Blocks.TRAPPED_CHEST)
                     {
-                        ChestType chestType = blockState.get(ChestBlock.TYPE);
+                        ChestType chestType = blockState.getValue(ChestBlock.TYPE);
                         if (chestType == ChestType.LEFT || chestType == ChestType.RIGHT)
                         {
-                            Direction facing = blockState.get(ChestBlock.FACING);
+                            Direction facing = blockState.getValue(ChestBlock.FACING);
                             BlockPos otherPartPos = blockPos.offset(chestType == ChestType.LEFT ? facing.getClockWise() : facing.getCounterClockWise());
                             currPos[1] = otherPartPos;
                         }

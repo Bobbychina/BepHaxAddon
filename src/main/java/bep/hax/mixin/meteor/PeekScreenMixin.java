@@ -70,7 +70,7 @@ public abstract class PeekScreenMixin extends ShulkerBoxScreen {
         bephax$searchField.setFocused(false);
         bephax$searchField.setEditable(true);
         bephax$searchField.setVisible(true);
-        this.addDrawableChild(bephax$searchField);
+        this.addRenderableWidget(bephax$searchField);
     }
     @Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true)
     private void onMouseClicked(MouseButtonEvent click, boolean doubled, CallbackInfoReturnable<Boolean> cir) {

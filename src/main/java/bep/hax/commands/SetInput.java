@@ -4,13 +4,14 @@ import meteordevelopment.meteorclient.commands.Command;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import bep.hax.modules.StashMover;
 import net.minecraft.commands.SharedSuggestionProvider;
+import net.minecraft.client.multiplayer.ClientSuggestionProvider;
 import static meteordevelopment.meteorclient.MeteorClient.mc;
 public class SetInput extends Command {
     public SetInput() {
         super("setinput", "Start input area selection for StashMover module");
     }
     @Override
-    public void build(LiteralArgumentBuilder<SharedSuggestionProvider> builder) {
+    public void build(LiteralArgumentBuilder<ClientSuggestionProvider> builder) {
         builder.executes(context -> {
             if (mc.player == null) {
                 error("Player is null!");

@@ -4,13 +4,14 @@ import meteordevelopment.meteorclient.commands.Command;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import bep.hax.modules.StashMover;
 import net.minecraft.commands.SharedSuggestionProvider;
+import net.minecraft.client.multiplayer.ClientSuggestionProvider;
 import static meteordevelopment.meteorclient.MeteorClient.mc;
 public class SetOutput extends Command {
     public SetOutput() {
         super("setoutput", "Start output area selection for StashMover module");
     }
     @Override
-    public void build(LiteralArgumentBuilder<SharedSuggestionProvider> builder) {
+    public void build(LiteralArgumentBuilder<ClientSuggestionProvider> builder) {
         builder.executes(context -> {
             if (mc.player == null) return 0;
             StashMover module = Modules.get().get(StashMover.class);

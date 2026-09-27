@@ -61,25 +61,25 @@ public class EntityUtil {
             return enderman.isAngry();
         }
         if (entity instanceof ZombifiedPiglin zombifiedPiglin) {
-            return zombifiedPiglin.isAttacking();
+            return zombifiedPiglin.isAggressive();
         }
         if (entity instanceof Wolf wolf) {
-            return wolf.isAttacking();
+            return wolf.isAggressive();
         }
         if (entity instanceof Piglin piglin) {
-            return piglin.isAttacking();
+            return piglin.isAggressive();
         }
         if (entity instanceof Bee bee) {
-            return bee.hasAngerTime();
+            return bee.isAngry();
         }
         if (entity instanceof PolarBear polarBear) {
-            return polarBear.isAttacking();
+            return polarBear.isAggressive();
         }
         if (entity instanceof Llama llama) {
-            return llama.isAttacking();
+            return llama.isAggressive();
         }
         if (entity instanceof IronGolem ironGolem) {
-            return ironGolem.isAttacking();
+            return ironGolem.isAggressive();
         }
         if (entity instanceof Spider || entity instanceof CaveSpider) {
             return entity.level().getSkyDarken() >= 0.5f;

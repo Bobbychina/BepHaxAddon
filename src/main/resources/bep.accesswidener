@@ -6,13 +6,13 @@ accessible method net/minecraft/client/multiplayer/MultiPlayerGameMode startPred
 accessible method net/minecraft/client/multiplayer/ClientLevel getBlockStatePredictionHandler ()Lnet/minecraft/client/multiplayer/prediction/BlockStatePredictionHandler;
 accessible method com/mojang/blaze3d/platform/NativeImage setPixelABGR (III)V
 
-accessible class net/minecraft/network/packet/c2s/play/PlayerInteractEntityC2SPacket$InteractType
-accessible class net/minecraft/network/packet/c2s/play/PlayerInteractEntityC2SPacket$InteractTypeHandler
-accessible method net/minecraft/network/protocol/game/ServerboundInteractPacket$Action getType ()Lnet/minecraft/network/protocol/game/ServerboundInteractPacket$ActionType;
+# removed: accessible class net/minecraft/network/packet/c2s/play/PlayerInteractEntityC2SPacket$InteractType  (26.1.2 无此嵌套类)
+# removed: accessible class net/minecraft/network/packet/c2s/play/PlayerInteractEntityC2SPacket$InteractTypeHandler  (26.1.2 无此嵌套类)
+# removed: accessible method net/minecraft/network/protocol/game/ServerboundInteractPacket$Action getType ()Lnet/minecraft/network/protocol/game/ServerboundInteractPacket$ActionType;  (26.1.2 无此嵌套类)
 
 # Access widener for ItemSearchBar GUI functionality
 accessible method net/minecraft/client/gui/screens/Screen addRenderableWidget (Lnet/minecraft/client/gui/components/events/GuiEventListener;)Lnet/minecraft/client/gui/components/events/GuiEventListener;
-accessible class net/minecraft/network/packet/c2s/play/PlayerInteractEntityC2SPacket$InteractType
+# removed: accessible class net/minecraft/network/packet/c2s/play/PlayerInteractEntityC2SPacket$InteractType  (26.1.2 无此嵌套类)
 accessible field net/minecraft/network/protocol/game/VecDeltaCodec base Lnet/minecraft/world/phys/Vec3;
 # Removed: HeldItemRenderer equip progress fields - may have been renamed or removed in 1.21.10
 # accessible field net/minecraft/client/render/item/HeldItemRenderer prevEquipProgressMainHand F

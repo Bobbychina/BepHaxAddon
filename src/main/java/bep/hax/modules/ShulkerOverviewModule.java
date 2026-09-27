@@ -94,9 +94,9 @@ public class ShulkerOverviewModule extends Module {
             int count = cached.itemCounts.getOrDefault(item, 0);
             String debug = String.format("Items: %d, Most: %s x%d",
                 cached.itemCounts.size(),
-                item.getName().getString(),
+                new ItemStack(item).getHoverName().getString(),
                 count);
-            context.drawText(mc.font, debug, x, y - 10, 0xFFFFFF, true);
+            context.text(mc.font, debug, x, y - 10, 0xFFFFFF, true);
         }
         int iconSize = this.iconSize.get();
         int iconX, iconY;
@@ -122,16 +122,16 @@ public class ShulkerOverviewModule extends Module {
                 iconY = y + 16 - iconSize;
             }
         }
-        context.getMatrices().pushMatrix();
+        context.pose().pushMatrix();
         if (iconSize == 16) {
-            context.drawItem(new ItemStack(item), iconX, iconY);
+            context.item(new ItemStack(item), iconX, iconY);
         } else {
             float scale = iconSize / 16.0f;
-            context.getMatrices().translate(iconX, iconY);
-            context.getMatrices().scale(scale, scale);
-            context.drawItem(new ItemStack(item), 0, 0);
+            context.pose().translate(iconX, iconY);
+            context.pose().scale(scale, scale);
+            context.item(new ItemStack(item), 0, 0);
         }
-        context.getMatrices().popMatrix();
+        context.pose().popMatrix();
         if (hasMultiple && !multipleText.get().isEmpty()) {
             renderMultipleIndicator(context, x, y, multipleText.get(), multipleSize.get());
         }
@@ -141,7 +141,7 @@ public class ShulkerOverviewModule extends Module {
         int textWidth = mc.font.width(text);
         int textX = slotX + 16 - textWidth - 1;
         int textY = slotY + 1;
-        context.drawText(mc.font, text, textX, textY, 0xFFFFFF00, true);
+        context.text(mc.font, text, textX, textY, 0xFFFFFF00, true);
     }
     public enum IconPosition {
         BottomRight,

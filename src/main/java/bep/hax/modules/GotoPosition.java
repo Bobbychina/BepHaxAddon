@@ -11,6 +11,7 @@ import net.minecraft.network.protocol.common.ClientboundDisconnectPacket;
 import net.minecraft.network.chat.Component;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.network.DisconnectionDetails;
 public class GotoPosition extends Module
 {
     private final SettingGroup sgGeneral = settings.getDefaultGroup();
@@ -33,7 +34,7 @@ public class GotoPosition extends Module
     @Override
     public void onActivate()
     {
-        double distance = Math.sqrt(mc.player.blockPosition().distSqr(target.get().getX(), mc.player.getY(), target.get().getZ()));
+        double distance = Math.sqrt(mc.player.blockPosition().distToCenterSqr(target.get().getX(), mc.player.getY(), target.get().getZ()));
         long totalSeconds = (long)(distance / 70);
         long hours = totalSeconds / 3600;
         long minutes = (totalSeconds % 3600) / 60;
@@ -50,7 +51,7 @@ public class GotoPosition extends Module
     @EventHandler
     private void onTick(TickEvent.Post event)
     {
-        if (Math.sqrt(mc.player.blockPosition().distSqr(target.get().getX(), mc.player.getY(), target.get().getZ())) > 5)
+        if (Math.sqrt(mc.player.blockPosition().distToCenterSqr(target.get().getX(), mc.player.getY(), target.get().getZ())) > 5)
         {
             mc.player.setYRot((float) Rotations.getYaw(new Vec3(target.get().getX(), (int) mc.player.getY(), target.get().getZ())));
             mc.options.keyUp.setDown(true);
@@ -63,7 +64,7 @@ public class GotoPosition extends Module
             mc.player.setDeltaMovement(0, 0, 0);
             if (disconnectOnComplete.get())
             {
-                mc.player.connection.onDisconnect(new ClientboundDisconnectPacket(Component.literal("[GotoPosition] You are at your destination!")));
+                mc.player.connection.onDisconnect(new DisconnectionDetails(Component.literal("[GotoPosition] You are at your destination!")));
             }
             target.reset();
             this.toggle();

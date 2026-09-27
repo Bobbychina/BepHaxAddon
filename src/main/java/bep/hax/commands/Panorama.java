@@ -20,6 +20,7 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import meteordevelopment.meteorclient.events.world.TickEvent;
 import meteordevelopment.meteorclient.utils.files.StreamUtils;
+import net.minecraft.client.multiplayer.ClientSuggestionProvider;
 public class Panorama extends Command {
     public Panorama() {
         super("panorama", "Takes a panorama and saves it to a custom resource pack for the main menu screen.", "take");
@@ -110,7 +111,7 @@ public class Panorama extends Command {
         }
     }
     @Override
-    public void build(LiteralArgumentBuilder<SharedSuggestionProvider> builder) {
+    public void build(LiteralArgumentBuilder<ClientSuggestionProvider> builder) {
         builder.then(
             argument("name", StringArgumentType.word()).executes(ctx -> {
                 String name = ctx.getArgument("name", String.class);
