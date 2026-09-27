@@ -7,6 +7,6 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 @Mixin(Options.class)
 public interface GameOptionsAccessor {
     @Mutable
-    @Accessor("viewDistance")
+    @Accessor("renderDistance") // 26.1: viewDistance -> renderDistance
     void setViewDistance(OptionInstance<Integer> viewDistance);
 }

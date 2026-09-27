@@ -11,7 +11,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(BlockBehaviour.BlockStateBase.class)
 public abstract class AbstractBlockStateMixin {
-    @Inject(method = "calcBlockBreakingDelta", at = @At("RETURN"), cancellable = true)
+    @Inject(method = "getDestroyProgress", at = @At("RETURN"), cancellable = true) // 26.1: calcBlockBreakingDelta -> getDestroyProgress
     private void onCalcBlockBreakingDelta(Player player, BlockGetter world, BlockPos pos, CallbackInfoReturnable<Float> info) {
         BepMine bepMine = Modules.get().get(BepMine.class);
         if (bepMine != null && bepMine.isActive()) {

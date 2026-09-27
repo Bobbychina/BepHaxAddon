@@ -15,7 +15,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class DrawContextMixin {
     @Shadow
     public abstract void fill(int x1, int y1, int x2, int y2, int color);
-    @Inject(method = "drawItem(Lnet/minecraft/world/item/ItemStack;II)V", at = @At("HEAD"))
+    @Inject(method = "item(Lnet/minecraft/world/item/ItemStack;II)V", at = @At("HEAD")) // 26.1: drawItem -> item
     private void highlightNamedItems(ItemStack stack, int x, int y, CallbackInfo ci) {
         Modules modules = Modules.get();
         if (modules == null) return;
@@ -29,7 +29,7 @@ public abstract class DrawContextMixin {
             this.fill(x - 1, y - 1, x + 17, y + 17, isb.highlightColor.get().getPacked());
         }
     }
-    @Inject(method = "drawItemWithoutEntity(Lnet/minecraft/world/item/ItemStack;III)V", at = @At("HEAD"))
+    @Inject(method = "item(Lnet/minecraft/world/item/ItemStack;III)V", at = @At("HEAD")) // 26.1: drawItemWithoutEntity -> item
     private void highlightNamedItemsNoEntity(ItemStack stack, int x, int y, int seed, CallbackInfo ci) {
         Modules modules = Modules.get();
         if (modules == null) return;

@@ -20,7 +20,7 @@ public abstract class WeightedSoundSetMixin implements Weighted<Sound> {
     private static final Random RANDOM = new Random();
     @Shadow
     @Final
-    private List<Weighted<Sound>> sounds;
+    private List<Weighted<Sound>> list; // 26.1: sounds -> list
     @Inject(method = "getSound(Lnet/minecraft/util/RandomSource;)Lnet/minecraft/client/resources/sounds/Sound;", at = @At("HEAD"), cancellable = true)
     private void mixinGetSound(net.minecraft.util.RandomSource random, CallbackInfoReturnable<Sound> cir) {
         Modules modules = Modules.get();
@@ -28,7 +28,7 @@ public abstract class WeightedSoundSetMixin implements Weighted<Sound> {
         MusicTweaks tweaks = modules.get(MusicTweaks.class);
         if (tweaks == null || !tweaks.isActive()) return;
         boolean overwrite = false;
-        for (Weighted<Sound> sound : this.sounds) {
+        for (Weighted<Sound> sound : this.list) {
             String id = sound.getSound(random).toString();
             if (id.contains("minecraft:music/")) {
                 overwrite = true;

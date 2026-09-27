@@ -22,19 +22,19 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(value = FireworkRocketEntity.class)
 public abstract class FireworkRocketEntityMixin implements ItemSupplier {
     @Shadow
-    private LivingEntity shooter;
+    private LivingEntity attachedToEntity; // 26.1: shooter -> attachedToEntity
     @Unique
     private RocketMan rm;
     @Inject(method = "tick", at = @At("HEAD"))
     private void createTrackedRocketEntity(CallbackInfo ci) {
-        if (this.shooter == null) return;
+        if (this.attachedToEntity == null) return;
         if (this.rm == null) {
             Modules modules = Modules.get();
             if (modules == null) return;
             rm = modules.get(RocketMan.class);
         }
         if (!rm.getClientInstance().player.isFallFlying()) return;
-        if (!this.shooter.getUUID().equals(rm.getClientInstance().player.getUUID())) return;
+        if (!this.attachedToEntity.getUUID().equals(rm.getClientInstance().player.getUUID())) return;
         if (!rm.isActive() || rm.currentRocket == (Object)this) return;
         LocalPlayer player = rm.getClientInstance().player;
         if (rm.currentRocket != null) {
@@ -59,7 +59,7 @@ public abstract class FireworkRocketEntityMixin implements ItemSupplier {
         if (!rm.isActive() || !rm.boostSpeed.get()) return multiplier;
         return rm.getRocketBoostAcceleration();
     }
-    @Inject(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/LivingEntity;getVelocity()Lnet/minecraft/world/phys/Vec3;"))
+    @Inject(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/LivingEntity;getDeltaMovement()Lnet/minecraft/world/phys/Vec3;")) // 26.1: getVelocity -> getDeltaMovement
     private void spoofRotationVector(CallbackInfo ci, @Local(ordinal = 0) LocalRef<Vec3> rotationVec) {
         if (this.rm == null) {
             Modules modules = Modules.get();
@@ -73,7 +73,7 @@ public abstract class FireworkRocketEntityMixin implements ItemSupplier {
         float i = Mth.sin(g);
         rotationVec.set(new Vec3(i, -1, h));
     }
-    @Inject(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/projectile/FireworkRocketEntity;explodeAndRemove(Lnet/minecraft/server/level/ServerLevel;)V"), cancellable = true)
+    @Inject(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/projectile/FireworkRocketEntity;explode(Lnet/minecraft/server/level/ServerLevel;)V"), cancellable = true) // 26.1: explodeAndRemove -> explode
     private void extendFireworkDuration(CallbackInfo ci) {
         if (this.rm == null) {
             Modules modules = Modules.get();

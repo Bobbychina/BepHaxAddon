@@ -24,11 +24,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class ClientPlayerEntityMixin {
     @Shadow public ClientInput input;
     @Shadow public abstract boolean isUsingItem();
-    @Shadow public abstract boolean isSneaking();
+    @Shadow public abstract boolean isCrouching(); // 26.1: isSneaking -> isCrouching
 
     // Note: playSoundToPlayer method removed in 1.21.11
 
-    @Inject(method = "pushOutOfBlocks", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "moveTowardsClosestSpace", at = @At("HEAD"), cancellable = true) // 26.1: pushOutOfBlocks -> moveTowardsClosestSpace
     private void onPushOutOfBlocks(double x, double z, CallbackInfo ci) {
         PushOutOfBlocksEvent event = new PushOutOfBlocksEvent();
         MeteorClient.EVENT_BUS.post(event);
@@ -42,7 +42,7 @@ public abstract class ClientPlayerEntityMixin {
         if (player == null) return;
         bephax$checkStartEating(player);
     }
-    @Inject(method = "tickMovement", at = @At(value = "FIELD", target = "Lnet/minecraft/client/player/LocalPlayer;input:Lnet/minecraft/client/player/ClientInput;", ordinal = 0, shift = At.Shift.AFTER))
+    @Inject(method = "aiStep", at = @At(value = "FIELD", target = "Lnet/minecraft/client/player/LocalPlayer;input:Lnet/minecraft/client/player/ClientInput;", ordinal = 0, shift = At.Shift.AFTER))
     private void bephax$multiplyInputAfterInputTick(CallbackInfo ci) {
         LocalPlayer player = (LocalPlayer) (Object) this;
         NoSlow noSlow = Modules.get().get(NoSlow.class);
@@ -62,14 +62,14 @@ public abstract class ClientPlayerEntityMixin {
             inputAccessor.setMovementForward(inputAccessor.getMovementForward() * multiplier);
             inputAccessor.setMovementSideways(inputAccessor.getMovementSideways() * multiplier);
         }
-        if (noSlow.sneaking() && isSneaking()) {
+        if (noSlow.sneaking() && isCrouching()) {
             float sneakMultiplier = 1.0f / 0.3f;
             InputAccessor inputAccessor = (InputAccessor) input;
             inputAccessor.setMovementForward(inputAccessor.getMovementForward() * sneakMultiplier);
             inputAccessor.setMovementSideways(inputAccessor.getMovementSideways() * sneakMultiplier);
         }
     }
-    @Inject(method = "tickMovement", at = @At("TAIL"))
+    @Inject(method = "aiStep", at = @At("TAIL")) // 26.1: tickMovement -> aiStep
     private void bephax$handleManualEatingAtTail(CallbackInfo ci) {
         LocalPlayer player = (LocalPlayer) (Object) this;
         bephax$handleManualEating(player);
@@ -77,7 +77,7 @@ public abstract class ClientPlayerEntityMixin {
     @Unique
     private boolean bephax$shouldMultiplyInput(NoSlow noSlow) {
         LocalPlayer player = (LocalPlayer) (Object) this;
-        if (player.isPassenger() || isSneaking()) return false;
+        if (player.isPassenger() || isCrouching()) return false;
         return isUsingItem() && noSlow.items();
     }
     @Unique

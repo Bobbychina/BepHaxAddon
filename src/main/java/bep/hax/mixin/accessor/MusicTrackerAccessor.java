@@ -5,8 +5,8 @@ import net.minecraft.client.resources.sounds.SoundInstance;
 import org.spongepowered.asm.mixin.gen.Accessor;
 @Mixin(MusicManager.class)
 public interface MusicTrackerAccessor {
-    @Accessor("timeUntilNextSong")
+    @Accessor("nextSongDelay") // 26.1: timeUntilNextSong -> nextSongDelay
     void setTimeUntilNextSong(int time);
-    @Accessor("current")
+    @Accessor("currentMusic") // 26.1: current -> currentMusic
     SoundInstance getCurrent();
 }

@@ -18,7 +18,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.regex.Matcher;
 @Mixin(ChatComponent.class)
 public class ChatHudMixin {
-    @Inject(method = "addMessage(Lnet/minecraft/network/chat/Component;Lnet/minecraft/network/chat/MessageSignature;Lnet/minecraft/client/GuiMessageTag;)V", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "addPlayerMessage(Lnet/minecraft/network/chat/Component;Lnet/minecraft/network/chat/MessageSignature;Lnet/minecraft/client/multiplayer/chat/GuiMessageTag;)V", at = @At("HEAD"), cancellable = true)
     private void onLivemessageAddMessage(Component message, MessageSignature signature, GuiMessageTag indicator, CallbackInfo ci) {
         if (!LiveMessage.INSTANCE.isActive()) return;
         Minecraft mc = Minecraft.getInstance();
@@ -50,7 +50,7 @@ public class ChatHudMixin {
         }
     }
     @ModifyVariable(
-        method = "addMessage(Lnet/minecraft/network/chat/Component;Lnet/minecraft/network/chat/MessageSignature;Lnet/minecraft/client/GuiMessageTag;)V",
+        method = "addPlayerMessage(Lnet/minecraft/network/chat/Component;Lnet/minecraft/network/chat/MessageSignature;Lnet/minecraft/client/multiplayer/chat/GuiMessageTag;)V",
         at = @At("HEAD"),
         argsOnly = true
     )
@@ -62,12 +62,17 @@ public class ChatHudMixin {
         MutableComponent mText = Component.literal(antiToS.censorText(message.getString()));
         return (antiToS.containsBlacklistedText(message.getString()) ? mText.setStyle(message.getStyle()) : message);
     }
-    @Inject(method = "addMessage(Lnet/minecraft/network/chat/Component;)V", at = @At("HEAD"), cancellable = true)
+    // 26.1: addMessage(Component) 拆成 addClientSystemMessage / addServerSystemMessage，两条都挂
+    @Inject(method = "addClientSystemMessage(Lnet/minecraft/network/chat/Component;)V", at = @At("HEAD"), cancellable = true)
     private void maybeCancelAddMessage(Component message, CallbackInfo ci) {
         Modules modules = Modules.get();
         if (modules == null) return;
         AntiToS antiToS = modules.get(AntiToS.class);
         if (!antiToS.isActive()) return;
         if (antiToS.chatMode.get() == AntiToS.ChatMode.Remove && antiToS.containsBlacklistedText(message.getString())) ci.cancel();
+    }
+    @Inject(method = "addServerSystemMessage(Lnet/minecraft/network/chat/Component;)V", at = @At("HEAD"), cancellable = true)
+    private void maybeCancelAddServerSystemMessage(Component message, CallbackInfo ci) {
+        maybeCancelAddMessage(message, ci);
     }
 }

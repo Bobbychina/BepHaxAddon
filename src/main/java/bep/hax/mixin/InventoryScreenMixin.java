@@ -81,7 +81,7 @@ public abstract class InventoryScreenMixin extends AbstractRecipeBookScreen<Inve
         if (saveLoadoutButton != null) saveLoadoutButton.visible = loadouts.isActive();
         if (loadLoadoutButton != null) loadLoadoutButton.visible = loadouts.isActive();
     }
-    @Inject(method = "render", at = @At("TAIL"))
+    @Inject(method = "extractRenderState", at = @At("TAIL")) // 26.1: render -> extractRenderState
     private void mixinRender(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
         if (loadouts == null) {
             Modules modules = Modules.get();
@@ -97,7 +97,7 @@ public abstract class InventoryScreenMixin extends AbstractRecipeBookScreen<Inve
             loadLoadoutButton.visible = loadouts.isActive();
         }
     }
-    @Inject(method = "handledScreenTick", at = @At("HEAD"))
+    @Inject(method = "containerTick", at = @At("HEAD")) // 26.1: handledScreenTick -> containerTick
     private void animateButtons(CallbackInfo ci) {
         if (loadouts == null) {
             Modules modules = Modules.get();

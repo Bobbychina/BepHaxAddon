@@ -12,12 +12,12 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(AbstractContainerScreen.class)
 public class NoUnstackableDragMixin<T extends AbstractContainerMenu> {
-    @Shadow @Final protected T handler;
+    @Shadow @Final protected T menu; // 26.1: handler -> menu
     @Inject(method = "mouseDragged", at = @At("HEAD"), cancellable = true)
     public void mouseDragged(MouseButtonEvent click, double deltaX, double deltaY, CallbackInfoReturnable<Boolean> cir) {
         InvFix module = Modules.get().get(InvFix.class);
         if(module == null || !module.shouldFixUnstackableDrag()) return;
-        if(!handler.getCarried().isEmpty() && !handler.getCarried().isStackable()) {
+        if(!menu.getCarried().isEmpty() && !menu.getCarried().isStackable()) {
             cir.setReturnValue(true);
         }
     }

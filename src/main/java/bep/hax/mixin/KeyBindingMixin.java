@@ -15,14 +15,21 @@ import static meteordevelopment.meteorclient.MeteorClient.mc;
 public abstract class KeyBindingMixin {
     @Final
     @Shadow
-    private String id;
+    private String name; // 26.1: id -> name
     @Unique
     ElytraFlyPlusPlus efly = null;
-    @Inject(at = @At("RETURN"), method = "isPressed", cancellable = true)
+    @Inject(at = @At("RETURN"), method = "isDown", cancellable = true) // 26.1: isPressed -> isDown
     public void isPressed(CallbackInfoReturnable<Boolean> cir)
     {
-        efly = efly == null ? Modules.get().get(ElytraFlyPlusPlus.class) : efly;
-        if (efly != null && efly.isActive() && efly.enabled() && id.equals("key.forward"))
+        // 26.1: KeyMapping.isDown 在 Minecraft 构造期（KeyMapping.releaseAll）就会被调用，
+        // 那时 Meteor 的 Modules 尚未初始化 -> Modules.get() 为 null，必须先判空
+        if (efly == null) {
+            Modules modules = Modules.get();
+            if (modules == null) return;
+            efly = modules.get(ElytraFlyPlusPlus.class);
+            if (efly == null) return;
+        }
+        if (efly.isActive() && efly.enabled() && name.equals("key.forward"))
         {
             cir.setReturnValue(true);
         }

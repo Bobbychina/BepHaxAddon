@@ -3,6 +3,9 @@ import org.spongepowered.asm.mixin.Mixin;
 import bep.hax.config.StardustConfig;
 import org.spongepowered.asm.mixin.Unique;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.network.chat.Component;
+import net.minecraft.ChatFormatting;
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import net.minecraft.client.gui.Font;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -14,14 +17,20 @@ public class SplashTextRendererMixin {
     @Unique private int trackAlpha = 0;
 
     // Note: render method signature may have changed in 1.21.11
-    @Inject(method = "render", at = @At("HEAD"), require = 0)
+    @Inject(method = "extractRenderState", at = @At("HEAD"), require = 0) // 26.1: render -> extractRenderState
     private void mixinRender(GuiGraphicsExtractor context, int width, Font textRenderer, float alpha, CallbackInfo ci) {
         this.trackAlpha = (int)(alpha * 255.0f);
     }
 
-    // Note: drawCenteredTextWithShadow signature changed in 1.21.11, using require = 0 to make optional
-    @ModifyArg(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GuiGraphicsExtractor;drawCenteredTextWithShadow(Lnet/minecraft/client/gui/Font;Ljava/lang/String;III)V"), index = 4, require = 0)
-    private int modifyRenderArg(int color) {
-        return StardustConfig.greenSplashTextSetting.get() ? 0x54FB54 | this.trackAlpha : color;
+    // 26.1: extractRenderState 走 ActiveTextCollector.accept(...)，颜色不再是 int 形参；
+    // 改为直接对 splash 文本套色（等价效果，require = 0 兜底）
+    @ModifyExpressionValue(
+        method = "extractRenderState",
+        at = @At(value = "FIELD", target = "Lnet/minecraft/client/gui/components/SplashRenderer;splash:Lnet/minecraft/network/chat/Component;"),
+        require = 0
+    )
+    private Component recolorSplash(Component original) {
+        if (!StardustConfig.greenSplashTextSetting.get()) return original;
+        return original.copy().withStyle(ChatFormatting.GREEN);
     }
 }

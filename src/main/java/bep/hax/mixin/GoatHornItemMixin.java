@@ -1,5 +1,8 @@
 package bep.hax.mixin;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Instrument;
 import bep.hax.modules.Honker;
 import net.minecraft.world.item.InstrumentItem;
 import org.spongepowered.asm.mixin.Mixin;
@@ -12,8 +15,9 @@ public class GoatHornItemMixin extends Item {
     public GoatHornItemMixin(Item.Properties settings) {
         super(settings);
     }
-    @Inject(method = "playSound", at = @At("HEAD"), cancellable = true)
-    private static void mixinPlaySound(CallbackInfo ci) {
+    // 26.1: InstrumentItem.playSound -> private static play(Level,Player,Instrument)
+    @Inject(method = "play", at = @At("HEAD"), cancellable = true)
+    private static void mixinPlaySound(Level level, Player player, Instrument instrument, CallbackInfo ci) {
         Modules modules = Modules.get();
         if (modules == null) return;
         Honker honker = modules.get(Honker.class);

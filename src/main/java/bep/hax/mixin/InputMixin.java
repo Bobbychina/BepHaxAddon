@@ -7,17 +7,17 @@ import org.spongepowered.asm.mixin.Shadow;
 @Mixin(ClientInput.class)
 public abstract class InputMixin implements InputAccessor {
     @Shadow
-    public abstract Vec2 getMovementInput();
+    public abstract Vec2 getMoveVector(); // 26.1: ClientInput.getMovementInput -> getMoveVector
     @Override
     public float getMovementForward() {
-        return this.getMovementInput().y;
+        return this.getMoveVector().y;
     }
     @Override
     public void setMovementForward(float value) {
     }
     @Override
     public float getMovementSideways() {
-        return this.getMovementInput().x;
+        return this.getMoveVector().x;
     }
     @Override
     public void setMovementSideways(float value) {

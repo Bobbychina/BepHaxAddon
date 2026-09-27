@@ -11,6 +11,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Mutable;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import org.spongepowered.asm.mixin.injection.At;
 import bep.hax.mixin.accessor.StyleAccessor;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -24,8 +25,9 @@ public abstract class ScreenMixin extends AbstractContainerEventHandler implemen
     @Final
     @Mutable
     protected Component title;
-    @Inject(method = "render", at = @At("HEAD"))
-    private void censorScreenTitles(CallbackInfo ci) {
+    // 26.1: Screen.render -> extractRenderState(GuiGraphicsExtractor,int,int,float)
+    @Inject(method = "extractRenderState", at = @At("HEAD"))
+    private void censorScreenTitles(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
         Modules mods = Modules.get();
         if (mods == null) return;
         AntiToS tos = mods.get(AntiToS.class);

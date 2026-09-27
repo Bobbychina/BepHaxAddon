@@ -11,6 +11,6 @@ public interface AccessorClientWorld {
     void hookPlaySound(double x, double y, double z, SoundEvent event,
                        SoundSource category, float volume, float pitch,
                        boolean useDistance, long seed);
-    @Invoker("getPendingUpdateManager")
+    @Invoker("getBlockStatePredictionHandler") // 26.1: getPendingUpdateManager -> getBlockStatePredictionHandler
     BlockStatePredictionHandler hookGetPendingUpdateManager();
 }

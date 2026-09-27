@@ -20,7 +20,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(MultiPlayerGameMode.class)
 public class RespawnPointBlockerMixin {
-    @Inject(method = "interactBlock", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "useItemOn", at = @At("HEAD"), cancellable = true) // 26.1: interactBlock -> useItemOn
     private void onInteractBlock(LocalPlayer player, InteractionHand hand, BlockHitResult hitResult, CallbackInfoReturnable<InteractionResult> cir) {
         RespawnPointBlocker module = Modules.get().get(RespawnPointBlocker.class);
         if (!module.isActive()) return;

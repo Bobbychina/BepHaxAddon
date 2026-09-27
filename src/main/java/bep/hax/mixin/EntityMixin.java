@@ -24,7 +24,11 @@ public class EntityMixin {
         protected UUID uuid;
         private ElytraFlyPlusPlus efly;
         private ElytraFlyPlusPlus getEfly() {
-            if (efly == null) efly = Modules.get().get(ElytraFlyPlusPlus.class);
+            if (efly == null) {
+                Modules modules = Modules.get();      // 启动早期可能为 null（Meteor 未初始化）
+                if (modules == null) return null;
+                efly = modules.get(ElytraFlyPlusPlus.class);
+            }
             return efly;
         }
         @Inject(at = @At("HEAD"), method = "Lnet/minecraft/world/entity/Entity;getPose()Lnet/minecraft/world/entity/Pose;", cancellable = true)
@@ -41,7 +45,7 @@ public class EntityMixin {
                 cir.setReturnValue(true);
             }
         }
-        @Inject(at = @At("HEAD"), method = "pushAwayFrom", cancellable = true)
+        @Inject(at = @At("HEAD"), method = "push(Lnet/minecraft/world/entity/Entity;)V", cancellable = true) // 26.1: pushAwayFrom -> push(Entity)
         private void pushAwayFrom(Entity entity, CallbackInfo ci) {
             PushEntityEvent pushEntityEvent = new PushEntityEvent((Entity) (Object) this, entity);
             MeteorClient.EVENT_BUS.post(pushEntityEvent);

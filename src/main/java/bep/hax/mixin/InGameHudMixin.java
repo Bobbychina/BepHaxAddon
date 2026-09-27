@@ -24,22 +24,22 @@ import net.minecraft.world.entity.HumanoidArm;
 @Mixin(Gui.class)
 public class InGameHudMixin {
     @Shadow
-    private ItemStack currentStack;
+    private ItemStack lastToolHighlight; // 26.1: currentStack -> lastToolHighlight
     @Inject(
-        method = "renderHeldItemTooltip",
-        at = @At(value = "INVOKE", target = "Lnet/minecraft/world/item/ItemStack;contains(Lnet/minecraft/core/component/DataComponentType;)Z")
+        method = "extractSelectedItemName", // 26.1: renderHeldItemTooltip -> extractSelectedItemName
+        at = @At(value = "INVOKE", target = "Lnet/minecraft/world/item/ItemStack;has(Lnet/minecraft/core/component/DataComponentType;)Z")
     )
     private void censorItemTooltip(GuiGraphicsExtractor context, CallbackInfo ci, @Local LocalRef<MutableComponent> itemName) {
-        if (this.currentStack.isEmpty()) return;
+        if (this.lastToolHighlight.isEmpty()) return;
         Modules modules = Modules.get();
         if (modules == null) return;
         AntiToS antiToS = modules.get(AntiToS.class);
         if (!antiToS.isActive()) return;
         if (antiToS.containsBlacklistedText(itemName.get().getString())) {
-            itemName.set(Component.empty().append(antiToS.censorText(itemName.get().getString())).withStyle(this.currentStack.getRarity().color()));
+            itemName.set(Component.empty().append(antiToS.censorText(itemName.get().getString())).withStyle(this.lastToolHighlight.getRarity().color()));
         }
     }
-    @Inject(method = "renderHotbar", at = @At("TAIL"))
+    @Inject(method = "extractItemHotbar", at = @At("TAIL")) // 26.1: renderHotbar -> extractItemHotbar
     private void onRenderHotbar(GuiGraphicsExtractor context, DeltaTracker tickCounter, CallbackInfo ci) {
         ShulkerOverviewModule module = Modules.get().get(ShulkerOverviewModule.class);
         if (module == null || !module.isActive()) return;
@@ -69,7 +69,7 @@ public class InGameHudMixin {
             module.renderShulkerOverlay(context, offX + 3, offY + 3, offhandStack);
         }
     }
-    @Inject(method = "renderOverlay", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "extractTextureOverlay", at = @At("HEAD"), cancellable = true) // 26.1: renderOverlay -> extractTextureOverlay
     private void onRenderOverlay(GuiGraphicsExtractor context, net.minecraft.resources.Identifier texture, float opacity, CallbackInfo ci) {
         Modules modules = Modules.get();
         if (modules == null) return;

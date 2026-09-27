@@ -9,8 +9,8 @@ import org.spongepowered.asm.mixin.injection.At;
 @Mixin(value = LocalPlayer.class, priority = 1100)
 public class ClientPlayerEntityGrimV3Mixin {
     @ModifyExpressionValue(
-        method = "tickMovement",
-        at = @At(value = "INVOKE", target = "Lnet/minecraft/client/player/LocalPlayer;isUsingItem()Z")
+        method = "aiStep", // 26.1: tickMovement -> aiStep；物品使用减速改由 isSlowDueToUsingItem() 决定
+        at = @At(value = "INVOKE", target = "Lnet/minecraft/client/player/LocalPlayer;isSlowDueToUsingItem()Z")
     )
     private boolean bephax$allowSlowdownForGrimV3(boolean original) {
         NoSlow noSlow = Modules.get().get(NoSlow.class);

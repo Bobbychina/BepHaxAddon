@@ -14,19 +14,19 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 @Mixin(ChatScreen.class)
 public abstract class ChatScreenMixin extends Screen {
     @Shadow
-    protected EditBox chatField;
+    protected EditBox input; // 26.1: chatField -> input
     protected ChatScreenMixin(Component title) {
         super(title);
     }
-    @Inject(method = "render", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "extractRenderState", at = @At("HEAD"), cancellable = true) // 26.1: render -> extractRenderState
     private void onRender(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
         Modules modules = Modules.get();
         if (modules != null) {
             WebChat webChat = modules.get(WebChat.class);
             if (webChat != null && webChat.isActive() && webChat.shouldHideInGameChat()) {
-                if (this.chatField != null) {
+                if (this.input != null) {
                     context.fill(2, this.height - 14 - 2, this.width - 2, this.height - 2, 0x80000000);
-                    this.chatField.extractRenderState(context, mouseX, mouseY, delta);
+                    this.input.extractRenderState(context, mouseX, mouseY, delta);
                 }
                 ci.cancel();
             }
@@ -38,8 +38,8 @@ public abstract class ChatScreenMixin extends Screen {
         if (modules != null) {
             WebChat webChat = modules.get(WebChat.class);
             if (webChat != null && webChat.isActive() && webChat.shouldHideInGameChat()) {
-                if (this.chatField != null) {
-                    this.chatField.setY(this.height - 12);
+                if (this.input != null) {
+                    this.input.setY(this.height - 12);
                 }
             }
         }

@@ -964,13 +964,18 @@ public class MusicTweaks extends Module {
         if (mc.player == null) return;
         String[] pieces = songName.split(" - ");
         ((IChatHud) mc.gui.getChat()).meteor$add(
-            Component.literal("§8<"+rcc+"§o✨§r§8> §2§oNow Playing§r§8: §7§o"+pieces[0]+" §8- "+rcc+"§o"+pieces[1]+"§r§8."),
+            Component.literal("§8<"+rcc()+"§o✨§r§8> §2§oNow Playing§r§8: §7§o"+pieces[0]+" §8- "+rcc()+"§o"+pieces[1]+"§r§8."),
             songName.hashCode()
         );
     }
     public void nullifyCurrentType() {
         currentType = null;
         rcc = StardustUtil.rCC();
+    }
+    // 26.1: mod 初始化期文本组件尚未绑定（"Components not bound yet"），字段初始化不能取 rCC，改为懒加载
+    private String rcc() {
+        if (rcc == null) rcc = StardustUtil.rCC();
+        return rcc;
     }
     public Minecraft getClient() { return mc; }
     public boolean shouldFadeOut() { return fadeOut.get(); }
@@ -991,7 +996,7 @@ public class MusicTweaks extends Module {
     private String currentSong = null;
     private Music currentType = null;
     private PitchDirection lastDirection = null;
-    private String rcc = StardustUtil.rCC();
+    private String rcc = null;
     @Override
     public void onActivate() {
         if (!startOnEnable.get()) return;

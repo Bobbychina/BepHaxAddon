@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(MultiPlayerGameMode.class)
 public class FullContainerFixMixin {
-    @Inject(method = "clickSlot", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "handleContainerInput", at = @At("HEAD"), cancellable = true) // 26.1: clickSlot -> handleContainerInput
     private void onClickSlot(int syncId, int slotId, int button, ContainerInput actionType, Player player, CallbackInfo ci) {
         InvFix module = Modules.get().get(InvFix.class);
         if (module == null || !module.shouldPreventFullContainerClicks()) return;

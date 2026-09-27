@@ -29,9 +29,9 @@ public abstract class HandledScreenMixin extends Screen {
     protected HandledScreenMixin(Component title) {
         super(title);
     }
-    @Shadow protected int x;
-    @Shadow protected int y;
-    @Shadow public abstract AbstractContainerMenu getScreenHandler();
+    @Shadow protected int leftPos; // 26.1: x -> leftPos
+    @Shadow protected int topPos;  // 26.1: y -> topPos
+    @Shadow public abstract AbstractContainerMenu getMenu(); // 26.1: getScreenHandler -> getMenu
     @Unique private EditBox itemSearchField;
     @Unique private ItemSearchBar itemSearchModule;
     @Inject(method = "init", at = @At("TAIL"))
@@ -40,8 +40,8 @@ public abstract class HandledScreenMixin extends Screen {
         if (itemSearchModule == null || !itemSearchModule.isActive() || !itemSearchModule.shouldShowSearchField()) return;
         itemSearchField = new EditBox(
             Minecraft.getInstance().font,
-            this.x + itemSearchModule.getOffsetX(),
-            this.y + itemSearchModule.getOffsetY(),
+            this.leftPos + itemSearchModule.getOffsetX(),
+            this.topPos + itemSearchModule.getOffsetY(),
             itemSearchModule.getFieldWidth(),
             itemSearchModule.getFieldHeight(),
             Component.literal("Search items...")
@@ -62,12 +62,12 @@ public abstract class HandledScreenMixin extends Screen {
         itemSearchField.setVisible(true);
         this.addRenderableWidget(itemSearchField);
     }
-    @Inject(method = "render", at = @At("TAIL"))
+    @Inject(method = "extractRenderState", at = @At("TAIL")) // 26.1: render -> extractRenderState
     private void onRender(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
         if (itemSearchModule == null || !itemSearchModule.isActive() || !itemSearchModule.shouldShowSearchField()) return;
         if (itemSearchField == null) return;
-        itemSearchField.setX(this.x + itemSearchModule.getOffsetX());
-        itemSearchField.setY(this.y + itemSearchModule.getOffsetY());
+        itemSearchField.setX(this.leftPos + itemSearchModule.getOffsetX());
+        itemSearchField.setY(this.topPos + itemSearchModule.getOffsetY());
         itemSearchField.setVisible(true);
     }
     @Inject(method = "keyPressed", at = @At("HEAD"), cancellable = true)
@@ -129,7 +129,7 @@ public abstract class HandledScreenMixin extends Screen {
         }
         return super.charTyped(input);
     }
-    @Inject(method = "drawSlot", at = @At("HEAD"))
+    @Inject(method = "extractSlot", at = @At("HEAD")) // 26.1: drawSlot -> extractSlot
     private void onDrawSlotHead(GuiGraphicsExtractor context, Slot slot, int x, int y, CallbackInfo ci) {
         if (itemSearchModule != null && itemSearchModule.isActive() && slot.hasItem()) {
             if (itemSearchModule.shouldHighlightSlot(slot.getItem())) {
@@ -138,7 +138,7 @@ public abstract class HandledScreenMixin extends Screen {
             }
         }
     }
-    @Inject(method = "drawSlot", at = @At("TAIL"))
+    @Inject(method = "extractSlot", at = @At("TAIL")) // 26.1: drawSlot -> extractSlot
     private void onDrawSlotTail(GuiGraphicsExtractor context, Slot slot, int x, int y, CallbackInfo ci) {
         ShulkerOverviewModule shulkerModule = Modules.get().get(ShulkerOverviewModule.class);
         if (shulkerModule != null && shulkerModule.isActive()) {

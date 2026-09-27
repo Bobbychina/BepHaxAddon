@@ -13,8 +13,8 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 @Mixin(Gui.class)
 public abstract class WebChatMixin {
     @Shadow
-    private ChatComponent chatHud;
-    @Inject(method = "renderChat", at = @At("HEAD"), cancellable = true)
+    private ChatComponent chat; // 26.1: chatHud -> chat
+    @Inject(method = "extractChat", at = @At("HEAD"), cancellable = true) // 26.1: renderChat -> extractChat
     private void onRenderChat(GuiGraphicsExtractor context, DeltaTracker tickCounter, CallbackInfo ci) {
         Modules modules = Modules.get();
         if (modules != null) {

@@ -33,8 +33,9 @@ public class MinecraftClientMixin {
         player.setYRot(player.getYRot() + g);
         player.setXRot(Mth.clamp(player.getXRot() + f, -90.0F, 90.0F));
     }
-    @Inject(method = "render", at = @At("HEAD"))
-    private void mixinRender(CallbackInfo ci) {
+    // 26.1: Minecraft.render -> private renderFrame(boolean)
+    @Inject(method = "renderFrame", at = @At("HEAD"))
+    private void mixinRender(boolean tick, CallbackInfo ci) {
         long currentTime = System.nanoTime();
         float deltaTime = (currentTime - lastFrameTime) / 10000000f;
         Modules modules = Modules.get();
@@ -104,7 +105,7 @@ public class MinecraftClientMixin {
         }
         lastFrameTime = currentTime;
     }
-    @Inject(method = "doItemUse", at = @At("HEAD"))
+    @Inject(method = "startUseItem", at = @At("HEAD")) // 26.1: doItemUse -> startUseItem
     private void onDoItemUse(CallbackInfo ci) {
         if (player == null) return;
         ItemStack mainHand = player.getMainHandItem();
@@ -121,7 +122,7 @@ public class MinecraftClientMixin {
             invManager.setEating(true);
         }
     }
-    @Inject(method = "getMusicInstance", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "getSituationalMusic", at = @At("HEAD"), cancellable = true) // 26.1: getMusicInstance -> getSituationalMusic
     public void mixinGetMusicType(CallbackInfoReturnable<Music> cir) {
         Modules modules = Modules.get();
         if (modules == null ) return;

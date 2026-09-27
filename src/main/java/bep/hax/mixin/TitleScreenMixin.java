@@ -20,7 +20,7 @@ public abstract class TitleScreenMixin extends Screen {
     @Unique
     private static final ServerData OLD_SERVER = new ServerData("2b2t", "2b2t.org", ServerData.Type.OTHER);
     @Shadow
-    private SplashRenderer splashText;
+    private SplashRenderer splash; // 26.1: splashText -> splash
     protected TitleScreenMixin(Component title) {
         super(title);
     }
@@ -54,7 +54,7 @@ public abstract class TitleScreenMixin extends Screen {
         ++timer;
         if (timer >= 420 && StardustConfig.rotateSplashTextSetting.get()) {
             timer = 0;
-            splashText = mc.getSplashManager().getSplash();
+            splash = mc.getSplashManager().getSplash();
         }
     }
 }

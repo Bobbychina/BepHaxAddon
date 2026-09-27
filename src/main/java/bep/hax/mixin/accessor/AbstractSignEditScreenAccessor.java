@@ -15,6 +15,6 @@ public interface AbstractSignEditScreenAccessor {
     @Mutable
     @Accessor("text")
     void setText(SignText text);
-    @Accessor("blockEntity")
+    @Accessor("sign") // 26.1: blockEntity -> sign
     SignBlockEntity getBlockEntity();
 }

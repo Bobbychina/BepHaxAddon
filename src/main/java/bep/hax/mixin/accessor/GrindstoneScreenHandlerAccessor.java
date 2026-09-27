@@ -5,8 +5,8 @@ import org.spongepowered.asm.mixin.gen.Invoker;
 import net.minecraft.world.inventory.GrindstoneMenu;
 @Mixin(GrindstoneMenu.class)
 public interface GrindstoneScreenHandlerAccessor {
-    @Invoker("grind")
+    @Invoker("removeNonCursesFrom") // 26.1: grind -> removeNonCursesFrom
     ItemStack invokeGrind(ItemStack item);
-    @Invoker("transferEnchantments")
+    @Invoker("mergeEnchantsFrom") // 26.1: transferEnchantments -> mergeEnchantsFrom
     void invokeTransferEnchantments(ItemStack target, ItemStack source);
 }

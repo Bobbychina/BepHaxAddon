@@ -20,16 +20,15 @@ import net.minecraft.client.gui.screens.inventory.AbstractSignEditScreen;
 @Mixin(AbstractSignEditScreen.class)
 public abstract class AbstractSignEditScreenMixin extends Screen {
     @Shadow
-    private int currentRow;
-    @Shadow
-    public abstract void close();
+    private int line;                 // 26.1: currentRow -> line
     @Shadow
     @Final
-    protected SignBlockEntity blockEntity;
+    protected SignBlockEntity sign;   // 26.1: blockEntity -> sign
     @Shadow
-    private TextFieldHelper selectionManager;
+    private TextFieldHelper signField; // 26.1: selectionManager -> signField
+    // 26.1: setCurrentRowMessage -> setMessage(String)（目标为 private，shadow 需自带方法体）
     @Shadow
-    protected abstract void setCurrentRowMessage(String message);
+    private void setMessage(String message) { throw new AssertionError(); }
     protected AbstractSignEditScreenMixin(Component title) { super(title); }
     @Inject(method = "init", at = @At("TAIL"))
     public void stardustMixinInit(CallbackInfo ci) {
@@ -40,9 +39,9 @@ public abstract class AbstractSignEditScreenMixin extends Screen {
         SignatureSign signatureSign = modules.get(SignatureSign.class);
         if (!signatureSign.isActive() && !signHistorian.isActive()) return;
         if (signatureSign.getAutoConfirm()) return;
-        SignText restoration = signHistorian.getRestoration(this.blockEntity);
+        SignText restoration = signHistorian.getRestoration(this.sign);
         if ((!signHistorian.isActive() || restoration == null) && signatureSign.isActive()) {
-            SignText signature = signatureSign.getSignature(this.blockEntity);
+            SignText signature = signatureSign.getSignature(this.sign);
             List<String> msgs = Arrays.stream(signature.getMessages(false)).map(Component::getString).toList();
             String[] messages = new String[msgs.size()];
             messages = msgs.toArray(messages);
@@ -50,8 +49,8 @@ public abstract class AbstractSignEditScreenMixin extends Screen {
             ((AbstractSignEditScreenAccessor) this).setMessages(messages);
             if ((signatureSign.isActive() && signatureSign.signFreedom.get())) {
                 AbstractSignEditScreenAccessor accessor = ((AbstractSignEditScreenAccessor) this);
-                this.selectionManager = new TextFieldHelper(
-                    () -> accessor.getMessages()[this.currentRow], this::setCurrentRowMessage,
+                this.signField = new TextFieldHelper(
+                    () -> accessor.getMessages()[this.line], this::setMessage,
                     TextFieldHelper.createClipboardGetter(this.minecraft), TextFieldHelper.createClipboardSetter(this.minecraft),
                     string -> true
                 );

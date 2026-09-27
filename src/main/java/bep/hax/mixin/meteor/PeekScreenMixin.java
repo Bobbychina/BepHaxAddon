@@ -45,9 +45,12 @@ public abstract class PeekScreenMixin extends ShulkerBoxScreen {
     private void onInit(ItemStack storageBlock, ItemStack[] contents, CallbackInfo ci) {
         bephax$searchModule = Modules.get().get(ItemSearchBar.class);
     }
-    @Inject(method = "init", at = @At("TAIL"), remap = true)
-    private void onInitScreen(CallbackInfo ci) {
+    // 26.1: PeekScreen 自身不再覆写 Screen.init()（继承链上的 init 无法作为注入点），
+    // 改为在每帧 extractBackground（原 drawBackground）里惰性创建搜索框。
+    @Inject(method = "extractBackground", at = @At("TAIL"), remap = true)
+    private void onInitScreen(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
         if (bephax$searchModule == null || !bephax$searchModule.isActive() || !bephax$searchModule.shouldShowSearchField()) return;
+        if (bephax$searchField != null) return;
         bephax$searchField = new EditBox(
             Minecraft.getInstance().font,
             this.leftPos + bephax$searchModule.getOffsetX(),
@@ -125,8 +128,9 @@ public abstract class PeekScreenMixin extends ShulkerBoxScreen {
         }
         return super.charTyped(input);
     }
-    @Inject(method = "drawBackground", at = @At("TAIL"), remap = true)
-    private void onDrawBackground(GuiGraphicsExtractor context, float delta, int mouseX, int mouseY, CallbackInfo ci) {
+    // 26.1: drawBackground -> extractBackground(GuiGraphicsExtractor,int mouseX,int mouseY,float delta)
+    @Inject(method = "extractBackground", at = @At("TAIL"), remap = true)
+    private void onDrawBackground(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
         if (bephax$searchModule == null || !bephax$searchModule.isActive() || !bephax$searchModule.shouldShowSearchField()) return;
         if (bephax$searchField == null) return;
         bephax$searchField.setX(this.leftPos + bephax$searchModule.getOffsetX());

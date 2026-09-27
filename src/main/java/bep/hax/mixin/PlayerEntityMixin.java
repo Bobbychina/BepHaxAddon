@@ -25,7 +25,7 @@ public abstract class PlayerEntityMixin extends LivingEntity {
         super(entityType, world);
     }
     @Unique private long toggleTimestamp = System.currentTimeMillis();
-    @Inject(method = "isPushedByFluids", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "isPushedByFluid", at = @At("HEAD"), cancellable = true) // 26.1: isPushedByFluids -> isPushedByFluid
     private void hookIsPushedByFluids(CallbackInfoReturnable<Boolean> cir) {
         if ((Object) this != mc.player) {
             return;

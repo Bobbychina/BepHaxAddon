@@ -22,21 +22,19 @@ import static meteordevelopment.meteorclient.MeteorClient.mc;
 @Mixin(Entity.class)
 public abstract class MixinEntity {
     @Shadow
-    public abstract boolean isInPose(Pose pose);
+    public abstract boolean hasPose(Pose pose); // 26.1: isInPose -> hasPose
     @Shadow
     public abstract Component getName();
     @Shadow
-    public abstract Level getEntityWorld();
+    public abstract Level level(); // 26.1: getEntityWorld -> level()
+    // 26.1: Entity.interact 已改为 interact(Player,InteractionHand,Vec3)，此处未使用，摘除
     @Shadow
-    public abstract InteractionResult interact(Player player, InteractionHand hand);
+    protected abstract void checkFallDamage(double heightDifference, boolean onGround, BlockState state, BlockPos landedPosition); // 26.1: fall -> checkFallDamage
+    // 26.1: Entity.stepOnBlock 已移除，此处未使用，摘除
     @Shadow
-    protected abstract void fall(double heightDifference, boolean onGround, BlockState state, BlockPos landedPosition);
+    public abstract float maxUpStep(); // 26.1: getStepHeight -> maxUpStep
     @Shadow
-    protected abstract boolean stepOnBlock(BlockPos pos, BlockState state, boolean playSound, boolean emitEvent, Vec3 movement);
-    @Shadow
-    public abstract float getStepHeight();
-    @Shadow
-    public abstract boolean isOnGround();
+    public abstract boolean onGround(); // 26.1: isOnGround -> onGround
     @Shadow
     public abstract AABB getBoundingBox();
 }

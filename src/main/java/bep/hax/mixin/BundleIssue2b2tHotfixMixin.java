@@ -22,14 +22,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(BundleMouseActions.class)
 public class BundleIssue2b2tHotfixMixin {
     @Unique private static final Logger LOGGER = LoggerFactory.getLogger("BepHax.BundleIssue2b2tHotfixMixin");
-    @Shadow @Final private Minecraft client;
+    @Shadow @Final private Minecraft minecraft; // 26.1: client -> minecraft
     @Unique private Integer packetSelectedItemIndex = null;
-    @Inject(method = "sendPacket", at = @At("HEAD"))
+    @Inject(method = "toggleSelectedBundleItem", at = @At("HEAD")) // 26.1: sendPacket -> toggleSelectedBundleItem(ItemStack,int,int)
     public void sendPacketHead(ItemStack item, int slotId, int selectedItemIndex, CallbackInfo info) {
         packetSelectedItemIndex = null;
         InvFix module = Modules.get().get(InvFix.class);
         if(module == null || !module.shouldFixBundles()) return;
-        ClientPacketListener networkHandler = client.getConnection();
+        ClientPacketListener networkHandler = minecraft.getConnection();
         if(networkHandler == null || networkHandler.getServerData() == null) return;
         String address = networkHandler.getServerData().ip;
         if(address == null) return;
@@ -40,7 +40,7 @@ public class BundleIssue2b2tHotfixMixin {
         if(bundleContents.isEmpty()) return;
         packetSelectedItemIndex = (bundleContents.size()-1) - selectedItemIndex;
     }
-    @ModifyArg(method = "sendPacket", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/multiplayer/ClientPacketListener;sendPacket(Lnet/minecraft/network/protocol/Packet;)V", ordinal = 0))
+    @ModifyArg(method = "toggleSelectedBundleItem", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/multiplayer/ClientPacketListener;send(Lnet/minecraft/network/protocol/Packet;)V", ordinal = 0))
     public Packet<?> sendPacketAtSetSelectedItem(Packet<?> packet) {
         if(packet instanceof ServerboundSelectBundleItemPacket itemSelPacket && packetSelectedItemIndex != null) {
             LOGGER.info("Changed selected bundle index " + itemSelPacket.selectedItemIndex() + " to " + packetSelectedItemIndex);

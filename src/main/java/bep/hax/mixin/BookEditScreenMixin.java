@@ -137,21 +137,21 @@ public abstract class BookEditScreenMixin extends Screen {
             )
         );
     }
-    @Inject(method = "finalizeBook", at = @At("HEAD"))
+    @Inject(method = "appendPageToBook", at = @At("HEAD")) // 26.1: finalizeBook -> appendPageToBook
     private void mixinFinalizeBook(CallbackInfo ci) {
         if (this.didFormatPage) {
             insertText("§r");
         }
     }
-    @Inject(method = "openPreviousPage", at = @At("HEAD"))
+    @Inject(method = "pageBack", at = @At("HEAD")) // 26.1: openPreviousPage -> pageBack
     private void mixinOpenPreviousPage(CallbackInfo ci) {
         this.didFormatPage = false;
     }
-    @Inject(method = "openNextPage", at = @At("HEAD"))
+    @Inject(method = "pageForward", at = @At("HEAD")) // 26.1: openNextPage -> pageForward
     private void mixinOpenNextPage(CallbackInfo ci) {
         this.didFormatPage = false;
     }
-    @Inject(method = "updatePage", at = @At("TAIL"))
+    @Inject(method = "updatePageContent", at = @At("TAIL")) // 26.1: updatePage -> updatePageContent
     private void mixinUpdatePage(CallbackInfo ci) {
         Modules modules = Modules.get();
         if (modules == null) return;

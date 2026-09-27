@@ -17,7 +17,8 @@ public class GameMenuScreenMixin extends Screen {
     protected GameMenuScreenMixin(Component title) {
         super(title);
     }
-    @Inject(method = "initWidgets", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/layouts/GridLayout;refreshPositions()V"))
+    // 26.1: PauseScreen.initWidgets 已并入 createPauseMenu；GridLayout.refreshPositions() -> arrangeElements()
+    @Inject(method = "createPauseMenu", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/layouts/GridLayout;arrangeElements()V"))
     private void addIllegalDisconnectButton(CallbackInfo ci, @Local GridLayout.RowHelper adder) {
         if (StardustConfig.illegalDisconnectButtonSetting.get() && !mc.isLocalServer()) {
             adder.addChild(Button.builder(Component.literal("§cIllegal Disconnect"), button -> {
