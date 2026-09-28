@@ -31,7 +31,7 @@ public class Bep extends MeteorAddon {
         Hud.get().register(SpeedKMH.INFO);
         Hud.get().register(DubCounterHud.INFO);
         Hud.get().register(MobInfo.INFO);
-        Modules.get().add(new AutoSmith());
+        // [共存去重] Modules.get().add(new AutoSmith());   // 与另一 mod 同名，功能由保留侧提供（见 docs/PORT-NOTES.md）
         Modules.get().add(new BepMine());
         Modules.get().add(new BepCrystal());
         Modules.get().add(new YawLock());
@@ -93,7 +93,7 @@ public class Bep extends MeteorAddon {
         Commands.add(new bep.hax.commands.Panorama());
         Commands.add(new bep.hax.commands.Loadout());
         Commands.add(new bep.hax.commands.ChestTrackerCommand());
-        Modules.get().add(new AdBlocker());
+        // [共存去重] Modules.get().add(new AdBlocker());   // 与另一 mod 同名，功能由保留侧提供（见 docs/PORT-NOTES.md）
         Modules.get().add(new Loadouts());
         Modules.get().add(new AntiToS());
         Modules.get().add(new ChatSigns());
