@@ -242,3 +242,17 @@ python E:\Files\tools\portkit\port_loop.py 8
 - stardust `ServerEntryMixin`：26.1 的 `ServerSelectionList$OnlineServerEntry` 无 `list` 字段 → 改 `@Shadow @Final ServerSelectionList this$0`；其 `swap(int,int)` 为 private（Java 不允许 `private abstract` 影子）→ 新增 `accessor/ServerEntrySwapInvoker`（`@Invoker("swap")`）调用。
 - stardust `meteor/WHeaderMixin`：26.1 Meteor `WWindow$WHeader.onMouseClicked(MouseButtonEvent, boolean)` → 处理函数签名同步改。
 - 教训：**主菜单只覆盖启动路径**，GUI/界面的 mixin 要开对应界面才应用；验收必须逐个界面点开。
+
+## 崩溃修复：Meteor WidgetScreen 关闭 × Fabric screen-api NPE（2026-09-28 09:0x）
+- 现象（`crash-reports/crash-2026-09-28_08.57.40-client.txt`）：
+  `NullPointerException: Screen cannot be null` →
+  `Fabric ScreenEvents.remove(ScreenEvents.java:113)` ← `Minecraft.setScreen` ← `Screen.onClose` ←
+  `meteordevelopment.meteorclient.gui.WidgetScreen.closeInternal(WidgetScreen.java:367)` ← `renderCustom(:273)`。
+- 触发链：stardust 的 `Meteorites` 小游戏界面（`save.json` 那条消息）在**已不是当前屏幕**时走了 `closeInternal()`
+  → `Screen.onClose()` → `setScreen(null)`，此时 Fabric screen-api 的 `remove()` 收到 `null` 直接抛 NPE，整局崩。
+- 修法：新增 `bep/hax/mixin/meteor/WidgetScreenCloseGuardMixin`（注册在 `bep-meteor.mixins.json`）：
+  对 `WidgetScreen.closeInternal()` 里那处 `Screen.onClose()` 做 `@Redirect`，**只在 `mc.screen == self` 时才真正关闭**，
+  否则跳过（Meteor 自己的 `removed()` 清理照常执行）。这样既不会二次 `setScreen(null)`，也不影响正常关屏。
+- 注意：`@Redirect` 处理函数第 0 参必须是目标方法 owner 类型（这里是 `Screen`），写成 `WidgetScreen` 会报
+  `invalid signature ... expected net.minecraft.client.gui.screens.Screen`。
+- 验证：`logs\smoke-guard2.txt` → `new crash reports (0)` + `errors (0)` + `PASS`；实机再走一遍同一操作即可确认。
