@@ -49,6 +49,9 @@ public class Spiral extends SearchAreaMode
     @Override
     public void onTick()
     {
+        if (pd == null) {   // 兜底：任何路径下 pd 未初始化时也不要崩游戏
+            pd = new PathingDataSpiral(mc.player.blockPosition(), mc.player.blockPosition(), -90.0f, true, 0, 0);
+        }
         if (System.nanoTime() - startTime > 6e11)
         {
             startTime = System.nanoTime();

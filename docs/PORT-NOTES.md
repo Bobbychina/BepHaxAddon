@@ -256,3 +256,18 @@ python E:\Files\tools\portkit\port_loop.py 8
 - 注意：`@Redirect` 处理函数第 0 参必须是目标方法 owner 类型（这里是 `Screen`），写成 `WidgetScreen` 会报
   `invalid signature ... expected net.minecraft.client.gui.screens.Screen`。
 - 验证：`logs\smoke-guard2.txt` → `new crash reports (0)` + `errors (0)` + `PASS`；实机再走一遍同一操作即可确认。
+
+## 崩溃修复：SearchArea 运行中切换模式 → 子模式状态为 null（2026-09-28 17:50 用户上报）
+- 报告：`crash-2026-09-28_17.50.39-client.txt`
+  `NullPointerException: Cannot read field "currPos" because "this.pd" is null`
+  → `bep.hax.modules.searcharea.modes.Spiral.onTick(Spiral.java:64)` ← `SearchArea.onTick(:86)`（TickEvent.Post）。
+- 根因（上游老 bug，非 26.1 API 引起）：`SearchArea.onModeChanged()` 在**运行中**被 GUI 改模式时只替换实例
+  `currentMode = new Spiral()/new Rectangle()`，**不调用新实例的 `onActivate()`**；子模式内部状态（`Spiral.pd` /
+  `Rectangle.pd`）因此保持 null，下一 tick 直接 NPE 崩整局。另外 `GSON.fromJson` 读到空存档时会返回 null，也会留下 null。
+- 修法（`modules/searcharea/`）：
+  1. `SearchArea` 增加 `modeActivated` 标记与正确的模式交接：切换时若模块处于激活态，先 `currentMode.onDeactivate()`，
+     换实例后再 `currentMode.onActivate()`（`onActivate/onDeactivate` 同步维护该标记，避免重复激活）。
+  2. `Spiral.onTick()` / `Rectangle.onTick()` 增加 `pd == null` 兜底：按各自默认构造就地初始化。
+  3. 两处 `GSON.fromJson(...)` 之后判空：为空则提示 `Saved path was empty, starting a new one.` 并回退到默认路径数据。
+- 验证：javac 0 错 + `gradlew build` 通过；jar 已装 MAIN（sha `15217F3C…`）。
+- 排查提示：这类「崩溃在对应用户操作之后」的手册故障，看崩溃报告第一段栈顶（`onTick`/`onRender`）比看 mixin 更快。

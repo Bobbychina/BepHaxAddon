@@ -37,6 +37,10 @@ public class Rectangle extends SearchAreaMode
             try {
                 FileReader reader = new FileReader(file);
                 pd = GSON.fromJson(reader, PathingDataRectangle.class);
+                if (pd == null) {
+                    info("Saved path was empty, starting a new one.");
+                    pd = new PathingDataRectangle(searchArea.startPos.get(), searchArea.targetPos.get(), searchArea.startPos.get(), 90, true, (int) mc.player.getZ());
+                }
                 reader.close();
             } catch (Exception ignored) {
             }
@@ -98,6 +102,9 @@ public class Rectangle extends SearchAreaMode
     @Override
     public void onTick()
     {
+        if (pd == null) {   // 兜底：模式切换/存档为空时不要崩游戏
+            pd = new PathingDataRectangle(searchArea.startPos.get(), searchArea.targetPos.get(), searchArea.startPos.get(), 90, true, (int) mc.player.getZ());
+        }
         if (System.nanoTime() - startTime > 6e11)
         {
             startTime = System.nanoTime();

@@ -71,14 +71,17 @@ public class SearchArea extends Module {
         clearAll.action = () -> currentMode.clearAll();
         return list;
     }
+    private boolean modeActivated = false;   // 记录当前 mode 是否已 onActivate，避免重复激活
     @Override
     public void onActivate() {
         currentMode.onActivate();
+        modeActivated = true;
     }
     @Override
     public void onDeactivate()
     {
         currentMode.onDeactivate();
+        modeActivated = false;
     }
     @EventHandler
     private void onTick(TickEvent.Post event)
@@ -86,10 +89,14 @@ public class SearchArea extends Module {
         currentMode.onTick();
     }
     private void onModeChanged(SearchAreaModes mode) {
+        // 修复：运行中切换模式时旧实现只换了实例、不调 onActivate()，导致子模式内部状态（Spiral.pd 等）为 null，
+        // 下一 tick 直接 NPE 崩游戏。这里按激活状态正确交接。
+        if (modeActivated) currentMode.onDeactivate();
         switch (mode) {
             case Rectangle -> currentMode = new Rectangle();
             case Spiral -> currentMode = new Spiral();
         }
+        if (modeActivated) currentMode.onActivate();
     }
     public enum WebhookSettings
     {
